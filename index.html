@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard แผนพัฒนาจังหวัดเชียงใหม่ (2566-2570)</title>
+    <title>Dashboard แผนพัฒนาจังหวัดเชียงใหม่</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     
@@ -11,21 +11,21 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         :root { --primary: #1e3a8a; --secondary: #3b82f6; --bg: #f3f4f6; --card: #ffffff; }
         body { font-family: 'Sarabun', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: #333; }
         .container { max-width: 1400px; margin: auto; }
         
-        /* Header & Main Controls */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-        h1 { color: var(--primary); margin: 0; font-size: 24px; }
-        
+        /* Header & Point 6: Smart Search & Point 5: Year Slicer */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        h1 { color: var(--primary); margin: 0; font-size: 26px; }
         .main-controls { display: flex; gap: 15px; align-items: center; background: var(--card); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .year-select { font-size: 18px; font-weight: bold; color: var(--primary); padding: 8px; border: 2px solid var(--secondary); border-radius: 6px; }
-        .search-box { padding: 10px; width: 300px; border: 1px solid #ccc; border-radius: 6px; font-family: 'Sarabun'; }
+        .year-select { font-size: 18px; font-weight: bold; color: var(--primary); padding: 8px; border: 2px solid var(--secondary); border-radius: 6px; background: #eff6ff;}
+        .search-box { padding: 10px; width: 300px; border: 1px solid #ccc; border-radius: 6px; font-family: 'Sarabun'; font-size: 15px;}
         
-        /* Switch Toggle */
+        /* Point 2: Switch Toggle (จำนวน/งบประมาณ) */
         .switch-container { display: flex; align-items: center; gap: 10px; font-weight: bold; background: #e0e7ff; padding: 10px 15px; border-radius: 8px; }
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -34,48 +34,49 @@
         input:checked + .slider { background-color: var(--secondary); }
         input:checked + .slider:before { transform: translateX(24px); }
 
-        /* Slicers (Dropdowns) */
-        .slicer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 20px; }
-        .slicer-box { background: var(--card); padding: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .slicer-box label { font-size: 12px; font-weight: bold; color: #64748b; display: block; margin-bottom: 5px; }
-        .slicer-box select { width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-family: 'Sarabun'; }
+        /* Point 5: Smart Slicer 5 ระดับ */
+        .slicer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .slicer-box { background: var(--card); padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-top: 4px solid var(--secondary);}
+        .slicer-box label { font-size: 13px; font-weight: bold; color: #475569; display: block; margin-bottom: 5px; }
+        .slicer-box select { width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-family: 'Sarabun'; cursor: pointer;}
 
-        /* Summary Cards */
+        /* Point 3: แถบแสดงผลสรุปภาพรวม */
         .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
         .summary-card { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .summary-value { font-size: 36px; font-weight: bold; margin: 10px 0; }
-        .filter-status { font-size: 14px; opacity: 0.9; margin-top: 10px; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px;}
+        .summary-value { font-size: 40px; font-weight: bold; margin: 10px 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);}
+        .filter-status { font-size: 14px; opacity: 0.9; margin-top: 10px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px;}
 
-        /* Dashboard Grid (Map & Charts) */
+        /* Point 1 & 2: Dashboard Grid (แผนที่ & กราฟ) */
         .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .dash-card { background: var(--card); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 450px; display: flex; flex-direction: column; }
-        #map { flex-grow: 1; width: 100%; border-radius: 8px; z-index: 1; }
+        .dash-card { background: var(--card); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 500px; display: flex; flex-direction: column; }
+        #map { flex-grow: 1; width: 100%; border-radius: 8px; z-index: 1; border: 1px solid #e2e8f0;}
         .chart-container { flex-grow: 1; position: relative; }
 
-        /* Table & Export */
+        /* Point 4: Table & Export */
         .table-section { background: var(--card); padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .table-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .btn-export { background: #10b981; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .table-header { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center;}
+        .btn-export { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 15px; transition: 0.2s;}
+        .btn-export:hover { filter: brightness(0.9); }
+        table { width: 100%; border-collapse: collapse; font-size: 15px; }
         th, td { border-bottom: 1px solid #e2e8f0; padding: 12px; text-align: left; }
-        th { background: #f8fafc; color: var(--primary); }
-        tr:hover { background: #f1f5f9; cursor: pointer; }
+        th { background: #f8fafc; color: var(--primary); position: sticky; top: 0;}
+        tr:hover { background: #f1f5f9; cursor: pointer; transition: 0.2s;}
 
-        /* Modal (Popup รายละเอียดย่อย) */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: #fff; margin: 5% auto; padding: 25px; border-radius: 12px; width: 80%; max-width: 800px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        /* Point 7: Modal Popup (คอลัมน์ S) */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px);}
+        .modal-content { background-color: #fff; margin: 3% auto; padding: 30px; border-radius: 12px; width: 85%; max-width: 900px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;}
+        .close-btn { color: #aaa; float: right; font-size: 32px; font-weight: bold; cursor: pointer; line-height: 1; }
         .close-btn:hover { color: #000; }
-        .sub-activity-box { background: #f8fafc; border-left: 4px solid var(--secondary); padding: 15px; margin-bottom: 10px; border-radius: 4px; }
+        .sub-activity-box { background: #f8fafc; border-left: 4px solid var(--secondary); padding: 15px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #e2e8f0;}
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>📊 Dashboard แผนพัฒนาจังหวัดเชียงใหม่</h1>
+        <h1>📊 Dashboard แผนพัฒนาจังหวัดเชียงใหม่ (2566-2570)</h1>
         <div class="main-controls">
-            <input type="text" id="globalSearch" class="search-box" placeholder="🔍 ค้นหาชื่อโครงการ หรือคีย์เวิร์ด...">
+            <input type="text" id="globalSearch" class="search-box" placeholder="🔍 ค้นหาชื่อโครงการ หน่วยงาน หรือพื้นที่...">
             
             <div class="switch-container">
                 <span>จำนวนโครงการ</span>
@@ -87,41 +88,44 @@
             </div>
             
             <select id="filterYear" class="year-select">
-                <option value="all">📅 ทุกปีงบประมาณ</option>
-                </select>
+                <option value="all">📅 แสดงทุกปีงบประมาณ</option>
+            </select>
         </div>
     </div>
 
     <div class="slicer-grid">
-        <div class="slicer-box"><label>1. ยุทธศาสตร์ชาติ 20 ปี</label><select id="filterNat" class="slicer"><option value="all">ทั้งหมด</option></select></div>
-        <div class="slicer-box"><label>2. แผนแม่บทฯ</label><select id="filterMaster" class="slicer"><option value="all">ทั้งหมด</option></select></div>
-        <div class="slicer-box"><label>3. แผนพัฒนาฯ ฉบับที่ 13</label><select id="filterPlan13" class="slicer"><option value="all">ทั้งหมด</option></select></div>
-        <div class="slicer-box"><label>4. แผนกลุ่มจังหวัดภาคเหนือ</label><select id="filterNorth" class="slicer"><option value="all">ทั้งหมด</option></select></div>
-        <div class="slicer-box"><label>5. แผนพัฒนาจังหวัดเชียงใหม่</label><select id="filterProv" class="slicer"><option value="all">ทั้งหมด</option></select></div>
+        <div class="slicer-box"><label>🎯 1. ยุทธศาสตร์ชาติ 20 ปี</label><select id="filterNat" class="slicer"><option value="all">-- ทุกประเด็น --</option></select></div>
+        <div class="slicer-box"><label>🎯 2. แผนแม่บทฯ</label><select id="filterMaster" class="slicer"><option value="all">-- ทุกประเด็น --</option></select></div>
+        <div class="slicer-box"><label>🎯 3. แผนพัฒนาฯ ฉบับที่ 13</label><select id="filterPlan13" class="slicer"><option value="all">-- ทุกประเด็น --</option></select></div>
+        <div class="slicer-box"><label>🎯 4. แผนกลุ่มจังหวัดภาคเหนือ</label><select id="filterNorth" class="slicer"><option value="all">-- ทุกประเด็น --</option></select></div>
+        <div class="slicer-box"><label>🎯 5. แผนพัฒนาจังหวัดเชียงใหม่</label><select id="filterProv" class="slicer"><option value="all">-- ทุกประเด็น --</option></select></div>
     </div>
 
     <div class="summary-grid">
         <div class="summary-card">
-            <h3>📌 จำนวนโครงการที่สอดคล้อง</h3>
+            <h3 style="margin-top: 0;">📌 จำนวนโครงการที่สอดคล้อง</h3>
             <div class="summary-value" id="sumProjects">0</div>
-            <div class="filter-status" id="statusProjects">กำลังแสดง: ทั้งหมด</div>
+            <div class="filter-status" id="statusProjects">เงื่อนไข: แสดงทั้งหมด</div>
         </div>
         <div class="summary-card" style="background: linear-gradient(135deg, #059669, #10b981);">
-            <h3>💰 งบประมาณรวม (บาท)</h3>
+            <h3 style="margin-top: 0;">💰 งบประมาณรวม (บาท)</h3>
             <div class="summary-value" id="sumBudget">0.00</div>
-            <div class="filter-status" id="statusBudget">กำลังแสดง: ทั้งหมด</div>
+            <div class="filter-status" id="statusBudget">เงื่อนไข: แสดงทั้งหมด</div>
         </div>
     </div>
 
     <div class="dash-grid">
         <div class="dash-card">
-            <h3 style="margin-top:0;">📍 แผนที่แสดงขอบเขตงบประมาณรายอำเภอ</h3>
+            <h3 style="margin-top:0; color: var(--primary);">📍 แผนที่กระจายงบประมาณรายอำเภอ (25 อำเภอ)</h3>
             <div id="map"></div>
         </div>
         <div class="dash-card">
-            <h3 style="margin-top:0; display:flex; justify-content:space-between;">
-                <span>📊 สัดส่วนตามประเด็นยุทธศาสตร์</span>
-                <select id="chartTypeSelect" style="padding:5px; border-radius:4px;"><option value="bar">กราฟแท่ง</option><option value="doughnut">กราฟโดนัท</option></select>
+            <h3 style="margin-top:0; color: var(--primary); display:flex; justify-content:space-between; align-items:center;">
+                <span>📊 สัดส่วนตามแผนพัฒนาจังหวัดเชียงใหม่</span>
+                <select id="chartTypeSelect" style="padding:6px; border-radius:6px; font-family:'Sarabun';">
+                    <option value="bar">กราฟแท่ง</option>
+                    <option value="doughnut">กราฟโดนัท</option>
+                </select>
             </h3>
             <div class="chart-container"><canvas id="mainChart"></canvas></div>
         </div>
@@ -129,10 +133,13 @@
 
     <div class="table-section">
         <div class="table-header">
-            <h3 style="margin:0;">📋 รายชื่อโครงการตามเงื่อนไขที่กรอง (คลิกเพื่อดูรายละเอียด)</h3>
-            <button class="btn-export" onclick="exportToExcel()">📥 Export to Excel</button>
+            <h3 style="margin:0; color: var(--primary);">📋 รายชื่อโครงการ (คลิกที่บรรทัดเพื่อดูรายละเอียดและกิจกรรมย่อย)</h3>
+            <div>
+                <button class="btn-export" onclick="exportToExcel()">📥 Export Excel</button>
+                <button class="btn-export" style="background: #ef4444; margin-left: 10px;" onclick="exportToPDF()">📄 Export PDF</button>
+            </div>
         </div>
-        <div style="overflow-x: auto; max-height: 400px;">
+        <div style="overflow-x: auto; max-height: 500px;" id="tableContainer">
             <table id="dataTable">
                 <thead>
                     <tr>
@@ -143,7 +150,7 @@
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="4" style="text-align:center;">⏳ กำลังโหลดข้อมูล...</td></tr>
+                    <tr><td colspan="4" style="text-align:center; padding: 30px;">⏳ กำลังโหลดข้อมูลจากฐานข้อมูล...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -153,14 +160,16 @@
 <div id="projectModal" class="modal">
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal()">&times;</span>
-        <h2 id="modalTitle" style="color: var(--primary);">ชื่อโครงการ</h2>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; font-size: 15px;">
-            <p><strong>📍 พื้นที่:</strong> <span id="modalArea"></span></p>
-            <p><strong>💰 งบรวม:</strong> <span id="modalBudget"></span> บาท</p>
-            <p><strong>🏢 หน่วยงาน:</strong> <span id="modalAgency"></span></p>
-            <p><strong>📅 ปีงบประมาณ:</strong> <span id="modalYear"></span></p>
+        <h2 id="modalTitle" style="color: var(--primary); margin-top: 0;">ชื่อโครงการ</h2>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; font-size: 16px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <p style="margin:0;"><strong>📍 พื้นที่:</strong> <span id="modalArea"></span></p>
+            <p style="margin:0;"><strong>💰 งบรวม:</strong> <span id="modalBudget" style="color: #10b981; font-weight: bold;"></span> บาท</p>
+            <p style="margin:0;"><strong>🏢 หน่วยงาน:</strong> <span id="modalAgency"></span></p>
+            <p style="margin:0;"><strong>📅 ปีงบประมาณ:</strong> <span id="modalYear"></span></p>
         </div>
-        <h3 style="border-bottom: 2px solid #eee; padding-bottom: 5px;">📑 กิจกรรมย่อย / รายละเอียด</h3>
+
+        <h3 style="border-bottom: 2px solid var(--secondary); padding-bottom: 8px; color: var(--primary);">📑 กิจกรรมย่อย / รายละเอียดปลีกย่อย</h3>
         <div id="modalSubActivities">
             </div>
     </div>
