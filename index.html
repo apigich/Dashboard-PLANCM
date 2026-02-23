@@ -18,11 +18,15 @@
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
         h1 { color: var(--primary); margin: 0; font-size: 26px; }
         
-        .main-controls { display: flex; gap: 10px; align-items: center; background: var(--card); padding: 12px 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex-wrap: wrap;}
+        .main-controls { display: flex; gap: 10px; align-items: center; background: var(--card); padding: 12px 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex-wrap: wrap; position: relative;}
+        
+        /* Point 6: Search box type="search" จะมีตัว x ให้ล้างค่าอัตโนมัติ */
         .search-box { padding: 10px; width: 250px; border: 1px solid #ccc; border-radius: 6px; font-family: 'Sarabun'; font-size: 15px;}
+        
         .btn-clear { background: #ef4444; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 14px; transition: 0.2s;}
         .btn-clear:hover { background: #dc2626; }
         
+        /* Point 5: Main Switch */
         .switch-container { display: flex; align-items: center; gap: 8px; font-weight: bold; background: #e0e7ff; padding: 10px; border-radius: 8px; }
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -31,35 +35,42 @@
         input:checked + .slider { background-color: var(--secondary); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        .year-group { display: flex; gap: 10px; align-items: center; background: #eff6ff; padding: 8px 15px; border-radius: 6px; border: 1px solid var(--secondary); font-weight: bold; color: var(--primary);}
-        .year-label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+        /* Point 1: Dropdown ปีงบประมาณแบบ Custom */
+        .dropdown-check-list { display: inline-block; position: relative; font-family: 'Sarabun'; }
+        .dropdown-check-list .anchor { display: inline-block; padding: 8px 15px; background: #eff6ff; border: 2px solid var(--secondary); border-radius: 6px; color: var(--primary); font-weight: bold; cursor: pointer; font-size: 16px; min-width: 150px;}
+        .dropdown-check-list .anchor::after { content: ' ▼'; font-size: 12px;}
+        .dropdown-check-list .items { padding: 10px; display: none; margin: 0; border: 1px solid #ccc; border-top: none; position: absolute; background: white; z-index: 1000; list-style: none; width: 250px; border-radius: 0 0 6px 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto;}
+        .dropdown-check-list.visible .items { display: block; }
+        .dropdown-check-list .items li { margin-bottom: 8px; display: flex; align-items: center; gap: 8px;}
 
         .slicer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; }
         .slicer-box { background: var(--card); padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-top: 4px solid var(--secondary); position: relative;}
         .slicer-box label { font-size: 12px; font-weight: bold; color: #475569; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .slicer-box select { width: 100%; padding: 6px; border: 1px solid #e2e8f0; border-radius: 4px; font-family: 'Sarabun'; font-size: 13px; cursor: pointer;}
         
-        /* ปุ่มกรองเฉพาะ สีเทาเข้ม (Point 3) */
-        .btn-exclusive { background: #475569; color: white; border: none; border-radius: 4px; padding: 3px 6px; font-size: 11px; cursor: pointer; font-family: 'Sarabun'; transition: 0.2s;}
-        .btn-exclusive:hover { background: #1e293b; }
+        /* Point 4: ปุ่มกรองเฉพาะ สีเทาเข้ม */
+        .btn-exclusive { background: #4b5563; color: white; border: none; border-radius: 4px; padding: 3px 8px; font-size: 11px; cursor: pointer; font-family: 'Sarabun'; transition: 0.2s;}
+        .btn-exclusive:hover { background: #1f2937; }
 
-        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 10px; }
+        /* Point 7: Summary & Status ย่อขนาดลงมาอยู่ด้วยกัน */
+        .summary-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
         .summary-card { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .summary-value { font-size: 36px; font-weight: bold; margin: 5px 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);}
         
-        /* แถบแจ้งสถานะแบบเดิม */
+        /* Status Bar ปรับให้กะทัดรัดลง */
         .active-filters-bar { background: #fef3c7; border-left: 5px solid #f59e0b; padding: 10px 15px; margin-bottom: 20px; border-radius: 6px; font-size: 14px; color: #92400e; display: flex; align-items: center; gap: 10px;}
 
-        /* --- Layout ใหม่ --- */
-        /* แถว 1: แผนที่ + โดนัท */
+        /* --- Point 2 & 3: Layout ใหม่ --- */
+        /* แถว 1: แผนที่ + โดนัทลักษณะพื้นที่ */
         .dash-grid-top { display: grid; grid-template-columns: 1.8fr 1fr; gap: 20px; margin-bottom: 20px; }
-        /* แถว 2: แท่งยุทธศาสตร์ + กราฟ Trend */
-        .dash-grid-mid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        /* แถว 2: แท่งยุทธศาสตร์ + โดนัทยุทธศาสตร์ + กราฟ Trend */
+        .dash-grid-mid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
         
-        .dash-card { background: var(--card); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 450px; display: flex; flex-direction: column; }
+        .dash-card { background: var(--card); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 420px; display: flex; flex-direction: column; }
         #map { flex-grow: 1; width: 100%; border-radius: 8px; z-index: 1; border: 1px solid #e2e8f0;}
         .chart-container { flex-grow: 1; position: relative; width: 100%; height: 100%; }
 
+        /* ตาราง (Point 8) */
         .table-section { background: var(--card); padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 40px;}
         .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .btn-sort { background: #e2e8f0; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; color: var(--primary);}
@@ -69,9 +80,10 @@
         th { background: #f8fafc; color: var(--primary); position: sticky; top: 0;}
         tr:hover { background: #f1f5f9; cursor: pointer;}
         
-        /* รายชื่อพื้นที่ในตาราง (Point 5) */
-        .area-list { margin: 0; padding-left: 15px; list-style-type: square;}
-        .area-list li { margin-bottom: 4px; }
+        /* ลิสต์อำเภอในตาราง */
+        .area-list { margin: 0; padding-left: 18px; list-style-type: square; color: #374151;}
+        .area-list li { margin-bottom: 4px; line-height: 1.4; border-bottom: 1px dashed #e5e7eb; padding-bottom: 2px;}
+        .area-list li:last-child { border-bottom: none; }
 
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px);}
         .modal-content { background-color: #fff; margin: 3% auto; padding: 30px; border-radius: 12px; width: 85%; max-width: 900px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;}
@@ -88,15 +100,20 @@
     <div class="header">
         <h1>📊 Dashboard แผนพัฒนาจังหวัดเชียงใหม่</h1>
         <div class="main-controls">
-            <input type="text" id="globalSearch" class="search-box" placeholder="🔍 ค้นหาชื่อโครงการ หรือพื้นที่...">
+            <input type="search" id="globalSearch" class="search-box" placeholder="🔍 ค้นหาชื่อโครงการ หรือพื้นที่...">
             <div class="switch-container">
-                <span>จำนวน</span>
+                <span>จำนวนโครงการ</span>
                 <label class="switch"><input type="checkbox" id="modeSwitch"><span class="slider"></span></label>
                 <span>งบประมาณ</span>
             </div>
-            <div class="year-group" id="yearCheckboxContainer">
-                <span>📅 ปีงบ:</span>
+            
+            <div id="yearDropdown" class="dropdown-check-list" tabindex="100">
+                <span class="anchor">📅 เลือกปีงบประมาณ</span>
+                <ul class="items" id="yearCheckboxes">
+                    <li><input type="checkbox" id="checkAllYears" checked /> <strong>ทุกปีงบประมาณที่มีข้อมูล</strong></li>
+                    </ul>
             </div>
+
             <button class="btn-clear" onclick="clearAllFilters()">🔄 ล้างการกรองทั้งหมด</button>
         </div>
     </div>
@@ -109,9 +126,9 @@
         <div class="slicer-box"><label>🎯 5. แผนพัฒนาจังหวัด <button class="btn-exclusive" onclick="exclusiveFilter('filterProv')">กรองเฉพาะด้านนี้</button></label><select id="filterProv"><option value="all">-- ดูทั้งหมด --</option></select></div>
     </div>
 
-    <div class="summary-grid">
-        <div class="summary-card"><h3 style="margin-top: 0;">📌 จำนวนโครงการ</h3><div class="summary-value" id="sumProjects">0</div></div>
-        <div class="summary-card" style="background: linear-gradient(135deg, #059669, #10b981);"><h3 style="margin-top: 0;">💰 งบประมาณรวม (บาท)</h3><div class="summary-value" id="sumBudget">0.00</div></div>
+    <div class="summary-wrapper">
+        <div class="summary-card"><h3 style="margin: 0;">📌 จำนวนโครงการทั้งหมด</h3><div class="summary-value" id="sumProjects">0</div></div>
+        <div class="summary-card" style="background: linear-gradient(135deg, #059669, #10b981);"><h3 style="margin: 0;">💰 งบประมาณรวม (บาท)</h3><div class="summary-value" id="sumBudget">0.00</div></div>
     </div>
     
     <div id="activeFiltersText" class="active-filters-bar"><strong>สถานะการกรองปัจจุบัน:</strong> กำลังเตรียมระบบ...</div>
@@ -122,18 +139,22 @@
             <div id="map"></div>
         </div>
         <div class="dash-card">
-            <h3 style="margin-top:0; color: #059669;">🍩 สัดส่วนลักษณะพื้นที่ <br><small style="font-weight:normal; color:#666;">(คลิกที่ส่วนของกราฟเพื่อกรองข้อมูล)</small></h3>
+            <h3 style="margin-top:0; color: #059669;">🍩 สัดส่วนลักษณะพื้นที่ <br><small style="font-weight:normal; color:#666;">(คลิกเพื่อกรอง Single/Multi)</small></h3>
             <div class="chart-container"><canvas id="areaChart"></canvas></div>
         </div>
     </div>
 
     <div class="dash-grid-mid">
         <div class="dash-card">
-            <h3 style="margin-top:0; color: var(--primary);">📊 สัดส่วนตามประเด็นยุทธศาสตร์ <br><small style="font-weight:normal; color:#666;">(แยก Single และ Joint)</small></h3>
-            <div class="chart-container"><canvas id="mainChart"></canvas></div>
+            <h3 style="margin-top:0; color: var(--primary);">📊 สัดส่วนตามประเด็นยุทธศาสตร์จังหวัด <br><small style="font-weight:normal; color:#666;">(กราฟแท่งเปรียบเทียบ)</small></h3>
+            <div class="chart-container"><canvas id="mainChartBar"></canvas></div>
         </div>
         <div class="dash-card">
-            <h3 style="margin-top:0; color: var(--primary);">📈 แนวโน้มการจัดสรรโครงการและงบประมาณตามปีงบประมาณ</h3>
+            <h3 style="margin-top:0; color: var(--primary);">🍩 สัดส่วนตามประเด็นยุทธศาสตร์จังหวัด <br><small style="font-weight:normal; color:#666;">(กราฟโดนัทแสดง %)</small></h3>
+            <div class="chart-container"><canvas id="mainChartDoughnut"></canvas></div>
+        </div>
+        <div class="dash-card">
+            <h3 style="margin-top:0; color: #dc2626;">📈 แนวโน้มการจัดสรรรายปีงบประมาณ</h3>
             <div class="chart-container"><canvas id="trendChart"></canvas></div>
         </div>
     </div>
