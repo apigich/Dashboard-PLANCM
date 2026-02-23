@@ -1,317 +1,177 @@
-// ==========================================
-// 🚨 วาง URL ของ Google Script ของคุณตรงนี้
-// ==========================================
-const API_URL = "https://script.google.com/macros/s/AKfycby4zmatIMhxh2K4PIiabU5qhgEiJT2RMWhY7N_0TGi9DalIfrGsthWd_6NXj62UQrhc/exec";
-
-let masterData = [];   
-let filteredData = []; 
-let currentMode = 'count'; 
-let myChart = null;
-let areaChart = null;
-let map = null;
-let geojsonLayer = null;
-
-let mapFilterDistrict = "all";
-let mapFilterProject = "all";
-
-// ==========================================
-// 1. สร้าง Slicer ล่วงหน้า
-// ==========================================
-function buildStaticSlicers() {
-    const strategyLevels = {
-        filterNat: ["ด้าน 1 ความมั่นคง", "ด้าน 2 การสร้างความสามารถในการแข่งขัน", "ด้าน 3 การพัฒนาและเสริมสร้างศักยภาพทรัพยากรมนุษย์", "ด้าน 4 การสร้างโอกาสและความเสมอภาคทางสังคม", "ด้าน 5 การสร้างการเติบโตบนคุณภาพชีวิตที่เป็นมิตรกับสิ่งแวดล้อม", "ด้าน 6 การปรับสมดุลและพัฒนาระบบการบริหารจัดการภาครัฐ"],
-        filterMaster: ["ประเด็นที่ 1 ความมั่นคง", "ประเด็นที่ 2 การต่างประเทศ", "ประเด็นที่ 3 การเกษตร", "ประเด็นที่ 4 อุตสาหกรรมและบริการแห่งอนาคต", "ประเด็นที่ 5 การท่องเที่ยว", "ประเด็นที่ 6 พื้นที่และเมืองน่าอยู่อัจฉริยะ", "ประเด็นที่ 7 โครงสร้างพื้นฐาน ระบบโลจิสติกส์ และดิจิทัล", "ประเด็นที่ 8 ผู้ประกอบการและวิสาหกิจขนาดกลางและขนาดย่อมยุคใหม่", "ประเด็นที่ 9 เขตเศรษฐกิจพิเศษ", "ประเด็นที่ 10 การปรับเปลี่ยนค่านิยมและวัฒนธรรม", "ประเด็นที่ 11 ศักยภาพคนตลอดช่วงชีวิต", "ประเด็นที่ 12 การพัฒนาการเรียนรู้", "ประเด็นที่ 13 การเสริมสร้างให้คนไทยมีสุขภาวะที่ดี", "ประเด็นที่ 14 ศักยภาพการกีฬา", "ประเด็นที่ 15 พลังทางสังคม", "ประเด็นที่ 16 เศรษฐกิจฐานราก", "ประเด็นที่ 17 ความเสมอภาคและหลักประกันทางสังคม", "ประเด็นที่ 18 การเติบโตอย่างยั่งยืน", "ประเด็นที่ 19 การบริหารจัดการน้ำทั้งระบบ", "ประเด็นที่ 20 การบริการประชาชนและประสิทธิภาพภาครัฐ", "ประเด็นที่ 21 การต่อต้านการทุจริตและประพฤติมิชอบ", "ประเด็นที่ 22 กฎหมายและกระบวนการยุติธรรม", "ประเด็นที่ 23 การวิจัยและพัฒนานวัตกรรม"],
-        filterPlan13: ["หมุดหมายที่ 1 ไทยเป็นประเทศชั้นนำด้านสินค้าเกษตรและเกษตรแปรรูปมูลค่าสูง", "หมุดหมายที่ 2 ไทยเป็นจุดหมายของการท่องเที่ยวที่เน้นคุณภาพและความยั่งยืน", "หมุดหมายที่ 3 ไทยเป็นฐานการผลิตยานยนต์ไฟฟ้าที่สำคัญของโลก", "หมุดหมายที่ 4 ไทยเป็นศูนย์กลางทางการแพทย์และสุขภาพมูลค่าสูง", "หมุดหมายที่ 5 ไทยเป็นประตูการค้าการลงทุนและยุทธศาสตร์ทางโลจิสติกส์ที่สำคัญของภูมิภาค", "หมุดหมายที่ 6 ไทยเป็นศูนย์กลางอุตสาหกรรมอิเล็กทรอนิกส์อัจฉริยะและอุตสาหกรรมดิจิทัลของอาเซียน", "หมุดหมายที่ 7 ไทยมีวิสาหกิจขนาดกลางและขนาดย่อมที่เข้มแข็ง มีศักยภาพสูง และสามารถแข่งขันได้", "หมุดหมายที่ 8 ไทยมีพื้นที่และเมืองอัจฉริยะที่น่าอยู่ ปลอดภัย เติบโตได้อย่างยั่งยืน", "หมุดหมายที่ 9 ไทยมีความยากจนข้ามรุ่นลดลง และมีความคุ้มครองทางสังคมที่เพียงพอ เหมาะสม", "หมุดหมายที่ 10 ไทยมีเศรษฐกิจหมุนเวียนและสังคมคาร์บอนต่ำ", "หมุดหมายที่ 11 ไทยสามารถลดความเสี่ยงและผลกระทบจากภัยธรรมชาติและการเปลี่ยนแปลงสภาพภูมิอากาศ", "หมุดหมายที่ 12 ไทยมีกำลังคนสมรรถนะสูง มุ่งเรียนรู้อย่างต่อเนื่อง ตอบโจทย์การพัฒนาแห่งอนาคต", "หมุดหมายที่ 13 ไทยมีภาครัฐที่ทันสมัย มีประสิทธิภาพ และตอบโจทย์ประชาชน"],
-        filterNorth: ["ประเด็นการพัฒนาที่ 1 การพัฒนาเศรษฐกิจท่องเที่ยวและการค้าในพื้นที่", "ประเด็นการพัฒนาที่ 2 การพัฒนาเศรษฐกิจมูลค่าสูงด้วยการส่งออกสินค้าและบริการนอกพื้นที่", "ประเด็นการพัฒนาที่ 3 การพัฒนาเศรษฐกิจเกษตรสร้างสรรค์", "ประเด็นการพัฒนาที่ 4 การพัฒนาเศรษฐกิจสิ่งแวดล้อมเพื่อลดฝุ่นควัน"],
-        filterProv: ["ประเด็นการพัฒนาที่ 1 การส่งเสริมอุตสาหกรรมท่องเที่ยวเน้นคุณค่า สร้างสรรค์บนอัตลักษณ์ล้านนา และอุตสาหกรรมไมซ์", "ประเด็นการพัฒนาที่ 2 การขับเคลื่อนเกษตรเพิ่มมูลค่า และเกษตรแปรรูปมูลค่าสูง", "ประเด็นการพัฒนาที่ 3 การยกระดับการค้าการลงทุนบนฐานเศรษฐกิจสร้างสรรค์ (Creative Economy) นวัตกรรม (Innovation) และการพัฒนาอย่างยั่งยืน (SDGs)", "ประเด็นการพัฒนาที่ 4 การจัดการเชิงรุกในปัญหาฝุ่นควัน (PM 2.5) และการรักษาทรัพยากรธรรมชาติและสิ่งแวดล้อมแบบมีส่วนร่วม", "ประเด็นการพัฒนาที่ 5 การเสริมสร้างสังคมแห่งโอกาสและเป็นธรรม เมืองน่าอยู่ มีความปลอดภัย เพื่อคุณภาพชีวิตที่ดีของประชาชน"]
-    };
-
-    for (const [id, options] of Object.entries(strategyLevels)) {
-        const select = document.getElementById(id);
-        if(select) options.forEach(opt => select.innerHTML += `<option value="${opt}">${opt}</option>`);
-    }
-
-    document.querySelectorAll('select.slicer, .search-box, .year-select').forEach(el => el.addEventListener('input', applyFilters));
-    document.getElementById('modeSwitch').addEventListener('change', (e) => { currentMode = e.target.checked ? 'budget' : 'count'; updateDashboard(); });
-}
-
-// ==========================================
-// 2. ดึงข้อมูล (Safe Parsing กันบัคจอขาว)
-// ==========================================
-async function init() {
-    buildStaticSlicers(); 
-
-    try {
-        const response = await fetch(API_URL);
-        masterData = await response.json();
-        
-        if (!Array.isArray(masterData)) throw new Error(masterData.error || "ข้อมูลที่ส่งมาไม่ใช่ Array");
-
-        const years = new Set();
-        masterData.forEach(row => {
-            // บังคับแปลงเป็น String ก่อน เพื่อกันบัคเวลาข้อมูลใน Excel เป็นตัวเลขล้วน
-            let budgetStr = String(row["งบประมาณ (ตัวเลข)"] || row["งบประมาณ"] || "0");
-            row._budgetNum = parseFloat(budgetStr.replace(/,/g, '')) || 0;
-            
-            row._year = String(row["ปีงบประมาณ"] || "ไม่ระบุ");
-            if(row._year !== "ไม่ระบุ") years.add(row._year);
-            
-            let rawArea = String(row["พื้นที่เป้าหมายทั้งหมด"] || row["⚙️ ขอบเขตพื้นที่ (Auto)"] || row["ขอบเขตพื้นที่"] || "ไม่ระบุ");
-            row._cleanArea = rawArea.replace(/จังหวัดเชียงใหม่/g, "").replace(/\s+/g, " ").trim();
-            if(row._cleanArea.endsWith(",")) row._cleanArea = row._cleanArea.slice(0, -1);
-            
-            if (row._cleanArea.includes("ครอบคลุมทั้งจังหวัด")) row._areaType = "Provincial";
-            else if (row._cleanArea.includes(",")) row._areaType = "Multi";
-            else row._areaType = "Single";
-        });
-
-        const yearSelect = document.getElementById('filterYear');
-        [...years].sort().forEach(y => yearSelect.innerHTML += `<option value="${y}">📅 ปีงบประมาณ ${y}</option>`);
-
-        filteredData = [...masterData];
-        updateDashboard();
-
-    } catch (error) {
-        document.getElementById('tableBody').innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;"><b>❌ เกิดข้อผิดพลาด:</b> ${error.message} <br>โปรดตรวจสอบ URL ของ API หรือโครงสร้างคอลัมน์ใน Excel</td></tr>`;
-        document.getElementById('activeFiltersText').innerHTML = "<strong>❌ ไม่สามารถโหลดข้อมูลได้</strong>";
-    }
-}
-
-// ==========================================
-// 3. ระบบกรอง
-// ==========================================
-function applyFilters() {
-    const searchTxt = document.getElementById('globalSearch').value.toLowerCase();
-    const fYear = document.getElementById('filterYear').value;
-    const fNat = document.getElementById('filterNat').value;
-    const fMaster = document.getElementById('filterMaster').value;
-    const fPlan13 = document.getElementById('filterPlan13').value;
-    const fNorth = document.getElementById('filterNorth').value;
-    const fProv = document.getElementById('filterProv').value;
-
-    filteredData = masterData.filter(row => {
-        // ใช้ String() ครอบทุกจุดเพื่อกันบัค
-        const colNat = String(row["ยุทธศาสตร์ชาติ 20 ปี"] || "");
-        const colMaster = String(row["แผนแม่บทภายใต้ยุทธศาสตร์ชาติ"] || "");
-        const colPlan13 = String(row["แผนพัฒนาฯ ฉบับที่ 13"] || "");
-        const colNorth = String(row["แผนพัฒนาภาคเหนือ"] || "");
-        const colProv = String(row["ประเด็นการพัฒนาจังหวัด (2566-2570)"] || "");
-
-        const matchSearch = searchTxt === "" || Object.values(row).join(" ").toLowerCase().includes(searchTxt);
-        const matchYear = fYear === "all" || row._year === fYear;
-        const matchNat = fNat === "all" || colNat.includes(fNat);
-        const matchMaster = fMaster === "all" || colMaster.includes(fMaster);
-        const matchPlan13 = fPlan13 === "all" || colPlan13.includes(fPlan13);
-        const matchNorth = fNorth === "all" || colNorth.includes(fNorth);
-        const matchProv = fProv === "all" || colProv.includes(fProv);
-        
-        const matchMapDist = mapFilterDistrict === "all" || row._cleanArea.includes(mapFilterDistrict);
-        const matchMapProj = mapFilterProject === "all" || String(row["ชื่อโครงการ"] || "") === mapFilterProject;
-
-        return matchSearch && matchYear && matchNat && matchMaster && matchPlan13 && matchNorth && matchProv && matchMapDist && matchMapProj;
-    });
-
-    // เรียง ก-ฮ (ใช้ String บังคับเพื่อไม่ให้พังถ้าชื่อโปรเจกต์เป็นตัวเลข)
-    filteredData.sort((a, b) => String(a["ชื่อโครงการ"] || "").localeCompare(String(b["ชื่อโครงการ"] || ""), 'th'));
-
-    updateDashboard();
-}
-
-function clearAllFilters() {
-    document.getElementById('globalSearch').value = "";
-    document.getElementById('filterYear').value = "all";
-    document.querySelectorAll('.slicer').forEach(el => el.value = "all");
-    mapFilterDistrict = "all";
-    mapFilterProject = "all";
-    applyFilters();
-}
-
-// ==========================================
-// 4. อัปเดต UI
-// ==========================================
-function updateDashboard() {
-    document.getElementById('sumProjects').innerText = filteredData.length.toLocaleString();
-    const totalBudget = filteredData.reduce((sum, row) => sum + row._budgetNum, 0);
-    document.getElementById('sumBudget').innerText = totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2});
-
-    let activeTexts = [];
-    if(document.getElementById('filterYear').value !== "all") activeTexts.push(`ปีงบ: ${document.getElementById('filterYear').value}`);
-    if(document.getElementById('filterNat').value !== "all") activeTexts.push(`ยุทธศาสตร์ชาติ`);
-    if(document.getElementById('filterMaster').value !== "all") activeTexts.push(`แผนแม่บทฯ`);
-    if(document.getElementById('filterPlan13').value !== "all") activeTexts.push(`แผนฯ 13`);
-    if(document.getElementById('filterNorth').value !== "all") activeTexts.push(`แผนภาคเหนือ`);
-    if(document.getElementById('filterProv').value !== "all") activeTexts.push(`แผนจังหวัด`);
-    if(mapFilterDistrict !== "all") activeTexts.push(`เฉพาะอำเภอ: ${mapFilterDistrict}`);
-    if(mapFilterProject !== "all") activeTexts.push(`โครงการเจาะจง`);
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard แผนพัฒนาจังหวัดเชียงใหม่</title>
     
-    let filterStr = activeTexts.length > 0 ? activeTexts.join(" | ") : "แสดงข้อมูลทั้งหมด (ไม่มีการกรอง)";
-    document.getElementById('activeFiltersText').innerHTML = `<strong>🔍 สถานะการกรองปัจจุบัน:</strong> ${filterStr} <span style="margin-left:15px; color:#1e3a8a;">(โหมด: ${currentMode === 'budget' ? 'รวมงบประมาณ' : 'นับจำนวน'})</span>`;
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    renderTable();
-    renderCharts();
-    setTimeout(renderMap, 300);
-}
+    <style>
+        :root { --primary: #1e3a8a; --secondary: #3b82f6; --bg: #f3f4f6; --card: #ffffff; }
+        body { font-family: 'Sarabun', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1400px; margin: auto; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        h1 { color: var(--primary); margin: 0; font-size: 26px; }
+        
+        .main-controls { display: flex; gap: 10px; align-items: center; background: var(--card); padding: 12px 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex-wrap: wrap;}
+        .search-box { padding: 10px; width: 250px; border: 1px solid #ccc; border-radius: 6px; font-family: 'Sarabun'; font-size: 15px;}
+        .btn-clear { background: #ef4444; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 14px; transition: 0.2s;}
+        .btn-clear:hover { background: #dc2626; }
+        
+        .switch-container { display: flex; align-items: center; gap: 8px; font-weight: bold; background: #e0e7ff; padding: 10px; border-radius: 8px; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--secondary); }
+        input:checked + .slider:before { transform: translateX(20px); }
 
-// ==========================================
-// 5. วาดกราฟ
-// ==========================================
-function renderCharts() {
-    const ctxMain = document.getElementById('mainChart');
-    let strategyCounts = {};
-    filteredData.forEach(row => {
-        let rawProv = String(row["ประเด็นการพัฒนาจังหวัด (2566-2570)"] || "ไม่ระบุ");
-        let strategies = rawProv.split(",").map(s => s.trim()).filter(s => s !== "");
-        if (strategies.length === 0) strategies = ["ไม่ระบุ"];
-        strategies.forEach(strat => {
-            let shortName = strat.split(" ").slice(0,3).join(" ");
-            if(!strategyCounts[shortName]) strategyCounts[shortName] = 0;
-            if(currentMode === 'budget') strategyCounts[shortName] += (row._budgetNum / strategies.length); 
-            else strategyCounts[shortName] += 1; 
-        });
-    });
+        /* ปีงบประมาณแบบ Checkbox (Point 5) */
+        .year-group { display: flex; gap: 10px; align-items: center; background: #eff6ff; padding: 8px 15px; border-radius: 6px; border: 1px solid var(--secondary); font-weight: bold; color: var(--primary);}
+        .year-label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
 
-    if (myChart) myChart.destroy();
-    myChart = new Chart(ctxMain, {
-        type: 'bar',
-        data: {
-            labels: Object.keys(strategyCounts),
-            datasets: [{
-                label: currentMode === 'budget' ? 'งบ (บาท)' : 'โครงการ',
-                data: Object.values(strategyCounts),
-                backgroundColor: '#3b82f6'
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-    });
+        .slicer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .slicer-box { background: var(--card); padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-top: 4px solid var(--secondary); position: relative;}
+        .slicer-box label { font-size: 13px; font-weight: bold; color: #475569; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .slicer-box select { width: 100%; padding: 6px; border: 1px solid #e2e8f0; border-radius: 4px; font-family: 'Sarabun'; font-size: 13px; cursor: pointer;}
+        /* ปุ่มกรองเฉพาะหมวด (Point 3) */
+        .btn-exclusive { background: #f59e0b; color: white; border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer; font-family: 'Sarabun'; }
+        .btn-exclusive:hover { background: #d97706; }
 
-    const ctxArea = document.getElementById('areaChart');
-    let areaCounts = { 'Single (เฉพาะพื้นที่)': 0, 'Multi (หลายอำเภอ)': 0, 'Provincial (ทั้งจังหวัด)': 0 };
-    filteredData.forEach(row => {
-        let key = row._areaType === 'Single' ? 'Single (เฉพาะพื้นที่)' : row._areaType === 'Multi' ? 'Multi (หลายอำเภอ)' : 'Provincial (ทั้งจังหวัด)';
-        if (currentMode === 'budget') areaCounts[key] += row._budgetNum;
-        else areaCounts[key] += 1;
-    });
+        /* Summary & Filter Status (Point 6) */
+        .summary-wrapper { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 20px; margin-bottom: 20px; align-items: stretch; }
+        .summary-card { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: center;}
+        .summary-value { font-size: 36px; font-weight: bold; margin: 5px 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);}
+        .status-card { background: #fef3c7; border: 2px solid #f59e0b; padding: 15px; border-radius: 10px; color: #92400e; font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center;}
 
-    if (areaChart) areaChart.destroy();
-    areaChart = new Chart(ctxArea, {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(areaCounts),
-            datasets: [{
-                data: Object.values(areaCounts),
-                backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-    });
-}
+        /* Layout แผนที่และกราฟ */
+        .dash-grid-top { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .dash-card { background: var(--card); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 450px; display: flex; flex-direction: column; }
+        #map { flex-grow: 1; width: 100%; border-radius: 8px; z-index: 1; border: 1px solid #e2e8f0;}
+        .chart-container { flex-grow: 1; position: relative; width: 100%; height: 100%; }
 
-// ==========================================
-// 6. แผนที่ Leaflet
-// ==========================================
-function setDistrictFilter(dName) {
-    mapFilterDistrict = dName;
-    mapFilterProject = "all";
-    closeModal();
-    applyFilters();
-}
+        /* กราฟ Trend (Point 4) */
+        .trend-section { background: var(--card); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 350px; margin-bottom: 20px; display: flex; flex-direction: column;}
 
-function renderMap() {
-    if (!map) {
-        map = L.map('map', {scrollWheelZoom: false}).setView([18.7883, 98.9853], 8);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-    }
+        /* ตารางและปุ่มเรียง (Point 8) */
+        .table-section { background: var(--card); padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 40px;}
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .btn-sort { background: #e2e8f0; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; color: var(--primary);}
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border-bottom: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+        th { background: #f8fafc; color: var(--primary); position: sticky; top: 0;}
+        tr:hover { background: #f1f5f9; cursor: pointer;}
 
-    let districtStats = {};
-    const dNames = ["กัลยาณิวัฒนา", "จอมทอง", "เชียงดาว", "ไชยปราการ", "ดอยเต่า", "ดอยสะเก็ด", "ดอยหล่อ", "ฝาง", "พร้าว", "เมืองเชียงใหม่", "แม่แจ่ม", "แม่แตง", "แม่ริม", "แม่วาง", "แม่ออน", "แม่อาย", "เวียงแหง", "สะเมิง", "สันกำแพง", "สันทราย", "สันป่าตอง", "สารภี", "หางดง", "อมก๋อย", "ฮอด"];
-    dNames.forEach(d => districtStats[d] = { singleC: 0, singleB: 0, multiC: 0, multiB: 0 });
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px);}
+        .modal-content { background-color: #fff; margin: 3% auto; padding: 30px; border-radius: 12px; width: 85%; max-width: 900px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;}
+        .close-btn { color: #aaa; float: right; font-size: 32px; font-weight: bold; cursor: pointer; line-height: 1; }
+        .close-btn:hover { color: #000; }
+        .sub-activity-box { background: #f8fafc; border-left: 4px solid var(--secondary); padding: 20px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #e2e8f0; line-height: 1.6;}
+        .btn-filter-project { margin-top: 15px; background: #10b981; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; width: 100%; transition: 0.2s;}
+        .btn-filter-project:hover { background: #059669; }
+    </style>
+</head>
+<body>
 
-    filteredData.forEach(row => {
-        let area = row._cleanArea;
-        if(row._areaType === "Single") {
-            let matched = dNames.filter(d => area.includes(d));
-            matched.forEach(d => { districtStats[d].singleC += 1; districtStats[d].singleB += row._budgetNum; });
-        } else if(row._areaType === "Multi") {
-            let matched = dNames.filter(d => area.includes(d));
-            matched.forEach(d => { districtStats[d].multiC += 1; districtStats[d].multiB += (row._budgetNum / matched.length); });
-        }
-    });
+<div class="container">
+    <div class="header">
+        <h1>📊 Dashboard แผนพัฒนาจังหวัดเชียงใหม่</h1>
+        <div class="main-controls">
+            <input type="text" id="globalSearch" class="search-box" placeholder="🔍 ค้นหาชื่อโครงการ หรือพื้นที่...">
+            <div class="switch-container">
+                <span>จำนวน</span>
+                <label class="switch"><input type="checkbox" id="modeSwitch"><span class="slider"></span></label>
+                <span>งบประมาณ</span>
+            </div>
+            <div class="year-group" id="yearCheckboxContainer">
+                <span>📅 ปีงบ:</span>
+                </div>
+            <button class="btn-clear" onclick="clearAllFilters()">🔄 ล้างการกรองทั้งหมด</button>
+        </div>
+    </div>
 
-    fetch("districts.json").then(res => res.json()).then(geoData => {
-        if(geojsonLayer) map.removeLayer(geojsonLayer);
-        geojsonLayer = L.geoJSON(geoData, {
-            style: function (f) {
-                let val = currentMode === 'budget' ? districtStats[f.properties.amp_th].singleB : districtStats[f.properties.amp_th].singleC;
-                let color = '#FFEDA0';
-                if (currentMode === 'budget') color = val > 50000000 ? '#800026' : val > 10000000 ? '#BD0026' : val > 1000000 ? '#E31A1C' : val > 0 ? '#FC4E2A' : '#FFEDA0';
-                else color = val > 10 ? '#800026' : val > 5 ? '#BD0026' : val > 2 ? '#E31A1C' : val > 0 ? '#FC4E2A' : '#FFEDA0';
-                return { fillColor: color, weight: 1, opacity: 1, color: '#333', fillOpacity: 0.8 };
-            },
-            onEachFeature: function (f, l) {
-                let s = districtStats[f.properties.amp_th];
-                let popupHtml = `
-                    <div style="font-family:'Sarabun'; width: 220px;">
-                        <b style="font-size:16px; color:#1e3a8a;">📍 อำเภอ${f.properties.amp_th}</b><hr style="margin:5px 0;">
-                        <div style="font-size:13px; line-height: 1.4;">
-                            <b style="color:#10b981;">🔹 โครงการเฉพาะพื้นที่ (Single)</b><br>
-                            จำนวน: ${s.singleC} โครงการ<br>งบ: ${s.singleB.toLocaleString()} บาท<br>
-                            <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
-                            <b style="color:#f59e0b;">🔸 โครงการร่วมพื้นที่ (Multi)</b><br>
-                            จำนวน: ${s.multiC} โครงการ<br>งบ: ${s.multiB.toLocaleString(undefined, {minimumFractionDigits:0})} บาท
-                        </div>
-                        <button onclick="setDistrictFilter('${f.properties.amp_th}')" style="margin-top:10px; width:100%; padding:6px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer;">🔍 กรองข้อมูลเฉพาะอำเภอนี้</button>
-                    </div>
-                `;
-                l.bindPopup(popupHtml);
-                l.on('mouseover', e => { e.target.setStyle({weight: 3, color: '#f59e0b'}); e.target.bringToFront(); });
-                l.on('mouseout', e => geojsonLayer.resetStyle(e.target));
-            }
-        }).addTo(map);
-    }).catch(e => console.log("รอไฟล์ districts.json"));
-}
+    <div class="slicer-grid">
+        <div class="slicer-box"><label>🎯 1. ยุทธศาสตร์ชาติ <button class="btn-exclusive" onclick="exclusiveFilter('filterNat')">กรองเฉพาะด้านนี้</button></label><select id="filterNat"><option value="all">-- ดูทั้งหมด --</option></select></div>
+        <div class="slicer-box"><label>🎯 2. แผนแม่บทฯ <button class="btn-exclusive" onclick="exclusiveFilter('filterMaster')">กรองเฉพาะด้านนี้</button></label><select id="filterMaster"><option value="all">-- ดูทั้งหมด --</option></select></div>
+        <div class="slicer-box"><label>🎯 3. แผนพัฒนาฯ ฉบับ 13 <button class="btn-exclusive" onclick="exclusiveFilter('filterPlan13')">กรองเฉพาะด้านนี้</button></label><select id="filterPlan13"><option value="all">-- ดูทั้งหมด --</option></select></div>
+        <div class="slicer-box"><label>🎯 4. แผนกลุ่มจังหวัด <button class="btn-exclusive" onclick="exclusiveFilter('filterNorth')">กรองเฉพาะด้านนี้</button></label><select id="filterNorth"><option value="all">-- ดูทั้งหมด --</option></select></div>
+        <div class="slicer-box"><label>🎯 5. แผนพัฒนาจังหวัด <button class="btn-exclusive" onclick="exclusiveFilter('filterProv')">กรองเฉพาะด้านนี้</button></label><select id="filterProv"><option value="all">-- ดูทั้งหมด --</option></select></div>
+    </div>
 
-// ==========================================
-// 7. ตาราง & Modal
-// ==========================================
-function setProjectFilter(projName) {
-    mapFilterProject = projName;
-    mapFilterDistrict = "all";
-    closeModal();
-    applyFilters();
-}
+    <div class="summary-wrapper">
+        <div class="summary-card"><h3 style="margin: 0;">📌 จำนวนโครงการ</h3><div class="summary-value" id="sumProjects">0</div></div>
+        <div class="summary-card" style="background: linear-gradient(135deg, #059669, #10b981);"><h3 style="margin: 0;">💰 งบประมาณรวม (บาท)</h3><div class="summary-value" id="sumBudget">0</div></div>
+        <div class="status-card">
+            <h3 style="margin: 0 0 10px 0; color: #b45309;">🔍 สถานะการกรองปัจจุบัน:</h3>
+            <div id="activeFiltersText" style="line-height: 1.6;">กำลังเตรียมระบบ...</div>
+        </div>
+    </div>
 
-function renderTable() {
-    const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = "";
-    if(filteredData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px;">ไม่พบข้อมูลที่ตรงกับเงื่อนไขการกรอง</td></tr>`; return;
-    }
-    filteredData.forEach((row, idx) => {
-        const tr = document.createElement('tr');
-        tr.onclick = () => openModal(idx); 
-        tr.innerHTML = `<td><strong>${row["ชื่อโครงการ"] || "-"}</strong></td><td>${row._year}</td><td>${row._cleanArea}</td><td style="text-align:right; font-weight:bold; color:var(--primary);">${row._budgetNum.toLocaleString()}</td>`;
-        tbody.appendChild(tr);
-    });
-}
+    <div class="dash-grid-top">
+        <div class="dash-card">
+            <h3 style="margin-top:0; color: var(--primary);">📍 การกระจายตัวของโครงการและงบประมาณ</h3>
+            <div id="map"></div>
+        </div>
+        <div class="dash-card">
+            <h3 style="margin-top:0; color: #059669;">🍩 สัดส่วนลักษณะพื้นที่ <br><small style="font-weight:normal; color:#666;">(คลิกที่ส่วนของกราฟเพื่อกรองข้อมูล)</small></h3>
+            <div class="chart-container"><canvas id="areaChart"></canvas></div>
+        </div>
+        <div class="dash-card">
+            <h3 style="margin-top:0; color: var(--primary);">📊 สัดส่วนตามประเด็นยุทธศาสตร์ <br><small style="font-weight:normal; color:#666;">(แยก Single และ Joint)</small></h3>
+            <div class="chart-container"><canvas id="mainChart"></canvas></div>
+        </div>
+    </div>
 
-function openModal(idx) {
-    const row = filteredData[idx];
-    document.getElementById('modalTitle').innerText = row["ชื่อโครงการ"] || "-";
-    document.getElementById('modalArea').innerText = row._cleanArea;
-    document.getElementById('modalBudget').innerText = row._budgetNum.toLocaleString();
-    document.getElementById('modalYear').innerText = row._year;
-    document.getElementById('modalAreaType').innerText = row._areaType + (row._areaType==='Single'?" (เฉพาะพื้นที่)":row._areaType==='Multi'?" (หลายพื้นที่)":" (ทั้งจังหวัด)");
+    <div class="trend-section">
+        <h3 style="margin-top:0; color: var(--primary);">📈 แนวโน้มการจัดสรรโครงการและงบประมาณตามปีงบประมาณ</h3>
+        <div class="chart-container"><canvas id="trendChart"></canvas></div>
+    </div>
 
-    const subDiv = document.getElementById('modalSubActivities');
-    const rawSub = String(row["รายละเอียดย่อย"] || ""); 
-    const cleanSub = rawSub.replace(/\n/g, "  ").trim();
-    subDiv.innerHTML = (!cleanSub) ? "<p style='color:gray;'>- ไม่มีข้อมูลรายละเอียด -</p>" : `<div class="sub-activity-box">${cleanSub}</div>`;
-    
-    document.getElementById('modalFilterBtnContainer').innerHTML = `<button class="btn-filter-project" onclick="setProjectFilter(\`${row["ชื่อโครงการ"]}\`)">📍 กดเพื่อแสดงพื้นที่ดำเนินการของโครงการนี้บนแผนที่</button>`;
+    <div class="table-section">
+        <div class="table-header">
+            <h3 style="margin:0; color: var(--primary);">📋 รายชื่อโครงการ (คลิกเพื่อดูรายละเอียด)</h3>
+            <button class="btn-sort" id="btnSort" onclick="toggleSort()">⬇️ เรียง: ใหม่ไปเก่า</button>
+        </div>
+        <div style="overflow-y: auto; max-height: 500px;">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th style="width: 45%;">ชื่อโครงการ</th>
+                        <th style="width: 15%;">ปีงบประมาณ</th>
+                        <th style="width: 25%;">พื้นที่ดำเนินการ</th>
+                        <th style="width: 15%; text-align: right;">งบประมาณ (บาท)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="4" style="text-align:center; padding: 40px; font-weight:bold; color:#d69e2e;">⏳ กำลังโหลดข้อมูล...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-    document.getElementById('projectModal').style.display = "block";
-}
-function closeModal() { document.getElementById('projectModal').style.display = "none"; }
-window.onclick = e => { if (e.target == document.getElementById('projectModal')) closeModal(); }
+<div id="projectModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h2 id="modalTitle" style="color: var(--primary); margin-top: 0;">ชื่อโครงการ</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; font-size: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <p style="margin:0;"><strong>📍 พื้นที่:</strong> <span id="modalArea"></span></p>
+            <p style="margin:0;"><strong>💰 งบรวม:</strong> <span id="modalBudget" style="color: #10b981; font-weight: bold;"></span> บาท</p>
+            <p style="margin:0;"><strong>📅 ปีงบประมาณ:</strong> <span id="modalYear"></span></p>
+            <p style="margin:0;"><strong>🎯 ลักษณะพื้นที่:</strong> <span id="modalAreaType" style="color: #f59e0b; font-weight: bold;"></span></p>
+        </div>
+        <h3 style="border-bottom: 2px solid var(--secondary); padding-bottom: 8px; color: var(--primary);">📑 รายละเอียดโครงการ</h3>
+        <div id="modalSubActivities"></div>
+        <div id="modalFilterBtnContainer"></div>
+    </div>
+</div>
 
-init();
+<script src="script.js"></script>
+</body>
+</html>
