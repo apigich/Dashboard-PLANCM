@@ -6,7 +6,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycby4zmatIMhxh2K4PIiabU5q
 let masterData = [];   
 let filteredData = []; 
 let currentMode = 'count'; 
-let myChart = null; // กราฟยุทธศาสตร์แปลงร่างได้ (Bar/Doughnut)
+let myChart = null;
 let areaChart = null;
 let trendChart = null;
 let map = null;
@@ -37,13 +37,11 @@ function buildStaticSlicers() {
 
     for (const [id, options] of Object.entries(strategyLevels)) {
         const select = document.getElementById(id);
-        if(select) {
-            options.forEach(opt => select.innerHTML += `<option value="${opt}">${opt}</option>`);
-            // ผูก Event เพิ่มเติมกันเหนียว
-            select.addEventListener('change', applyFilters);
-        }
+        if(select) options.forEach(opt => select.innerHTML += `<option value="${opt}">${opt}</option>`);
     }
 
+    document.getElementById('globalSearch').addEventListener('search', applyFilters);
+    document.getElementById('globalSearch').addEventListener('input', applyFilters);
     document.getElementById('modeSwitch').addEventListener('change', (e) => { currentMode = e.target.checked ? 'budget' : 'count'; updateDashboard(); });
 }
 
@@ -56,7 +54,6 @@ function exclusiveFilter(targetId) {
     applyFilters();
 }
 
-// ปุ่มล้างกรองเฉพาะโดนัท
 function clearAreaFilter() {
     chartFilterAreaType = "all";
     applyFilters();
@@ -81,6 +78,7 @@ async function init() {
             row._year = String(row["ปีงบประมาณ"] || "ไม่ระบุ").trim();
             if(row._year !== "ไม่ระบุ" && row._year !== "") years.add(row._year);
             
+            // อ่านค่าพื้นที่ให้ตรงเป๊ะ
             let areaRaw = String(row["พื้นที่เป้าหมายทั้งหมด"] || row["อำเภอที่ตั้ง (หลัก)"] || row["ขอบเขตพื้นที่"] || "ไม่ระบุ");
             let cleanedArea = areaRaw.replace(/จังหวัดเชียงใหม่/g, "").replace(/\s+/g, " ").trim();
             if(cleanedArea.endsWith(",")) cleanedArea = cleanedArea.slice(0, -1);
@@ -97,18 +95,18 @@ async function init() {
             yearBox.innerHTML += `<li><input type="checkbox" class="year-cb" value="${y}" checked onchange="handleYearChange(this)"> <span>ปีงบประมาณ ${y}</span></li>`;
         });
 
+        document.getElementById('checkAllYears').addEventListener('change', function() {
+            let cbs = document.querySelectorAll('.year-cb');
+            cbs.forEach(cb => cb.checked = this.checked);
+            applyFilters();
+        });
+
         filteredData = [...masterData];
         applyFilters(); 
 
     } catch (error) {
         document.getElementById('tableBody').innerHTML = `<tr><td colspan="4" style="color:red; text-align:center; padding: 30px;"><b>❌ โหลดข้อมูลล้มเหลว</b><br>${error.message}</td></tr>`;
     }
-}
-
-function toggleAllYears(sourceCb) {
-    let cbs = document.querySelectorAll('.year-cb');
-    cbs.forEach(cb => cb.checked = sourceCb.checked);
-    applyFilters();
 }
 
 function handleYearChange(el) {
@@ -118,7 +116,7 @@ function handleYearChange(el) {
 }
 
 // ==========================================
-// 3. ระบบกรอง & จัดเรียง (Realtime)
+// 3. ระบบกรอง (Realtime 100%)
 // ==========================================
 function applyFilters() {
     const searchTxt = document.getElementById('globalSearch').value.toLowerCase();
@@ -193,19 +191,20 @@ function updateDashboard() {
     const selectedYears = Array.from(document.querySelectorAll('.year-cb:checked')).map(cb => cb.value);
     if(selectedYears.length < document.querySelectorAll('.year-cb').length && selectedYears.length > 0) activeTexts.push(`เฉพาะปี: ${selectedYears.join(', ')}`);
     
-    // อัปเดตข้อความใต้กราฟยุทธศาสตร์ (Point 7)
-    let stratSubtitle = "ทุกประเด็นยุทธศาสตร์";
-    if (document.getElementById('filterProv').value !== "all") stratSubtitle = "แผนจังหวัด: " + document.getElementById('filterProv').value;
-    else if (document.getElementById('filterNorth').value !== "all") stratSubtitle = "แผนภาคเหนือ: " + document.getElementById('filterNorth').value;
-    else if (document.getElementById('filterPlan13').value !== "all") stratSubtitle = "แผนฯ 13: " + document.getElementById('filterPlan13').value;
-    else if (document.getElementById('filterMaster').value !== "all") stratSubtitle = "แผนแม่บทฯ: " + document.getElementById('filterMaster').value;
-    else if (document.getElementById('filterNat').value !== "all") stratSubtitle = "ยุทธศาสตร์ชาติ: " + document.getElementById('filterNat').value;
+    // อัปเดตข้อความใต้กราฟยุทธศาสตร์ (Point 2)
+    let stratSubtitle = "(ค่าเริ่มต้น: แผนพัฒนาจังหวัดเชียงใหม่)";
+    let stratKey = "ประเด็นการพัฒนาจังหวัด (2566-2570)"; // คอลัมน์ตั้งต้นที่นำไปวาดกราฟ
+
+    if (document.getElementById('filterNat').value !== "all") { stratSubtitle = "(กำลังแสดงผล: ยุทธศาสตร์ชาติ)"; stratKey = "ยุทธศาสตร์ชาติ 20 ปี"; }
+    else if (document.getElementById('filterMaster').value !== "all") { stratSubtitle = "(กำลังแสดงผล: แผนแม่บทฯ)"; stratKey = "แผนแม่บทภายใต้ยุทธศาสตร์ชาติ"; }
+    else if (document.getElementById('filterPlan13').value !== "all") { stratSubtitle = "(กำลังแสดงผล: แผนพัฒนาฯ ฉบับที่ 13)"; stratKey = "แผนพัฒนาฯ ฉบับที่ 13"; }
+    else if (document.getElementById('filterNorth').value !== "all") { stratSubtitle = "(กำลังแสดงผล: แผนพัฒนาภาคเหนือ)"; stratKey = "แผนพัฒนาภาคเหนือ"; }
     
-    document.getElementById('strategyChartSubtitle').innerText = `(กำลังแสดงผล: ${stratSubtitle})`;
+    document.getElementById('strategyChartSubtitle').innerText = stratSubtitle;
     
+    // บันทึกสถานะการกรองทั่วไป
     const slicerIds = ['filterNat', 'filterMaster', 'filterPlan13', 'filterNorth', 'filterProv'];
     slicerIds.forEach(id => { if(document.getElementById(id).value !== "all") activeTexts.push(`เจาะจงยุทธศาสตร์`); });
-    
     if(mapFilterDistrict !== "all") activeTexts.push(`อำเภอ: ${mapFilterDistrict}`);
     if(mapFilterProject !== "all") activeTexts.push(`โครงการเจาะจง`);
     if(chartFilterAreaType !== "all") activeTexts.push(`ลักษณะพื้นที่: ${chartFilterAreaType}`);
@@ -214,20 +213,20 @@ function updateDashboard() {
     document.getElementById('activeFiltersText').innerHTML = `<span style="color:#b45309;">${filterStr}</span> <span style="margin-left:15px; color:#1e3a8a;">(โหมด: ${currentMode === 'budget' ? 'รวมงบประมาณ' : 'นับจำนวนโครงการ'})</span>`;
 
     renderTable();
-    renderCharts();
+    renderCharts(stratKey);
     setTimeout(renderMap, 300); 
 }
 
 // ==========================================
 // 5. วาดกราฟ
 // ==========================================
-function renderCharts() {
+function renderCharts(activeStrategyKey) {
     let stratData = {};
     let integratedBudget = 0;
     let integratedBudgetDetails = {};
 
     filteredData.forEach(row => {
-        let rawProv = String(row["ประเด็นการพัฒนาจังหวัด (2566-2570)"] || "ไม่ระบุ");
+        let rawProv = String(row[activeStrategyKey] || "ไม่ระบุ");
         let strategies = rawProv.split(",").map(s => s.trim()).filter(s => s !== "");
         if (strategies.length === 0) strategies = ["ไม่ระบุ"];
         
@@ -253,7 +252,6 @@ function renderCharts() {
     const ctxMain = document.getElementById('mainChart');
     if (myChart) myChart.destroy();
     
-    // โหมดสลับประเภทกราฟ
     let chartType = document.getElementById('chartTypeSelect').value;
 
     if (chartType === 'bar') {
@@ -337,7 +335,7 @@ function renderCharts() {
         });
     }
 
-    // พื้นที่ดำเนินการ
+    // โดนัท พื้นที่
     const ctxArea = document.getElementById('areaChart');
     let areaCounts = { 'Single': 0, 'Multi': 0, 'Provincial': 0, 'ไม่ระบุ': 0 };
     filteredData.forEach(row => { areaCounts[row._areaType] += (currentMode === 'budget' ? row._budgetNum : 1); });
@@ -361,7 +359,7 @@ function renderCharts() {
         }
     });
 
-    // Trend Chart
+    // กราฟ Trend
     const ctxTrend = document.getElementById('trendChart');
     let yearCounts = {};
     filteredData.forEach(row => {
@@ -482,9 +480,8 @@ function openModal(idx) {
     let aLabel = aType === 'Single' ? " (เฉพาะพื้นที่)" : aType === 'Multi' ? " (หลายพื้นที่)" : aType === 'Provincial' ? " (ทั้งจังหวัด)" : " (ไม่ได้ระบุพื้นที่)";
     document.getElementById('modalAreaType').innerText = aType + aLabel;
 
+    // แก้บัค Modal: แปลง \n ให้กลายเป็น <br> เพื่อเคาะบรรทัดตาม Google Sheet 100%
     const subDiv = document.getElementById('modalSubActivities');
-    
-    // แปลง \n และ \r\n ให้กลายเป็น <br> เพื่อขึ้นบรรทัดใหม่ตามต้นฉบับ 100%
     const rawSub = String(row["รายละเอียดย่อย"] || "");
     const cleanSub = rawSub.replace(/\r\n/g, "<br>").replace(/\n/g, "<br>").trim();
     
