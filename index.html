@@ -62,7 +62,6 @@
         .status-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-start;}
         .active-filters-bar { flex: 1.5; background: #fff7ed; border-left: 6px solid #f97316; padding: 15px; border-radius: 6px; font-size: 15px; color: #9a3412; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); height: 100%;}
         
-        /* Dropdown จังหวัด */
         .provincial-wrapper { flex: 1; display: flex; flex-direction: column; }
         .provincial-status-bar { background: #e0e7ff; border-left: 6px solid #3b82f6; padding: 15px; border-radius: 6px; font-size: 14px; color: #1e3a8a; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s; position: relative; z-index: 2;}
         .provincial-status-bar:hover { background: #dbeafe; border-color: #2563eb;}
@@ -71,7 +70,6 @@
         .provincial-dropdown { display: none; background: #ffffff; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 6px 6px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); animation: slideDown 0.3s ease; z-index: 1;}
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* สไตล์สำหรับ (+...) สีส้ม และ Footer */
         .joint-stat { color: var(--joint); font-weight: bold; font-size: 0.95em; margin-left: 4px; }
         .footer-row { background-color: #fff7ed !important; border-top: 3px solid #f97316 !important; color: #9a3412 !important; font-weight: bold;}
         .footer-row td { padding: 12px 10px !important; }
@@ -195,7 +193,12 @@
                             <tr><td colspan="3" style="text-align:center;">กำลังประมวลผล...</td></tr>
                         </tbody>
                         <tfoot id="provincialTableFooter">
-                            </tfoot>
+                            <tr class="footer-row">
+                                <td class="footer-label" style="text-align: right; padding-right: 15px;">สรุปรวมประเด็นที่ตอบสนองมากกว่า 1 เป้าหมาย</td>
+                                <td style="text-align:center; padding:12px;"><b id="provJointCount">0</b></td>
+                                <td style="text-align:right; padding:12px;"><b id="provJointBudget">0</b></td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
