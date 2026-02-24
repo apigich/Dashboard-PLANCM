@@ -38,7 +38,7 @@
         .dropdown-check-list { display: inline-block; position: relative; font-family: 'Sarabun'; }
         .dropdown-check-list .anchor { display: inline-block; padding: 8px 15px; background: #eff6ff; border: 2px solid var(--secondary); border-radius: 6px; color: var(--primary); font-weight: bold; cursor: pointer; font-size: 16px; min-width: 150px;}
         .dropdown-check-list .anchor::after { content: ' ▼'; font-size: 12px;}
-        .dropdown-check-list .items { padding: 10px; display: none; margin: 0; border: 1px solid #ccc; border-top: none; position: absolute; background: white; z-index: 1000; list-style: none; width: 250px; border-radius: 0 0 6px 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto;}
+        .dropdown-check-list .items { padding: 10px; display: none; margin: 0; border: 1px solid #ccc; border-top: none; position: absolute; background: white; z-index: 1000; list-style: none; width: 300px; border-radius: 0 0 6px 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto;}
         .dropdown-check-list.visible .items { display: block; }
         .dropdown-check-list .items li { margin-bottom: 8px; display: flex; align-items: center; gap: 8px;}
 
@@ -55,7 +55,6 @@
         .summary-value { font-size: 36px; font-weight: bold; margin: 5px 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);}
         
         .status-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        /* แถบสถานะปรับสีให้เด่น */
         .active-filters-bar { flex: 1.5; background: #fff7ed; border-left: 6px solid #f97316; padding: 15px; border-radius: 6px; font-size: 15px; color: #9a3412; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
         .provincial-status-bar { flex: 1; background: #e0e7ff; border-left: 6px solid #3b82f6; padding: 15px; border-radius: 6px; font-size: 14px; color: #1e3a8a; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
 
@@ -133,24 +132,24 @@
     </div>
     
     <div class="status-container">
-        <div id="activeFiltersText" class="active-filters-bar"><strong>🔍 สถานะการกรองปัจจุบัน:</strong> กำลังเตรียมระบบ...</div>
-        <div id="provincialStatusText" class="provincial-status-bar">🌟 กำลังประมวลผลโครงการระดับจังหวัด...</div>
+        <div id="activeFiltersText" class="active-filters-bar"><strong>🔍 สถานะการกรองข้อมูลปัจจุบัน:</strong> กำลังเตรียมระบบ...</div>
+        <div id="provincialStatusText" class="provincial-status-bar">🌟 ประมวลผลโครงการระดับจังหวัด...</div>
     </div>
 
     <div class="dash-grid-top">
         <div class="dash-card">
             <h3 style="margin-top:0; color: var(--primary); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                <span>📍 แผนที่วิเคราะห์เชิงพื้นที่</span>
+                <span>📍 แผนที่วิเคราะห์การกระจายตัวระดับพื้นที่</span>
                 <select id="mapModeSelect" onchange="renderMap()" style="padding:6px; border-radius:6px; font-family:'Sarabun'; border: 2px solid var(--secondary); color: var(--primary); font-weight:bold; cursor: pointer; background: #eff6ff;">
-                    <option value="overview">โหมดที่ 1: ภาพรวมความหนาแน่น (จำนวน/งบ)</option>
-                    <option value="strategic">โหมดที่ 2: เจาะลึกความสอดคล้องยุทธศาสตร์ (4D Matrix)</option>
+                    <option value="overview">รูปแบบที่ 1: ภาพรวมการกระจายตัวของโครงการและงบประมาณ</option>
+                    <option value="strategic">รูปแบบที่ 2: การวิเคราะห์ความสอดคล้องเชิงยุทธศาสตร์</option>
                 </select>
             </h3>
             <div id="map"></div>
         </div>
         <div class="dash-card">
             <h3 style="margin-top:0; color: #059669; display:flex; justify-content:space-between; align-items:flex-start;">
-                <div>🍩 สัดส่วนลักษณะพื้นที่ <br><small style="font-weight:normal; color:#666;">(คลิกบนกราฟเพื่อกรอง)</small></div>
+                <div>🍩 สัดส่วนลักษณะพื้นที่ <br><small style="font-weight:normal; color:#666;">(คลิกบนแผนภูมิเพื่อกรองข้อมูล)</small></div>
                 <button type="button" class="btn-clear-small" onclick="clearAreaFilter()">🔄 ล้างการกรองนี้</button>
             </h3>
             <div class="chart-container"><canvas id="areaChart"></canvas></div>
@@ -162,7 +161,7 @@
             <h3 style="margin-top:0; color: var(--primary); display:flex; justify-content:space-between; align-items:flex-start;">
                 <div>
                     📊 สัดส่วนตามประเด็นยุทธศาสตร์<br>
-                    <small id="strategyChartSubtitle" style="font-weight:normal; color:#666;">(ค่าเริ่มต้น: แผนพัฒนาจังหวัดเชียงใหม่)</small>
+                    <small id="strategyChartSubtitle" style="font-weight:normal; color:#666;">(แสดงผลตามค่าเริ่มต้น: แผนพัฒนาจังหวัดเชียงใหม่)</small>
                 </div>
                 <select id="chartTypeSelect" onchange="renderCharts()" style="padding:4px 8px; border-radius:4px; font-family:'Sarabun'; border: 1px solid #ccc; cursor: pointer; background: white;">
                     <option value="bar" selected>กราฟแท่ง</option>
@@ -173,7 +172,7 @@
         </div>
         
         <div class="dash-card">
-            <h3 style="margin-top:0; color: #dc2626;">📈 แนวโน้มการจัดสรรโครงการและงบประมาณรายปี</h3>
+            <h3 style="margin-top:0; color: #dc2626;">📈 แนวโน้มการจัดสรรโครงการและงบประมาณรายปีงบประมาณ</h3>
             <div class="chart-container"><canvas id="trendChart"></canvas></div>
         </div>
     </div>
@@ -183,7 +182,7 @@
             <h3 style="margin:0; color: var(--primary);">📋 รายชื่อโครงการ (คลิกเพื่อดูรายละเอียด)</h3>
             <div style="display:flex; gap: 10px; align-items:center;">
                 <button type="button" class="btn-clear-small" onclick="clearAllFilters()">🔄 ล้างการกรองทั้งหมด</button>
-                <button type="button" class="btn-sort" id="btnSort" onclick="toggleSort()">⬇️ เรียงปีงบ: ใหม่ไปเก่า</button>
+                <button type="button" class="btn-sort" id="btnSort" onclick="toggleSort()">⬇️ เรียงปีงบประมาณ: ใหม่ไปเก่า</button>
             </div>
         </div>
         <div style="overflow-y: auto; max-height: 600px;">
@@ -191,7 +190,7 @@
                 <thead>
                     <tr>
                         <th style="width: 35%;">ชื่อโครงการ</th>
-                        <th style="width: 10%; text-align: center;">ปีงบ</th>
+                        <th style="width: 10%; text-align: center;">ปีงบประมาณ</th>
                         <th style="width: 40%;">พื้นที่ดำเนินการ</th>
                         <th style="width: 15%; text-align: right;">งบประมาณ (บาท)</th>
                     </tr>
@@ -209,12 +208,15 @@
         <span class="close-btn" onclick="closeModal()">&times;</span>
         <h2 id="modalTitle" style="color: var(--primary); margin-top: 0;">ชื่อโครงการ</h2>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; font-size: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
-            <p style="margin:0;"><strong>📍 พื้นที่:</strong> <span id="modalArea"></span></p>
-            <p style="margin:0;"><strong>💰 งบรวม:</strong> <span id="modalBudget" style="color: #10b981; font-weight: bold;"></span> บาท</p>
+            <p style="margin:0;"><strong>📍 พื้นที่ดำเนินการ:</strong> <span id="modalArea"></span></p>
+            <p style="margin:0;"><strong>💰 งบประมาณรวม:</strong> <span id="modalBudget" style="color: #10b981; font-weight: bold;"></span></p>
             <p style="margin:0;"><strong>📅 ปีงบประมาณ:</strong> <span id="modalYear"></span></p>
             <p style="margin:0;"><strong>🎯 ลักษณะพื้นที่:</strong> <span id="modalAreaType" style="color: #f59e0b; font-weight: bold;"></span></p>
         </div>
-        <h3 style="border-bottom: 2px solid var(--secondary); padding-bottom: 8px; color: var(--primary);">📑 รายละเอียดโครงการ</h3>
+        
+        <div id="modalStrategyTable"></div>
+
+        <h3 style="border-bottom: 2px solid var(--secondary); padding-bottom: 8px; color: var(--primary); margin-top: 25px;">📑 รายละเอียดโครงการ</h3>
         <div id="modalSubActivities"></div>
         <div id="modalFilterBtnContainer"></div>
     </div>
