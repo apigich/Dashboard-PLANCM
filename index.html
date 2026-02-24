@@ -54,9 +54,17 @@
         .summary-card { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .summary-value { font-size: 36px; font-weight: bold; margin: 5px 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);}
         
-        .status-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .active-filters-bar { flex: 1.5; background: #fff7ed; border-left: 6px solid #f97316; padding: 15px; border-radius: 6px; font-size: 15px; color: #9a3412; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
-        .provincial-status-bar { flex: 1; background: #e0e7ff; border-left: 6px solid #3b82f6; padding: 15px; border-radius: 6px; font-size: 14px; color: #1e3a8a; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+        /* โครงสร้างแถบสถานะ และ Dropdown จังหวัด */
+        .status-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: flex-start;}
+        .active-filters-bar { flex: 1.5; background: #fff7ed; border-left: 6px solid #f97316; padding: 15px; border-radius: 6px; font-size: 15px; color: #9a3412; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); height: 100%;}
+        
+        .provincial-wrapper { flex: 1; display: flex; flex-direction: column; }
+        .provincial-status-bar { background: #e0e7ff; border-left: 6px solid #3b82f6; padding: 15px; border-radius: 6px; font-size: 14px; color: #1e3a8a; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s; position: relative; z-index: 2;}
+        .provincial-status-bar:hover { background: #dbeafe; border-color: #2563eb;}
+        .provincial-status-bar.open { border-radius: 6px 6px 0 0; box-shadow: none; border-bottom: 1px dashed #cbd5e1;}
+        
+        .provincial-dropdown { display: none; background: #ffffff; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 6px 6px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); animation: slideDown 0.3s ease; z-index: 1;}
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
         .dash-grid-top { display: grid; grid-template-columns: 2.2fr 1fr; gap: 20px; margin-bottom: 20px; }
         .dash-grid-mid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
@@ -74,7 +82,6 @@
         .table-search-box .clear-icon { position: absolute; right: 10px; top: 8px; cursor: pointer; color: #94a3b8; font-weight: bold;}
         .table-search-box .clear-icon:hover { color: #ef4444; }
         
-        /* ปุ่มเรียงลำดับ 2 ปุ่ม */
         .btn-sort { background: #e0e7ff; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 5px; transition: 0.2s;}
         .btn-sort:hover { background: #dbeafe; border-color: var(--secondary); }
         .btn-sort.active { background: var(--primary); color: white; border-color: var(--primary); }
@@ -148,7 +155,31 @@
     
     <div class="status-container">
         <div id="activeFiltersText" class="active-filters-bar"><strong>🔍 สถานะการกรองข้อมูลปัจจุบัน:</strong> กำลังเตรียมระบบ...</div>
-        <div id="provincialStatusText" class="provincial-status-bar">🌟 ประมวลผลโครงการระดับจังหวัด...</div>
+        
+        <div class="provincial-wrapper">
+            <div id="provincialStatusBar" class="provincial-status-bar" onclick="toggleProvincialTable()">
+                <div id="provincialStatusContent">🌟 ประมวลผลโครงการระดับจังหวัด...</div>
+                <div style="text-align:center; margin-top:5px; font-size:12px; color:#1d4ed8; font-weight:bold;">▼ คลิกเพื่อดูตารางแจกแจงความสอดคล้องยุทธศาสตร์ ▼</div>
+            </div>
+            
+            <div id="provincialDropdown" class="provincial-dropdown">
+                <h4 id="provincialTableHeader" style="margin-top:0; margin-bottom:10px; color:var(--primary); line-height:1.5;"></h4>
+                <div style="max-height: 250px; overflow-y: auto;">
+                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                        <thead>
+                            <tr style="background:#f1f5f9;">
+                                <th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:left;">ประเด็น/เป้าหมายที่สอดคล้อง</th>
+                                <th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:center; width:20%;">จำนวนโครงการ</th>
+                                <th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:right; width:30%;">งบประมาณ (บาท)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="provincialTableBody">
+                            <tr><td colspan="3" style="text-align:center;">กำลังประมวลผล...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="dash-grid-top">
@@ -232,7 +263,6 @@
                 <button id="btnNextPage" class="btn-page" onclick="changePage(1)">ถัดไป ▶</button>
             </div>
         </div>
-
     </div>
 </div>
 
