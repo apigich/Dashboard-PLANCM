@@ -65,10 +65,9 @@
         .provincial-dropdown { display: none; background: #ffffff; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 6px 6px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); animation: slideDown 0.3s ease; z-index: 1;}
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* สไตล์พิเศษสำหรับ Joint และ Footer */
         .joint-stat { color: var(--joint); font-weight: bold; font-size: 0.95em; margin-left: 4px; }
-        .provincial-footer-row { background-color: #fff7ed !important; border-top: 3px solid #f97316 !important; color: #9a3412 !important; font-weight: bold;}
-        .provincial-footer-row td { padding: 12px 10px !important; }
+        .footer-row { background-color: #fff7ed; border-top: 3px solid #f97316 !important; color: #9a3412;}
+        .footer-row td { padding: 12px 10px !important; font-weight: bold; font-size: 14px;}
 
         .dash-grid-top { display: grid; grid-template-columns: 2.2fr 1fr; gap: 20px; margin-bottom: 20px; }
         .dash-grid-mid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
@@ -86,9 +85,11 @@
         .table-search-box .clear-icon { position: absolute; right: 10px; top: 8px; cursor: pointer; color: #94a3b8; font-weight: bold;}
         .table-search-box .clear-icon:hover { color: #ef4444; }
         
-        .btn-sort { background: #e0e7ff; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 5px; transition: 0.2s;}
-        .btn-sort:hover { background: #dbeafe; border-color: var(--secondary); }
-        .btn-sort.active { background: var(--primary); color: white; border-color: var(--primary); }
+        /* ปุ่มเรียงลำดับที่เป็นอิสระ */
+        .btn-sort { background: #eff6ff; border: 1px solid #bfdbfe; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 5px; transition: 0.2s;}
+        .btn-sort:hover { background: #dbeafe; }
+        /* Active ในที่นี้คือแค่บอกว่าปุ่มนี้ทำงานอยู่ (ซึ่งมันทำงานตลอดเวลา) */
+        .btn-sort.active { background: #dbeafe; border-color: var(--secondary); color: #1e40af; }
 
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
         th, td { border-bottom: 1px solid #e2e8f0; padding: 12px; text-align: left; vertical-align: top; }
@@ -240,8 +241,8 @@
                     <span class="clear-icon" onclick="document.getElementById('tableSearch').value=''; handleTableSearch()">✖</span>
                 </div>
 
-                <button id="btnSortYear" class="btn-sort active" onclick="toggleSort('year')">📅 ปีงบประมาณ: ใหม่ ➜ เก่า</button>
-                <button id="btnSortBudget" class="btn-sort" onclick="toggleSort('budget')">💰 งบประมาณ: มาก ➜ น้อย</button>
+                <button id="btnSortYear" class="btn-sort" onclick="toggleSort('year')">📅 ปีงบประมาณ: ▼ ใหม่-เก่า</button>
+                <button id="btnSortBudget" class="btn-sort" onclick="toggleSort('budget')">💰 งบประมาณ: ▼ มาก-น้อย</button>
 
                 <button type="button" class="btn-clear-small" onclick="clearAllFilters()">🔄 ล้างการกรองทั้งหมด</button>
             </div>
