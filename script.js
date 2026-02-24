@@ -26,7 +26,6 @@ let sortYearAsc = false;
 let sortBudgetAsc = false;   
 
 let currentStratFilterId = 'filterProv'; 
-// กลับมาใช้ Key ที่ตรงกับ Column Excel 100% เพื่อแก้บัก "ไม่ระบุ"
 const stratMapping = {
     'filterNat': { key: 'ยุทธศาสตร์ชาติ 20 ปี', name: 'ยุทธศาสตร์ชาติ 20 ปี' },
     'filterMaster': { key: 'แผนแม่บทภายใต้ยุทธศาสตร์ชาติ', name: 'แผนแม่บทภายใต้ยุทธศาสตร์ชาติ' },
@@ -70,7 +69,6 @@ function exclusiveFilter(targetId) {
 
 function clearAreaFilter() { chartFilterAreaType = "all"; applyFilters(); }
 
-// เปิด-ปิด ตารางโครงการระดับจังหวัด
 function toggleProvincialTable() {
     const dd = document.getElementById('provincialDropdown');
     const bar = document.getElementById('provincialStatusBar');
@@ -171,7 +169,6 @@ function applyFilters() {
     const fProv = document.getElementById('filterProv').value;
 
     filteredData = masterData.filter(row => {
-        // Fallback หาคอลัมน์เผื่อชื่อไม่ตรง
         let getVal = (key) => {
             if(row[key] !== undefined) return String(row[key]);
             let shortKey = key.split(" ")[0];
@@ -378,16 +375,19 @@ function updateDashboard() {
     document.getElementById('activeFiltersText').innerHTML = `<div style="margin-bottom:6px;"><strong>🔍 สถานะการกรองข้อมูลปัจจุบัน:</strong> ${mainStratStatus}</div><div style="font-size:13px;"><strong>เงื่อนไขการกรองเพิ่มเติม:</strong> ${filterStr === "" ? "ไม่มี" : filterStr.substring(3)}</div>`;
 
     renderProvincialTable(activeStrat, selectedValue);
+    // วาดกราฟโดยส่ง key เสมอ แก้บัคสลับโดนัทไม่ได้
     renderCharts(activeStrat.key);
     setTimeout(renderMap, 300); 
 }
 
-// 🎯 สร้างตารางยุทธศาสตร์ระดับจังหวัดใน Dropdown
+// 🎯 สร้างตารางยุทธศาสตร์ระดับจังหวัดแบบ Single/Joint 분리
 function renderProvincialTable(activeStrat, selectedValue) {
     let provData = filteredData.filter(r => r._areaType === "Provincial");
     let stratStats = {};
+    let globalJointSet = new Set();
+    let globalJointBudget = 0;
 
-    provData.forEach(row => {
+    provData.forEach((row, index) => {
         let val = row[activeStrat.key];
         if (val === undefined) {
             let searchKey = activeStrat.key.split(" ")[0]; 
@@ -398,14 +398,28 @@ function renderProvincialTable(activeStrat, selectedValue) {
 
         let rawStrats = String(val || "ไม่ระบุข้อมูล").split(",").map(s => s.trim()).filter(s => s !== "");
         if (rawStrats.length === 0) rawStrats = ["ไม่ระบุข้อมูล"];
+        
+        // ถ้ามีการกรอง Dropdown และโครงการนี้ไม่ได้ตอบโจทย์ข้อที่เลือก ให้ข้ามไป
+        if (selectedValue !== "all" && !rawStrats.includes(selectedValue)) return;
+
+        let isSingle = rawStrats.length === 1;
+
+        // คำนวณสรุปรวม Joint ด้านล่างสุด (นับแค่เฉพาะโครงการที่ไม่ซ้ำ)
+        if (!isSingle) {
+            globalJointSet.add(index);
+            globalJointBudget += row._budgetNum;
+        }
 
         rawStrats.forEach(s => {
-            // ถ้าระบุเป้าหมายชัดเจน ให้ข้ามอันอื่นที่ไม่ตรง
             if (selectedValue !== "all" && s !== selectedValue) return;
-
-            if (!stratStats[s]) stratStats[s] = { count: 0, budget: 0 };
-            stratStats[s].count += 1;
-            stratStats[s].budget += row._budgetNum;
+            if (!stratStats[s]) stratStats[s] = { singleC: 0, jointC: 0, singleB: 0 };
+            
+            if (isSingle) {
+                stratStats[s].singleC += 1;
+                stratStats[s].singleB += row._budgetNum; // งบโชว์เฉพาะ Single
+            } else {
+                stratStats[s].jointC += 1;
+            }
         });
     });
 
@@ -416,29 +430,42 @@ function renderProvincialTable(activeStrat, selectedValue) {
     document.getElementById('provincialTableHeader').innerHTML = headerHtml;
 
     let tbodyHtml = '';
-    let sortedKeys = Object.keys(stratStats).sort((a,b) => stratStats[b].count - stratStats[a].count);
+    let sortedKeys = Object.keys(stratStats).sort((a,b) => (stratStats[b].singleC + stratStats[b].jointC) - (stratStats[a].singleC + stratStats[a].jointC));
 
     if (sortedKeys.length === 0) {
         tbodyHtml = `<tr><td colspan="3" style="text-align:center; padding:15px; color:gray;">- ไม่มีข้อมูลโครงการระดับจังหวัดที่ตรงกับเงื่อนไขนี้ -</td></tr>`;
     } else {
         sortedKeys.forEach(k => {
+            let jointText = stratStats[k].jointC > 0 ? `<span class="joint-stat">(+${stratStats[k].jointC})</span>` : '';
             tbodyHtml += `
                 <tr style="border-bottom: 1px dashed #e2e8f0;">
                     <td style="padding:10px;">${k}</td>
-                    <td style="text-align:center; padding:10px;"><b>${stratStats[k].count}</b></td>
-                    <td style="text-align:right; padding:10px; color:#059669;"><b>${stratStats[k].budget.toLocaleString()}</b></td>
+                    <td style="text-align:center; padding:10px;"><b>${stratStats[k].singleC}</b> ${jointText}</td>
+                    <td style="text-align:right; padding:10px; color:#059669;"><b>${stratStats[k].singleB.toLocaleString()}</b></td>
                 </tr>
             `;
         });
     }
     document.getElementById('provincialTableBody').innerHTML = tbodyHtml;
+
+    // 🎯 สร้าง Footer สรุป Joint ไว้ด้านล่างสุด พร้อมเส้นคั่น
+    let footerHtml = `
+        <tr class="footer-row">
+            <td class="footer-label">สรุปรวมประเด็นที่ตอบสนองมากกว่า 1 เป้าหมาย</td>
+            <td style="text-align:center; padding:12px;"><b>${globalJointSet.size}</b></td>
+            <td style="text-align:right; padding:12px;"><b>${globalJointBudget.toLocaleString()}</b></td>
+        </tr>
+    `;
+    document.getElementById('provincialTableFooter').innerHTML = footerHtml;
 }
 
 
 // ==========================================
-// 5. วาดกราฟ 
+// 5. วาดกราฟ (แก้บัคตัดคำ 40 ตัวอักษร)
 // ==========================================
 function renderCharts(activeStrategyKey) {
+    if(!activeStrategyKey) activeStrategyKey = stratMapping[currentStratFilterId].key;
+    
     let stratData = {};
     let integratedBudget = 0;
     
@@ -482,6 +509,8 @@ function renderCharts(activeStrategyKey) {
     });
 
     let labels = sortedKeys;
+    // 🎯 ระบบย่อคำบนกราฟ (ให้ไม่เกิน 40 ตัวอักษร) แต่ชื่อเต็มจะอยู่ใน Tooltip
+    let displayLabels = labels.map(k => k.length > 40 ? k.substring(0, 40) + "..." : k);
     
     if (chartType === 'bar') {
         let dataSingle = [], dataJoint = [];
@@ -495,6 +524,7 @@ function renderCharts(activeStrategyKey) {
             }
         });
         if (currentMode === 'budget' && integratedBudget > 0) {
+            displayLabels.push("งบประมาณบูรณาการ");
             labels.push("งบประมาณบูรณาการ");
             dataSingle.push(0);
             dataJoint.push(integratedBudget);
@@ -503,16 +533,24 @@ function renderCharts(activeStrategyKey) {
         myChart = new Chart(ctxMain, {
             type: 'bar',
             data: {
-                labels: labels,
+                labels: displayLabels,
                 datasets: [
-                    { label: currentMode==='count' ? 'สอดคล้องประเด็นเดียว (Single)' : 'งบประมาณ (สอดคล้องประเด็นเดียว)', data: dataSingle, backgroundColor: '#3b82f6' },
-                    { label: currentMode==='count' ? 'สอดคล้องหลายประเด็น (Joint)' : 'งบประมาณ (สอดคล้องหลายประเด็น)', data: dataJoint, backgroundColor: '#f59e0b' }
+                    { label: currentMode==='count' ? 'เฉพาะประเด็นเดียว (Single)' : 'งบประมาณ (เฉพาะประเด็นเดียว)', data: dataSingle, backgroundColor: '#3b82f6' },
+                    { label: currentMode==='count' ? 'หลายประเด็น (Joint)' : 'งบประมาณ (หลายประเด็น)', data: dataJoint, backgroundColor: '#f59e0b' }
                 ]
             },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
                 scales: { x: { stacked: true }, y: { stacked: true } },
-                plugins: { tooltip: { mode: 'index', intersect: false }, datalabels: { display: false } }
+                plugins: { 
+                    tooltip: { 
+                        mode: 'index', intersect: false,
+                        callbacks: {
+                            title: function(ctx) { return labels[ctx[0].dataIndex]; } // โชว์ชื่อเต็มใน Tooltip
+                        }
+                    }, 
+                    datalabels: { display: false } 
+                }
             }
         });
     } else {
@@ -522,13 +560,14 @@ function renderCharts(activeStrategyKey) {
             else data.push(stratData[k].singleB);
         });
         if (currentMode === 'budget' && integratedBudget > 0) {
+            displayLabels.push("งบประมาณบูรณาการ");
             labels.push("งบประมาณบูรณาการ");
             data.push(integratedBudget);
         }
         
         myChart = new Chart(ctxMain, {
             type: 'doughnut',
-            data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#1e3a8a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'] }] },
+            data: { labels: displayLabels, datasets: [{ data: data, backgroundColor: ['#1e3a8a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'] }] },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
                 plugins: { 
@@ -539,7 +578,7 @@ function renderCharts(activeStrategyKey) {
                                 let dataset = ctx.dataset.data;
                                 let total = dataset.reduce((a, b) => a + b, 0);
                                 let pct = total > 0 ? ((ctx.raw * 100) / total).toFixed(1) : 0;
-                                let k = ctx.label;
+                                let k = labels[ctx.dataIndex]; // ดึงชื่อเต็มมาโชว์ใน Tooltip
                                 if(currentMode === 'count') {
                                     return ` ${k}: ${ctx.raw} โครงการ (${pct}%) | ประเด็นเดียว: ${stratData[k]?.singleC || 0}, หลายประเด็น: ${stratData[k]?.jointC || 0}`;
                                 } else {
@@ -553,7 +592,7 @@ function renderCharts(activeStrategyKey) {
                         formatter: (value, ctx) => {
                             let sum = 0;
                             let dataArr = ctx.chart.data.datasets[0].data;
-                            dataArr.map(data => { sum += data; });
+                            dataArr.map(d => { sum += d; });
                             let percentage = sum > 0 ? (value*100 / sum).toFixed(1) : 0;
                             return percentage >= 5 ? percentage + "%" : "";
                         }
@@ -596,7 +635,7 @@ function renderCharts(activeStrategyKey) {
                     formatter: (value, ctx) => {
                         let sum = 0;
                         let dataArr = ctx.chart.data.datasets[0].data;
-                        dataArr.map(data => { sum += data; });
+                        dataArr.map(d => { sum += d; });
                         let pct = sum > 0 ? (value*100 / sum).toFixed(1) : 0;
                         return pct >= 5 ? pct + "%" : "";
                     }
@@ -636,7 +675,7 @@ function renderCharts(activeStrategyKey) {
 }
 
 // ==========================================
-// 6. แผนที่ Leaflet
+// 6. แผนที่ Leaflet (Heatmap เฉพาะ Single)
 // ==========================================
 function setDistrictFilter(dName) { 
     mapFilterDistrict = dName; 
@@ -645,6 +684,7 @@ function setDistrictFilter(dName) {
     
     const slicerIds = ['filterNat', 'filterMaster', 'filterPlan13', 'filterNorth', 'filterProv'];
     slicerIds.forEach(id => document.getElementById(id).value = "all");
+    currentStratFilterId = 'filterProv';
     
     closeModal(); 
     resetPageAndFilter(); 
@@ -705,7 +745,10 @@ function renderMap() {
             let matchedDistricts = dNames.filter(d => row._cleanArea.includes(d));
             matchedDistricts.forEach(d => {
                 if (areaType === "Single") { districtStats[d].singleC += 1; districtStats[d].singleB += row._budgetNum; }
-                if (areaType === "Multi") { districtStats[d].multiC += 1; districtStats[d].multiB += (row._budgetNum / matchedDistricts.length); }
+                if (areaType === "Multi") { 
+                    districtStats[d].multiC += 1; 
+                    districtStats[d].multiB += row._budgetNum; // ไม่มีการหารแล้ว
+                }
 
                 districtStats[d].totalProjects += 1;
                 strats.forEach(s => {
@@ -737,12 +780,14 @@ function renderMap() {
                 let s = districtStats[dName] || {singleC: 0, singleB: 0, multiC: 0, multiB: 0, totalProjects: 0};
                 let color = '#FFEDA0';
                 
+                // 🎯 การระบายสี: อ้างอิงจาก Single เท่านั้น 100% ตามสั่ง
                 if (mapMode === 'overview') {
-                    let val = currentMode === 'budget' ? (s.singleB + s.multiB) : (s.singleC + s.multiC);
+                    let val = currentMode === 'budget' ? s.singleB : s.singleC; 
                     if (currentMode === 'budget') color = val > 50000000 ? '#800026' : val > 10000000 ? '#BD0026' : val > 1000000 ? '#E31A1C' : val > 0 ? '#FC4E2A' : '#FFEDA0';
                     else color = val > 10 ? '#800026' : val > 5 ? '#BD0026' : val > 2 ? '#E31A1C' : val > 0 ? '#FC4E2A' : '#FFEDA0';
                 } else {
-                    let val = s.totalProjects; 
+                    let val = s.matrix.single_single + s.matrix.single_joint; // อิงแค่ Single ในโหมด 4D
+                    if (!isSpecificStrat) val = s.singleC;
                     if (val > 15) color = '#800026';
                     else if (val > 8) color = '#BD0026';
                     else if (val > 3) color = '#E31A1C';
@@ -763,10 +808,10 @@ function renderMap() {
                             จำนวน: ${s.singleC} โครงการ<br>งบประมาณ: ${s.singleB.toLocaleString()} บาท<br>
                             <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
                             <b style="color:#f59e0b;">📦 ดำเนินการร่วมกับอำเภออื่น</b><br>
-                            จำนวน: ${s.multiC} โครงการ<br>งบประมาณเฉลี่ย: ${s.multiB.toLocaleString(undefined, {minimumFractionDigits:0})} บาท<br>
+                            จำนวน: ${s.multiC} โครงการ<br>งบประมาณรวม: ${s.multiB.toLocaleString()} บาท<br>
+                            <div style="color:#ef4444; font-size:11px; margin-top:2px;">(งบประมาณที่แสดงผลไม่ถูกนำมาคำนวณรายอำเภอ)</div>
                             <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
                             <b style="color:#ef4444;">🌐 ดำเนินการครอบคลุมทั้งจังหวัด</b><br>
-                            <span style="color:#666;">(ไม่นำมาคำนวณความเข้มข้นในแผนที่)</span><br>
                             จำนวนโครงการที่ดำเนินการครอบคลุมถึง: ${s.provC} โครงการ
                         </div>
                     `;
