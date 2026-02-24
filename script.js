@@ -6,8 +6,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycby4zmatIMhxh2K4PIiabU5q
 let masterData = [];   
 let filteredData = []; 
 let currentMode = 'count'; 
-let myChartBar = null; 
-let myChartDoughnut = null; 
+let myChart = null; // กราฟยุทธศาสตร์ (สลับแท่ง/โดนัท)
 let areaChart = null;
 let trendChart = null;
 let map = null;
@@ -18,7 +17,7 @@ let mapFilterProject = "all";
 let chartFilterAreaType = "all"; 
 let sortAscending = false; 
 
-// ตัวจำสถานะยุทธศาสตร์ (ค่าเริ่มต้น: แผนจังหวัด)
+// ตัวจำสถานะยุทธศาสตร์ 
 let currentStratFilterId = 'filterProv'; 
 const stratMapping = {
     'filterNat': { key: 'ยุทธศาสตร์ชาติ 20 ปี', name: 'ยุทธศาสตร์ชาติ 20 ปี' },
@@ -54,7 +53,6 @@ function buildStaticSlicers() {
     document.getElementById('modeSwitch').addEventListener('change', (e) => { currentMode = e.target.checked ? 'budget' : 'count'; updateDashboard(); });
 }
 
-// ฟังก์ชัน "กรองเฉพาะด้านนี้" 
 function exclusiveFilter(targetId) {
     currentStratFilterId = targetId;
     const slicerIds = ['filterNat', 'filterMaster', 'filterPlan13', 'filterNorth', 'filterProv'];
@@ -67,7 +65,7 @@ function exclusiveFilter(targetId) {
 function clearAreaFilter() { chartFilterAreaType = "all"; applyFilters(); }
 
 // ==========================================
-// 2. ดึงข้อมูล
+// 2. ดึงข้อมูล (ดักบัคขั้นสูง)
 // ==========================================
 async function init() {
     buildStaticSlicers(); 
@@ -79,12 +77,17 @@ async function init() {
 
         const years = new Set();
         masterData.forEach(row => {
+            // งบประมาณ
             let budgetRaw = row["งบประมาณ (ตัวเลข)"] || row["งบประมาณ"] || "0";
             row._budgetNum = parseFloat(String(budgetRaw).replace(/,/g, '')) || 0;
             
-            row._year = String(row["ปีงบประมาณ"] || "ไม่ระบุ").trim();
+            // ปีงบประมาณ ดักเคส Excel ส่งมาเป็น 2566.0
+            let yearRaw = String(row["ปีงบประมาณ"] || "ไม่ระบุ").trim();
+            if (yearRaw.includes(".")) yearRaw = yearRaw.split(".")[0];
+            row._year = yearRaw;
             if(row._year !== "ไม่ระบุ" && row._year !== "") years.add(row._year);
             
+            // พื้นที่
             let areaRaw = row["พื้นที่เป้าหมายทั้งหมด"];
             if (!areaRaw || areaRaw === "-" || String(areaRaw).trim() === "") areaRaw = row["⚙️ ขอบเขตพื้นที่ (Auto)"];
             if (!areaRaw || areaRaw === "-" || String(areaRaw).trim() === "") areaRaw = row["อำเภอที่ตั้ง (หลัก)"];
@@ -187,28 +190,27 @@ function clearAllFilters() {
     mapFilterDistrict = "all";
     mapFilterProject = "all";
     chartFilterAreaType = "all";
-    currentStratFilterId = 'filterProv'; // คืนค่าแผนจังหวัด
+    currentStratFilterId = 'filterProv'; 
     applyFilters();
 }
 
 // ==========================================
-// 4. อัปเดต UI 
+// 4. อัปเดต UI
 // ==========================================
 function updateDashboard() {
     document.getElementById('sumProjects').innerText = filteredData.length.toLocaleString();
     const totalBudget = filteredData.reduce((sum, row) => sum + row._budgetNum, 0);
     document.getElementById('sumBudget').innerText = totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2});
 
-    // อัปเดตแถบ "ทั้งจังหวัด" (Provincial Status)
+    // แถบ Provincial
     let provCount = 0; let provBudget = 0;
     filteredData.forEach(r => { if(r._areaType === "Provincial") { provCount++; provBudget += r._budgetNum; } });
     document.getElementById('provincialStatusText').innerHTML = `<span>🌟 โครงการที่ดำเนินการครอบคลุมทั้งจังหวัด: <b>${provCount}</b> โครงการ</span> <span>💰 งบประมาณ: <b>${provBudget.toLocaleString()}</b> บาท</span>`;
 
-    // อัปเดตข้อความใต้กราฟยุทธศาสตร์
+    // อัปเดตหัวข้อกราฟยุทธศาสตร์
     let activeStrat = stratMapping[currentStratFilterId];
     let isDefault = (currentStratFilterId === 'filterProv' && document.getElementById('filterProv').value === "all");
-    document.getElementById('strategyChartSubtitleBar').innerText = isDefault ? `(ค่าเริ่มต้น: ${activeStrat.name})` : `(กำลังแสดงผล: ${activeStrat.name})`;
-    document.getElementById('strategyChartSubtitleDough').innerText = isDefault ? `(ค่าเริ่มต้น: ${activeStrat.name})` : `(กำลังแสดงผล: ${activeStrat.name})`;
+    document.getElementById('strategyChartSubtitle').innerText = isDefault ? `(ค่าเริ่มต้น: ${activeStrat.name})` : `(กำลังแสดงผล: ${activeStrat.name})`;
 
     // ข้อความสถานะการกรองแบบละเอียด
     let activeTexts = [];
@@ -230,21 +232,24 @@ function updateDashboard() {
     document.getElementById('activeFiltersText').innerHTML = `<strong>🔍 สถานะการกรองปัจจุบัน:</strong> <span style="color:#b45309;">${filterStr}</span>`;
 
     renderTable();
-    renderCharts(activeStrat.key);
+    // ส่ง id ของแผนไปให้ฟังก์ชันวาดกราฟ
+    renderCharts();
     setTimeout(renderMap, 300); 
 }
 
 // ==========================================
 // 5. วาดกราฟ
 // ==========================================
-function renderCharts(activeStrategyKey) {
+function renderCharts() {
+    let activeStrat = stratMapping[currentStratFilterId];
+    let activeStrategyKey = activeStrat.key;
+
     let stratData = {};
     let integratedBudget = 0;
     let integratedBudgetDetails = {};
 
     filteredData.forEach(row => {
         let val = row[activeStrategyKey];
-        // แก้บัคไม่ระบุ
         let rawProv = (val && String(val).trim() !== "" && val !== "NaN" && val !== "-") ? String(val) : "ไม่ระบุ";
         
         let strategies = rawProv.split(",").map(s => s.trim()).filter(s => s !== "");
@@ -269,95 +274,94 @@ function renderCharts(activeStrategyKey) {
         }
     });
 
-    // 5.1 Bar Chart
-    const ctxBar = document.getElementById('mainChartBar');
-    if (myChartBar) myChartBar.destroy();
+    const ctxMain = document.getElementById('mainChart');
+    if (myChart) myChart.destroy();
     
-    let barLabels = [], barData1 = [], barData2 = [];
-    if(currentMode === 'count') {
-        barLabels = Object.keys(stratData);
-        barData1 = barLabels.map(k => stratData[k].singleC);
-        barData2 = barLabels.map(k => stratData[k].jointC);
-    } else {
-        barLabels = Object.keys(stratData);
-        if(integratedBudget > 0) barLabels.push("งบบูรณาการหลายเป้าหมาย");
-        
-        barLabels.forEach(k => {
-            if(k === "งบบูรณาการหลายเป้าหมาย") { barData1.push(0); barData2.push(integratedBudget); }
-            else { barData1.push(stratData[k].singleB); barData2.push(0); }
-        });
-    }
+    let chartType = document.getElementById('chartTypeSelect').value;
 
-    myChartBar = new Chart(ctxBar, {
-        type: 'bar',
-        data: {
-            labels: barLabels,
-            datasets: [
-                { label: currentMode === 'count' ? 'เฉพาะประเด็นนี้ (Single)' : 'งบเฉพาะประเด็น (Single)', data: barData1, backgroundColor: '#3b82f6' },
-                { label: currentMode === 'count' ? 'บูรณาการประเด็นนี้ด้วย (Joint)' : 'งบบูรณาการหลายเป้าหมาย', data: barData2, backgroundColor: '#f59e0b' }
-            ]
-        },
-        options: { 
-            responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(ctx) {
-                            if(currentMode === 'budget' && ctx.label === "งบบูรณาการหลายเป้าหมาย" && ctx.datasetIndex === 1) {
-                                let lines = [`รวมงบบูรณาการ: ${integratedBudget.toLocaleString()} บาท`, `(สัดส่วนคร่าวๆ ในโครงการร่วม:)`];
-                                for(let k in integratedBudgetDetails) lines.push(` - ${k}: ${integratedBudgetDetails[k].toLocaleString(undefined,{maximumFractionDigits:0})} บ.`);
-                                return lines;
+    if (chartType === 'bar') {
+        let barLabels = [], barData1 = [], barData2 = [];
+        if(currentMode === 'count') {
+            barLabels = Object.keys(stratData);
+            barData1 = barLabels.map(k => stratData[k].singleC);
+            barData2 = barLabels.map(k => stratData[k].jointC);
+        } else {
+            barLabels = Object.keys(stratData);
+            if(integratedBudget > 0) barLabels.push("งบบูรณาการหลายเป้าหมาย");
+            
+            barLabels.forEach(k => {
+                if(k === "งบบูรณาการหลายเป้าหมาย") { barData1.push(0); barData2.push(integratedBudget); }
+                else { barData1.push(stratData[k].singleB); barData2.push(0); }
+            });
+        }
+
+        myChart = new Chart(ctxMain, {
+            type: 'bar',
+            data: {
+                labels: barLabels,
+                datasets: [
+                    { label: currentMode === 'count' ? 'เฉพาะประเด็นนี้ (Single)' : 'งบเฉพาะประเด็น (Single)', data: barData1, backgroundColor: '#3b82f6' },
+                    { label: currentMode === 'count' ? 'บูรณาการประเด็นนี้ด้วย (Joint)' : 'งบบูรณาการหลายเป้าหมาย', data: barData2, backgroundColor: '#f59e0b' }
+                ]
+            },
+            options: { 
+                responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                if(currentMode === 'budget' && ctx.label === "งบบูรณาการหลายเป้าหมาย" && ctx.datasetIndex === 1) {
+                                    let lines = [`รวมงบบูรณาการ: ${integratedBudget.toLocaleString()} บาท`, `(สัดส่วนคร่าวๆ ในโครงการร่วม:)`];
+                                    for(let k in integratedBudgetDetails) lines.push(` - ${k}: ${integratedBudgetDetails[k].toLocaleString(undefined,{maximumFractionDigits:0})} บ.`);
+                                    return lines;
+                                }
+                                return `${ctx.dataset.label}: ${ctx.raw.toLocaleString()} ${currentMode === 'count' ? 'โครงการ' : 'บาท'}`;
                             }
-                            return `${ctx.dataset.label}: ${ctx.raw.toLocaleString()} ${currentMode === 'count' ? 'โครงการ' : 'บาท'}`;
                         }
                     }
                 }
             }
-        }
-    });
-
-    // 5.2 Doughnut Chart
-    const ctxDough = document.getElementById('mainChartDoughnut');
-    if (myChartDoughnut) myChartDoughnut.destroy();
-    
-    let dLabels = [], dData = [];
-    if(currentMode === 'count') {
-        dLabels = Object.keys(stratData);
-        dData = dLabels.map(k => stratData[k].singleC + stratData[k].jointC);
+        });
     } else {
-        dLabels = Object.keys(stratData).filter(k => stratData[k].singleB > 0);
-        dData = dLabels.map(k => stratData[k].singleB);
-        if(integratedBudget > 0) { dLabels.push("งบบูรณาการหลายเป้าหมาย"); dData.push(integratedBudget); }
-    }
+        let dLabels = [], dData = [];
+        if(currentMode === 'count') {
+            dLabels = Object.keys(stratData);
+            dData = dLabels.map(k => stratData[k].singleC + stratData[k].jointC);
+        } else {
+            dLabels = Object.keys(stratData).filter(k => stratData[k].singleB > 0);
+            dData = dLabels.map(k => stratData[k].singleB);
+            if(integratedBudget > 0) { dLabels.push("งบบูรณาการหลายเป้าหมาย"); dData.push(integratedBudget); }
+        }
 
-    myChartDoughnut = new Chart(ctxDough, {
-        type: 'doughnut',
-        data: { labels: dLabels, datasets: [{ data: dData, backgroundColor: ['#1e3a8a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'] }] },
-        options: { 
-            responsive: true, maintainAspectRatio: false, plugins: { 
-                legend: { position: 'right' },
-                tooltip: {
-                    callbacks: {
-                        label: function(ctx) {
-                            let k = ctx.label;
-                            if(currentMode === 'count') {
-                                return [`รวม: ${ctx.raw} โครงการ`, ` - เฉพาะประเด็น (Single): ${stratData[k].singleC}`, ` - บูรณาการ (Joint): ${stratData[k].jointC}`];
-                            } else {
-                                if(k === "งบบูรณาการหลายเป้าหมาย") {
-                                    let lines = [`งบรวม: ${integratedBudget.toLocaleString()} บาท`];
-                                    for(let d in integratedBudgetDetails) lines.push(` - ${d}: ${integratedBudgetDetails[d].toLocaleString(undefined,{maximumFractionDigits:0})} บ.`);
-                                    return lines;
+        myChart = new Chart(ctxMain, {
+            type: 'doughnut',
+            data: { labels: dLabels, datasets: [{ data: dData, backgroundColor: ['#1e3a8a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'] }] },
+            options: { 
+                responsive: true, maintainAspectRatio: false, plugins: { 
+                    legend: { position: 'right' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                let k = ctx.label;
+                                if(currentMode === 'count') {
+                                    return [`รวม: ${ctx.raw} โครงการ`, ` - เฉพาะประเด็น (Single): ${stratData[k].singleC}`, ` - บูรณาการ (Joint): ${stratData[k].jointC}`];
+                                } else {
+                                    if(k === "งบบูรณาการหลายเป้าหมาย") {
+                                        let lines = [`งบรวม: ${integratedBudget.toLocaleString()} บาท`];
+                                        for(let d in integratedBudgetDetails) lines.push(` - ${d}: ${integratedBudgetDetails[d].toLocaleString(undefined,{maximumFractionDigits:0})} บ.`);
+                                        return lines;
+                                    }
+                                    return `งบเฉพาะประเด็น: ${ctx.raw.toLocaleString()} บาท`;
                                 }
-                                return `งบเฉพาะประเด็น: ${ctx.raw.toLocaleString()} บาท`;
                             }
                         }
                     }
-                }
-            } 
-        }
-    });
+                } 
+            }
+        });
+    }
 
-    // 5.3 Area Doughnut
+    // โดนัท พื้นที่
     const ctxArea = document.getElementById('areaChart');
     let areaCounts = { 'Single': 0, 'Multi': 0, 'Provincial': 0, 'ไม่ระบุ': 0 };
     filteredData.forEach(row => { areaCounts[row._areaType] += (currentMode === 'budget' ? row._budgetNum : 1); });
@@ -381,7 +385,7 @@ function renderCharts(activeStrategyKey) {
         }
     });
 
-    // 5.4 Trend Chart
+    // กราฟ Trend
     const ctxTrend = document.getElementById('trendChart');
     let yearCounts = {};
     filteredData.forEach(row => {
@@ -465,7 +469,7 @@ function renderMap() {
 }
 
 // ==========================================
-// 7. ตาราง & Modal
+// 7. ตาราง & Modal 
 // ==========================================
 function setProjectFilter(projName) { mapFilterProject = projName; mapFilterDistrict = "all"; chartFilterAreaType = "all"; closeModal(); applyFilters(); }
 
@@ -502,6 +506,7 @@ function openModal(idx) {
     let aLabel = aType === 'Single' ? " (เฉพาะพื้นที่)" : aType === 'Multi' ? " (หลายพื้นที่)" : aType === 'Provincial' ? " (ทั้งจังหวัด)" : " (ไม่ได้ระบุพื้นที่)";
     document.getElementById('modalAreaType').innerText = aType + aLabel;
 
+    // ระบบเว้นบรรทัดรายละเอียดย่อย
     const subDiv = document.getElementById('modalSubActivities');
     const rawSub = String(row["รายละเอียดย่อย"] || "");
     const cleanSub = rawSub.replace(/\r\n/g, "<br>").replace(/\n/g, "<br>").trim();
