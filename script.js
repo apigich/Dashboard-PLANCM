@@ -6,7 +6,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycby4zmatIMhxh2K4PIiabU5q
 let masterData = [];   
 let filteredData = []; 
 let currentMode = 'count'; 
-let myChart = null;
+let myChart = null; 
 let areaChart = null;
 let trendChart = null;
 let map = null;
@@ -16,6 +16,16 @@ let mapFilterDistrict = "all";
 let mapFilterProject = "all";
 let chartFilterAreaType = "all"; 
 let sortAscending = false; 
+
+// ตัวจำสถานะยุทธศาสตร์ (ค่าเริ่มต้นคือ แผนจังหวัด)
+let currentStratFilterId = 'filterProv'; 
+const stratMapping = {
+    'filterNat': { key: 'ยุทธศาสตร์ชาติ 20 ปี', name: 'ยุทธศาสตร์ชาติ 20 ปี' },
+    'filterMaster': { key: 'แผนแม่บทภายใต้ยุทธศาสตร์ชาติ', name: 'แผนแม่บทฯ' },
+    'filterPlan13': { key: 'แผนพัฒนาฯ ฉบับที่ 13', name: 'แผนพัฒนาฯ ฉบับที่ 13' },
+    'filterNorth': { key: 'แผนพัฒนาภาคเหนือ', name: 'แผนพัฒนาภาคเหนือ' },
+    'filterProv': { key: 'ประเด็นการพัฒนาจังหวัด (2566-2570)', name: 'แผนพัฒนาจังหวัดเชียงใหม่' }
+};
 
 // ==========================================
 // 1. สร้าง UI และ Slicer ล่วงหน้า
@@ -40,13 +50,12 @@ function buildStaticSlicers() {
         if(select) options.forEach(opt => select.innerHTML += `<option value="${opt}">${opt}</option>`);
     }
 
-    document.getElementById('globalSearch').addEventListener('search', applyFilters);
-    document.getElementById('globalSearch').addEventListener('input', applyFilters);
     document.getElementById('modeSwitch').addEventListener('change', (e) => { currentMode = e.target.checked ? 'budget' : 'count'; updateDashboard(); });
 }
 
-// ฟังก์ชันปุ่ม "กรองเฉพาะด้านนี้"
+// ฟังก์ชันปุ่ม "กรองเฉพาะด้านนี้" (อัปเดตสถานะและล้างค่าอื่น)
 function exclusiveFilter(targetId) {
+    currentStratFilterId = targetId;
     const slicerIds = ['filterNat', 'filterMaster', 'filterPlan13', 'filterNorth', 'filterProv'];
     slicerIds.forEach(id => {
         if (id !== targetId) document.getElementById(id).value = "all";
@@ -60,7 +69,7 @@ function clearAreaFilter() {
 }
 
 // ==========================================
-// 2. ดึงข้อมูล
+// 2. ดึงข้อมูล (ดักบัคชื่อคอลัมน์พื้นที่)
 // ==========================================
 async function init() {
     buildStaticSlicers(); 
@@ -78,27 +87,34 @@ async function init() {
             row._year = String(row["ปีงบประมาณ"] || "ไม่ระบุ").trim();
             if(row._year !== "ไม่ระบุ" && row._year !== "") years.add(row._year);
             
-            // อ่านค่าพื้นที่ให้ตรงเป๊ะ
-            let areaRaw = String(row["พื้นที่เป้าหมายทั้งหมด"] || row["อำเภอที่ตั้ง (หลัก)"] || row["ขอบเขตพื้นที่"] || "ไม่ระบุ");
-            let cleanedArea = areaRaw.replace(/จังหวัดเชียงใหม่/g, "").replace(/\s+/g, " ").trim();
+            // อ่านค่าพื้นที่แบบลดความผิดพลาดให้มากที่สุด
+            let areaRaw = row["พื้นที่เป้าหมายทั้งหมด"];
+            if (!areaRaw || areaRaw === "-" || String(areaRaw).trim() === "") areaRaw = row["⚙️ ขอบเขตพื้นที่ (Auto)"];
+            if (!areaRaw || areaRaw === "-" || String(areaRaw).trim() === "") areaRaw = row["อำเภอที่ตั้ง (หลัก)"];
+            if (!areaRaw || String(areaRaw).trim() === "") areaRaw = "ไม่ระบุ";
+            
+            let cleanedArea = String(areaRaw).replace(/จังหวัดเชียงใหม่/g, "").replace(/\s+/g, " ").trim();
             if(cleanedArea.endsWith(",")) cleanedArea = cleanedArea.slice(0, -1);
             row._cleanArea = cleanedArea || "ไม่ระบุ";
             
-            if (row._cleanArea.includes("ครอบคลุมทั้งจังหวัด")) { row._areaType = "Provincial"; row._areaList = ["ครอบคลุมทั้งจังหวัด"]; }
-            else if (row._cleanArea.includes(",")) { row._areaType = "Multi"; row._areaList = row._cleanArea.split(",").map(a => a.trim()).filter(a => a !== ""); }
-            else if (row._cleanArea === "ไม่ระบุ" || row._cleanArea === "-" || row._cleanArea === "") { row._areaType = "ไม่ระบุ"; row._areaList = ["ไม่ระบุข้อมูลพื้นที่"]; }
-            else { row._areaType = "Single"; row._areaList = [row._cleanArea]; }
+            // แยกประเภท
+            if (row._cleanArea.includes("ครอบคลุมทั้งจังหวัด") || row._cleanArea === "ทั้งจังหวัด") { 
+                row._areaType = "Provincial"; row._areaList = ["ครอบคลุมทั้งจังหวัด"]; 
+            }
+            else if (row._cleanArea.includes(",")) { 
+                row._areaType = "Multi"; row._areaList = row._cleanArea.split(",").map(a => a.trim()).filter(a => a !== ""); 
+            }
+            else if (row._cleanArea === "ไม่ระบุ" || row._cleanArea === "-") { 
+                row._areaType = "ไม่ระบุ"; row._areaList = ["ไม่ระบุข้อมูลพื้นที่"]; 
+            }
+            else { 
+                row._areaType = "Single"; row._areaList = [row._cleanArea]; 
+            }
         });
 
         const yearBox = document.getElementById('yearCheckboxes');
         [...years].sort().forEach(y => {
-            yearBox.innerHTML += `<li><input type="checkbox" class="year-cb" value="${y}" checked onchange="handleYearChange(this)"> <span>ปีงบประมาณ ${y}</span></li>`;
-        });
-
-        document.getElementById('checkAllYears').addEventListener('change', function() {
-            let cbs = document.querySelectorAll('.year-cb');
-            cbs.forEach(cb => cb.checked = this.checked);
-            applyFilters();
+            yearBox.innerHTML += `<li><input type="checkbox" class="year-cb" value="${y}" checked onchange="handleYearChange()"> <span>ปีงบประมาณ ${y}</span></li>`;
         });
 
         filteredData = [...masterData];
@@ -109,14 +125,20 @@ async function init() {
     }
 }
 
-function handleYearChange(el) {
+function toggleAllYears(sourceCb) {
+    let cbs = document.querySelectorAll('.year-cb');
+    cbs.forEach(cb => cb.checked = sourceCb.checked);
+    applyFilters();
+}
+
+function handleYearChange() {
     let allChecked = document.querySelectorAll('.year-cb:checked').length === document.querySelectorAll('.year-cb').length;
     document.getElementById('checkAllYears').checked = allChecked;
     applyFilters();
 }
 
 // ==========================================
-// 3. ระบบกรอง (Realtime 100%)
+// 3. ระบบกรอง & จัดเรียง 
 // ==========================================
 function applyFilters() {
     const searchTxt = document.getElementById('globalSearch').value.toLowerCase();
@@ -138,6 +160,7 @@ function applyFilters() {
         const rowText = Object.values(row).map(v => String(v)).join(" ").toLowerCase();
         const matchSearch = searchTxt === "" || rowText.includes(searchTxt);
         const matchYear = selectedYears.length === 0 || selectedYears.includes(row._year);
+        
         const matchNat = fNat === "all" || colNat.includes(fNat);
         const matchMaster = fMaster === "all" || colMaster.includes(fMaster);
         const matchPlan13 = fPlan13 === "all" || colPlan13.includes(fPlan13);
@@ -176,44 +199,50 @@ function clearAllFilters() {
     mapFilterDistrict = "all";
     mapFilterProject = "all";
     chartFilterAreaType = "all";
+    currentStratFilterId = 'filterProv'; // คืนค่าเริ่มต้นกราฟยุทธศาสตร์
     applyFilters();
 }
 
 // ==========================================
-// 4. อัปเดต UI 
+// 4. อัปเดต UI และข้อความสถานะ
 // ==========================================
 function updateDashboard() {
     document.getElementById('sumProjects').innerText = filteredData.length.toLocaleString();
     const totalBudget = filteredData.reduce((sum, row) => sum + row._budgetNum, 0);
     document.getElementById('sumBudget').innerText = totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2});
 
+    // 4.1 อัปเดตสถานะโครงการทั้งจังหวัด (Provincial)
+    let provCount = 0;
+    let provBudget = 0;
+    filteredData.forEach(r => { if(r._areaType === "Provincial") { provCount++; provBudget += r._budgetNum; } });
+    document.getElementById('provincialStatusText').innerHTML = `🌟 โครงการที่ดำเนินการครอบคลุมทั้งจังหวัด: ${provCount} โครงการ | มูลค่ารวม: ${provBudget.toLocaleString()} บาท`;
+
+    // 4.2 อัปเดตคำอธิบายใต้กราฟยุทธศาสตร์
+    let activeStrat = stratMapping[currentStratFilterId];
+    let isDefault = (currentStratFilterId === 'filterProv' && document.getElementById('filterProv').value === "all");
+    document.getElementById('strategyChartSubtitle').innerText = isDefault ? `(ค่าเริ่มต้น: ${activeStrat.name})` : `(กำลังแสดงผล: ${activeStrat.name})`;
+
+    // 4.3 สร้าง Text บอกสถานะตัวกรองปัจจุบันแบบระบุชื่อ
     let activeTexts = [];
     const selectedYears = Array.from(document.querySelectorAll('.year-cb:checked')).map(cb => cb.value);
-    if(selectedYears.length < document.querySelectorAll('.year-cb').length && selectedYears.length > 0) activeTexts.push(`เฉพาะปี: ${selectedYears.join(', ')}`);
+    if(selectedYears.length < document.querySelectorAll('.year-cb').length && selectedYears.length > 0) activeTexts.push(`ปีงบ: ${selectedYears.join(', ')}`);
     
-    // อัปเดตข้อความใต้กราฟยุทธศาสตร์ (Point 2)
-    let stratSubtitle = "(ค่าเริ่มต้น: แผนพัฒนาจังหวัดเชียงใหม่)";
-    let stratKey = "ประเด็นการพัฒนาจังหวัด (2566-2570)"; // คอลัมน์ตั้งต้นที่นำไปวาดกราฟ
-
-    if (document.getElementById('filterNat').value !== "all") { stratSubtitle = "(กำลังแสดงผล: ยุทธศาสตร์ชาติ)"; stratKey = "ยุทธศาสตร์ชาติ 20 ปี"; }
-    else if (document.getElementById('filterMaster').value !== "all") { stratSubtitle = "(กำลังแสดงผล: แผนแม่บทฯ)"; stratKey = "แผนแม่บทภายใต้ยุทธศาสตร์ชาติ"; }
-    else if (document.getElementById('filterPlan13').value !== "all") { stratSubtitle = "(กำลังแสดงผล: แผนพัฒนาฯ ฉบับที่ 13)"; stratKey = "แผนพัฒนาฯ ฉบับที่ 13"; }
-    else if (document.getElementById('filterNorth').value !== "all") { stratSubtitle = "(กำลังแสดงผล: แผนพัฒนาภาคเหนือ)"; stratKey = "แผนพัฒนาภาคเหนือ"; }
+    if(document.getElementById('filterNat').value !== "all") activeTexts.push(`ยุทธศาสตร์ชาติ: ${document.getElementById('filterNat').value.split(" ")[0]}...`);
+    if(document.getElementById('filterMaster').value !== "all") activeTexts.push(`แผนแม่บทฯ: ${document.getElementById('filterMaster').value.split(" ")[0]}...`);
+    if(document.getElementById('filterPlan13').value !== "all") activeTexts.push(`แผนฯ 13: ${document.getElementById('filterPlan13').value.split(" ")[0]}...`);
+    if(document.getElementById('filterNorth').value !== "all") activeTexts.push(`แผนภาคเหนือ: ${document.getElementById('filterNorth').value.split(" ")[0]}...`);
+    if(document.getElementById('filterProv').value !== "all") activeTexts.push(`แผนจังหวัด: ${document.getElementById('filterProv').value.split(" ")[0]}...`);
     
-    document.getElementById('strategyChartSubtitle').innerText = stratSubtitle;
-    
-    // บันทึกสถานะการกรองทั่วไป
-    const slicerIds = ['filterNat', 'filterMaster', 'filterPlan13', 'filterNorth', 'filterProv'];
-    slicerIds.forEach(id => { if(document.getElementById(id).value !== "all") activeTexts.push(`เจาะจงยุทธศาสตร์`); });
     if(mapFilterDistrict !== "all") activeTexts.push(`อำเภอ: ${mapFilterDistrict}`);
     if(mapFilterProject !== "all") activeTexts.push(`โครงการเจาะจง`);
-    if(chartFilterAreaType !== "all") activeTexts.push(`ลักษณะพื้นที่: ${chartFilterAreaType}`);
+    if(chartFilterAreaType !== "all") activeTexts.push(`พื้นที่: ${chartFilterAreaType}`);
+    if(document.getElementById('globalSearch').value !== "") activeTexts.push(`ค้นหาคำเฉพาะ`);
     
     let filterStr = activeTexts.length > 0 ? activeTexts.join(" | ") : "แสดงข้อมูลทั้งหมด (ไม่ได้เปิดการกรอง)";
-    document.getElementById('activeFiltersText').innerHTML = `<span style="color:#b45309;">${filterStr}</span> <span style="margin-left:15px; color:#1e3a8a;">(โหมด: ${currentMode === 'budget' ? 'รวมงบประมาณ' : 'นับจำนวนโครงการ'})</span>`;
+    document.getElementById('activeFiltersText').innerHTML = `<span style="color:#b45309;">${filterStr}</span>`;
 
     renderTable();
-    renderCharts(stratKey);
+    renderCharts(activeStrat.key);
     setTimeout(renderMap, 300); 
 }
 
@@ -225,6 +254,7 @@ function renderCharts(activeStrategyKey) {
     let integratedBudget = 0;
     let integratedBudgetDetails = {};
 
+    // อ่านข้อมูลจากคอลัมน์ยุทธศาสตร์ที่ถูกเลือก
     filteredData.forEach(row => {
         let rawProv = String(row[activeStrategyKey] || "ไม่ระบุ");
         let strategies = rawProv.split(",").map(s => s.trim()).filter(s => s !== "");
@@ -443,7 +473,7 @@ function renderMap() {
 }
 
 // ==========================================
-// 7. ตาราง & Modal 
+// 7. ตาราง & Modal
 // ==========================================
 function setProjectFilter(projName) { mapFilterProject = projName; mapFilterDistrict = "all"; chartFilterAreaType = "all"; closeModal(); applyFilters(); }
 
@@ -480,7 +510,7 @@ function openModal(idx) {
     let aLabel = aType === 'Single' ? " (เฉพาะพื้นที่)" : aType === 'Multi' ? " (หลายพื้นที่)" : aType === 'Provincial' ? " (ทั้งจังหวัด)" : " (ไม่ได้ระบุพื้นที่)";
     document.getElementById('modalAreaType').innerText = aType + aLabel;
 
-    // แก้บัค Modal: แปลง \n ให้กลายเป็น <br> เพื่อเคาะบรรทัดตาม Google Sheet 100%
+    // แก้บัค Modal: แปลง \n ให้กลายเป็น <br> เพื่อเคาะบรรทัดตาม Google Sheet
     const subDiv = document.getElementById('modalSubActivities');
     const rawSub = String(row["รายละเอียดย่อย"] || "");
     const cleanSub = rawSub.replace(/\r\n/g, "<br>").replace(/\n/g, "<br>").trim();
