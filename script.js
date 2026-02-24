@@ -22,10 +22,10 @@ let chartFilterAreaType = "all";
 let currentPage = 1;
 const rowsPerPage = 20;
 
-// 🎯 ตัวแปร Sorting แยกอิสระ 2 ตัว (Dual-Sorting)
-let isYearDesc = true;   // true = ใหม่ไปเก่า, false = เก่าไปใหม่
-let isBudgetDesc = true; // true = มากไปน้อย, false = น้อยไปมาก
-let primarySortKey = 'year'; // เก็บสถานะว่าปุ่มไหนเป็นแกนหลักตอนนี้
+// 🎯 ตัวแปร Sorting แยกอิสระ
+let isYearDesc = true;   
+let isBudgetDesc = true; 
+let primarySortKey = 'year'; 
 
 let currentStratFilterId = 'filterProv'; 
 const stratMapping = {
@@ -222,13 +222,11 @@ function clearAllFilters() {
 // ==========================================
 // 4. ระบบตาราง (Dual-Level Sorting)
 // ==========================================
-
 function handleTableSearch() {
     currentPage = 1; 
     renderTable();   
 }
 
-// 🎯 ฟังก์ชันจัดการปุ่มเรียง (กดอิสระ ไม่รีเซ็ตกัน)
 function toggleSort(type) {
     if (type === 'year') {
         if(primarySortKey === 'year') isYearDesc = !isYearDesc;
@@ -238,8 +236,8 @@ function toggleSort(type) {
         primarySortKey = 'budget';
     }
     
-    document.getElementById('btnSortYear').innerText = `📅 ปีงบประมาณ: ${isYearDesc ? '▼ ใหม่ไปเก่า' : '▲ เก่าไปใหม่'}`;
-    document.getElementById('btnSortBudget').innerText = `💰 งบประมาณ: ${isBudgetDesc ? '▼ มากไปน้อย' : '▲ น้อยไปมาก'}`;
+    document.getElementById('btnSortYear').innerText = `📅 ปีงบประมาณ: ${isYearDesc ? '▼ ใหม่ ➜ เก่า' : '▲ เก่า ➜ ใหม่'}`;
+    document.getElementById('btnSortBudget').innerText = `💰 งบประมาณ: ${isBudgetDesc ? '▼ มาก ➜ น้อย' : '▲ น้อย ➜ มาก'}`;
     
     document.getElementById('btnSortYear').classList.toggle('active', primarySortKey === 'year');
     document.getElementById('btnSortBudget').classList.toggle('active', primarySortKey === 'budget');
@@ -266,27 +264,25 @@ function renderTable() {
         return String(row["ชื่อโครงการ"] || "").toLowerCase().includes(tableSearchTxt);
     });
 
-    // 🎯 Logic การจัดเรียง
     tableData.sort((a, b) => {
         let yearA = parseInt(a._year) || 0;
         let yearB = parseInt(b._year) || 0;
         let budgetA = a._budgetNum;
         let budgetB = b._budgetNum;
 
-        // ถ้ากรองพื้นที่เจาะจง -> เรียงความเข้มข้นตรงกลาง
+        // 🎯 กรณีเจาะอำเภอ ให้ล็อก Area Type เป็นที่ 2 เสมอ
         if (mapFilterDistrict !== "all") {
-            // 1. เรียงปี
             if (yearA !== yearB) return isYearDesc ? yearB - yearA : yearA - yearB; 
-            // 2. ลักษณะพื้นที่
+            
             const typeOrder = { "Single": 1, "Multi": 2, "Provincial": 3, "ไม่ระบุ": 4 };
             let typeA = typeOrder[a._areaType] || 5;
             let typeB = typeOrder[b._areaType] || 5;
             if (typeA !== typeB) return typeA - typeB;
-            // 3. งบประมาณ
+            
             return isBudgetDesc ? budgetB - budgetA : budgetA - budgetB;
         }
 
-        // ดูภาพรวม
+        // กรณีปกติ เรียงตามปุ่มหลักก่อน แล้วปุ่มรอง
         if (primarySortKey === 'year') {
             if (yearA !== yearB) return isYearDesc ? yearB - yearA : yearA - yearB;
             return isBudgetDesc ? budgetB - budgetA : budgetA - budgetB; 
@@ -336,7 +332,7 @@ function renderTable() {
 }
 
 // ==========================================
-// 5. อัปเดต UI Dashboard & Dropdown จังหวัด
+// 5. อัปเดต UI & ตาราง Provincial Dropdown
 // ==========================================
 function updateDashboard() {
     document.getElementById('sumProjects').innerText = filteredData.length.toLocaleString();
@@ -383,7 +379,7 @@ function updateDashboard() {
     setTimeout(renderMap, 300); 
 }
 
-// 🎯 สร้างตารางยุทธศาสตร์ระดับจังหวัดแบบแยก Single/Joint และ Footer
+// 🎯 สร้างตารางยุทธศาสตร์ระดับจังหวัดแบบใหม่ + Footer
 function renderProvincialTable(activeStrat, selectedValue) {
     let provData = filteredData.filter(r => r._areaType === "Provincial");
     let stratStats = {};
@@ -417,7 +413,7 @@ function renderProvincialTable(activeStrat, selectedValue) {
             
             if (isSingle) {
                 stratStats[s].singleC += 1;
-                stratStats[s].singleB += row._budgetNum; // เก็บเฉพาะงบ Single
+                stratStats[s].singleB += row._budgetNum; 
             } else {
                 stratStats[s].jointC += 1;
             }
@@ -449,14 +445,20 @@ function renderProvincialTable(activeStrat, selectedValue) {
     }
     document.getElementById('provincialTableBody').innerHTML = tbodyHtml;
 
-    // 🎯 อัปเดต Footer (รวมยอด Joint)
-    document.getElementById('provJointCount').innerText = globalJointSet.size;
-    document.getElementById('provJointBudget').innerText = globalJointBudget.toLocaleString();
+    // 🎯 Footer สรุป Joint (มีเส้นคั่นเสมอ)
+    let footerHtml = `
+        <tr class="footer-row">
+            <td class="footer-label" style="text-align: right; padding-right: 15px;">สรุปรวมประเด็นที่ตอบสนองมากกว่า 1 เป้าหมาย</td>
+            <td style="text-align:center; padding:12px;"><b>${globalJointSet.size}</b></td>
+            <td style="text-align:right; padding:12px;"><b>${globalJointBudget.toLocaleString()}</b></td>
+        </tr>
+    `;
+    document.getElementById('provincialTableFooter').innerHTML = footerHtml;
 }
 
 
 // ==========================================
-// 5. วาดกราฟ (ย่อคำ + โชว์ %)
+// 5. วาดกราฟ (ย่อคำบนแกน + โชว์ % โดนัท)
 // ==========================================
 function renderCharts() {
     let activeStrategyKey = stratMapping[currentStratFilterId].key;
@@ -503,7 +505,7 @@ function renderCharts() {
     });
 
     let labels = sortedKeys;
-    // 🎯 ตัดคำให้ยาวไม่เกิน 35 ตัวอักษร
+    // 🎯 ระบบย่อคำบนกราฟ (ถ้าเกิน 35 ตัวอักษรให้ใส่ ...)
     let displayLabels = labels.map(k => k.length > 35 ? k.substring(0, 35) + "..." : k);
     
     if (chartType === 'bar') {
@@ -527,7 +529,7 @@ function renderCharts() {
         myChart = new Chart(ctxMain, {
             type: 'bar',
             data: {
-                labels: displayLabels, // ใช้ชื่อย่อบนแกน
+                labels: displayLabels,
                 datasets: [
                     { label: currentMode==='count' ? 'เฉพาะประเด็นเดียว (Single)' : 'งบประมาณ (เฉพาะประเด็นเดียว)', data: dataSingle, backgroundColor: '#3b82f6' },
                     { label: currentMode==='count' ? 'หลายประเด็น (Joint)' : 'งบประมาณ (หลายประเด็น)', data: dataJoint, backgroundColor: '#f59e0b' }
@@ -539,7 +541,7 @@ function renderCharts() {
                 plugins: { 
                     tooltip: { 
                         mode: 'index', intersect: false,
-                        callbacks: { title: function(ctx) { return labels[ctx[0].dataIndex]; } } // โชว์ชื่อเต็มใน Tooltip
+                        callbacks: { title: function(ctx) { return labels[ctx[0].dataIndex]; } } // Tooltip โชว์ชื่อเต็ม 100%
                     }, 
                     datalabels: { display: false } 
                 }
@@ -557,7 +559,7 @@ function renderCharts() {
             data.push(integratedBudget);
         }
 
-        // 🎯 เติม % ลงไปใน Legend ของ Donut
+        // 🎯 เติม % ลงไปใน Legend ให้อ่านง่าย
         let dataSum = data.reduce((a, b) => a + b, 0);
         let labelsWithPct = displayLabels.map((lbl, idx) => {
             let pct = dataSum > 0 ? ((data[idx] * 100) / dataSum).toFixed(1) : 0;
@@ -670,7 +672,7 @@ function renderCharts() {
 }
 
 // ==========================================
-// 6. แผนที่ Leaflet (Heatmap เฉพาะ Single + Multi ใน Count, Single ใน Budget)
+// 6. แผนที่ Leaflet (Heatmap: Count = Single+Multi, Budget = Single Only)
 // ==========================================
 function setDistrictFilter(dName) { 
     mapFilterDistrict = dName; 
@@ -778,10 +780,10 @@ function renderMap() {
                 let s = districtStats[dName] || {singleC: 0, singleB: 0, multiC: 0, multiB: 0, totalProjects: 0};
                 let color = '#FFEDA0';
                 
-                // 🎯 Heatmap Count: ใช้ Single+Multi | Heatmap Budget: ใช้เฉพาะ Single 100%
+                // 🎯 Heatmap: Count (Single+Multi), Budget (Single Only)
                 if (mapMode === 'overview') {
                     if (currentMode === 'budget') {
-                        let val = s.singleB; // สีงบตาม Single เท่านั้น ไม่หาร ไม่บวกเพิ่ม
+                        let val = s.singleB; // สีงบตาม Single เท่านั้น
                         color = val > 50000000 ? '#800026' : val > 10000000 ? '#BD0026' : val > 1000000 ? '#E31A1C' : val > 0 ? '#FC4E2A' : '#FFEDA0';
                     } else {
                         let val = s.singleC + s.multiC; // สีจำนวนโครงการใช้ Single+Multi
@@ -803,19 +805,18 @@ function renderMap() {
                 let popupHtml = `<div style="font-family:'Sarabun'; width: 290px;"><b style="font-size:16px; color:#1e3a8a;">📍 ข้อมูลอำเภอ${dName}</b><hr style="margin:5px 0;">`;
                 
                 if (mapMode === 'overview') {
-                    // 🎯 Popup อธิบายชัดเจนว่า Joint โชว์งบรวม แต่ไม่ระบายสี
+                    // 🎯 Popup โชว์ว่า Joint ไม่หารเงิน
                     popupHtml += `
                         <div style="font-size:13px; line-height: 1.4;">
-                            <b style="color:#10b981;">🎯 ดำเนินการเฉพาะอำเภอนี้ (Single)</b><br>
+                            <b style="color:#10b981;">🎯 ดำเนินการเฉพาะพื้นที่อำเภอนี้</b><br>
                             จำนวน: ${s.singleC} โครงการ<br>งบประมาณ: ${s.singleB.toLocaleString()} บาท<br>
                             <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
-                            <b style="color:#f59e0b;">📦 ดำเนินการร่วมกับอำเภออื่น (Multi)</b><br>
-                            จำนวนโครงการที่เกี่ยวข้อง: ${s.multiC} โครงการ<br>
-                            ยอดรวมงบประมาณโครงการ: ${s.multiB.toLocaleString()} บาท<br>
-                            <span style="color:#ef4444; font-size:11px;">(งบประมาณส่วนนี้เป็นยอดรวม ไม่ถูกนำมาหารและไม่ถูกนำมาคำนวณเพื่อระบายสีในแผนที่)</span><br>
+                            <b style="color:#f59e0b;">📦 ดำเนินการร่วมกับอำเภออื่น</b><br>
+                            จำนวนโครงการที่เกี่ยวข้อง: ${s.multiC} โครงการ<br>ยอดรวมงบประมาณโครงการ: ${s.multiB.toLocaleString()} บาท<br>
+                            <span style="color:#ef4444; font-size:11px;">(งบประมาณที่แสดงผลเป็นยอดรวมของโครงการ ไม่ถูกนำมาคำนวณและระบายสีรายอำเภอ)</span><br>
                             <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
-                            <b style="color:#ef4444;">🌐 ดำเนินการครอบคลุมทั้งจังหวัด (Provincial)</b><br>
-                            จำนวนโครงการที่ครอบคลุมถึง: ${s.provC} โครงการ<br>
+                            <b style="color:#ef4444;">🌐 ดำเนินการครอบคลุมทั้งจังหวัด</b><br>
+                            จำนวนโครงการที่ดำเนินการครอบคลุมถึง: ${s.provC} โครงการ<br>
                             <span style="color:#ef4444; font-size:11px;">(ไม่นำมาคำนวณความเข้มข้นในแผนที่)</span>
                         </div>
                     `;
