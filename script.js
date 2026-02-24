@@ -413,7 +413,7 @@ function renderProvincialTable(activeStrat, selectedValue) {
             
             if (isSingle) {
                 stratStats[s].singleC += 1;
-                stratStats[s].singleB += row._budgetNum; 
+                stratStats[s].singleB += row._budgetNum; // เก็บเฉพาะงบ Single
             } else {
                 stratStats[s].jointC += 1;
             }
@@ -445,20 +445,14 @@ function renderProvincialTable(activeStrat, selectedValue) {
     }
     document.getElementById('provincialTableBody').innerHTML = tbodyHtml;
 
-    // 🎯 Footer สรุป Joint (มีเส้นคั่นเสมอ)
-    let footerHtml = `
-        <tr class="footer-row">
-            <td class="footer-label" style="text-align: right; padding-right: 15px;">สรุปรวมประเด็นที่ตอบสนองมากกว่า 1 เป้าหมาย</td>
-            <td style="text-align:center; padding:12px;"><b>${globalJointSet.size}</b></td>
-            <td style="text-align:right; padding:12px;"><b>${globalJointBudget.toLocaleString()}</b></td>
-        </tr>
-    `;
-    document.getElementById('provincialTableFooter').innerHTML = footerHtml;
+    // 🎯 อัปเดต Footer (รวมยอด Joint)
+    document.getElementById('provJointCount').innerText = globalJointSet.size;
+    document.getElementById('provJointBudget').innerText = globalJointBudget.toLocaleString();
 }
 
 
 // ==========================================
-// 5. วาดกราฟ (ย่อคำบนแกน + โชว์ % โดนัท)
+// 5. วาดกราฟ (ย่อคำบนแกน + โชว์ % โดนัท + ตรวจจับ "ไม่ระบุ")
 // ==========================================
 function renderCharts() {
     let activeStrategyKey = stratMapping[currentStratFilterId].key;
@@ -474,9 +468,14 @@ function renderCharts() {
             if (foundKey) val = row[foundKey];
         }
 
-        let rawProv = (val && String(val).trim() !== "" && val !== "NaN" && val !== "-") ? String(val) : "ไม่ระบุข้อมูล";
-        let strategies = rawProv.split(",").map(s => s.trim()).filter(s => s !== "");
-        if (strategies.length === 0) strategies = ["ไม่ระบุข้อมูล"];
+        // 🎯 ตรวจจับข้อมูลที่เว้นว่าง, NaN, "-", "ไม่ระบุข้อมูล" และจัดให้เป็นหมวด "ไม่ระบุ"
+        let strVal = String(val).trim();
+        if (!val || strVal === "" || strVal === "NaN" || strVal === "undefined" || strVal === "-" || strVal === "ไม่ระบุข้อมูล") {
+            strVal = "ไม่ระบุ";
+        }
+
+        let strategies = strVal.split(",").map(s => s.trim()).filter(s => s !== "");
+        if (strategies.length === 0) strategies = ["ไม่ระบุ"];
         
         let isSingle = strategies.length === 1;
         
@@ -508,6 +507,9 @@ function renderCharts() {
     // 🎯 ระบบย่อคำบนกราฟ (ถ้าเกิน 35 ตัวอักษรให้ใส่ ...)
     let displayLabels = labels.map(k => k.length > 35 ? k.substring(0, 35) + "..." : k);
     
+    // 🎯 ชุดสีที่เยอะขึ้น รองรับแผนแม่บทที่มีถึง 23 ประเด็น
+    const pieColors = ['#1e3a8a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b', '#0ea5e9', '#14b8a6', '#f43f5e', '#d946ef', '#a855f7', '#6366f1', '#84cc16', '#eab308', '#f97316', '#06b6d4', '#059669', '#dc2626', '#7c3aed', '#475569', '#9ca3af', '#cbd5e1', '#1e40af', '#047857', '#b91c1c'];
+
     if (chartType === 'bar') {
         let dataSingle = [], dataJoint = [];
         labels.forEach(k => {
@@ -568,7 +570,7 @@ function renderCharts() {
         
         myChart = new Chart(ctxMain, {
             type: 'doughnut',
-            data: { labels: labelsWithPct, datasets: [{ data: data, backgroundColor: ['#1e3a8a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'] }] },
+            data: { labels: labelsWithPct, datasets: [{ data: data, backgroundColor: pieColors }] },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
                 plugins: { 
@@ -780,7 +782,7 @@ function renderMap() {
                 let s = districtStats[dName] || {singleC: 0, singleB: 0, multiC: 0, multiB: 0, totalProjects: 0};
                 let color = '#FFEDA0';
                 
-                // 🎯 Heatmap: Count (Single+Multi), Budget (Single Only)
+                // 🎯 Heatmap Count: ใช้ Single+Multi | Heatmap Budget: ใช้เฉพาะ Single 100%
                 if (mapMode === 'overview') {
                     if (currentMode === 'budget') {
                         let val = s.singleB; // สีงบตาม Single เท่านั้น
@@ -805,18 +807,19 @@ function renderMap() {
                 let popupHtml = `<div style="font-family:'Sarabun'; width: 290px;"><b style="font-size:16px; color:#1e3a8a;">📍 ข้อมูลอำเภอ${dName}</b><hr style="margin:5px 0;">`;
                 
                 if (mapMode === 'overview') {
-                    // 🎯 Popup โชว์ว่า Joint ไม่หารเงิน
+                    // 🎯 Popup อธิบายชัดเจนว่า Joint โชว์งบรวม แต่ไม่ระบายสี
                     popupHtml += `
                         <div style="font-size:13px; line-height: 1.4;">
-                            <b style="color:#10b981;">🎯 ดำเนินการเฉพาะพื้นที่อำเภอนี้</b><br>
+                            <b style="color:#10b981;">🎯 ดำเนินการเฉพาะอำเภอนี้ (Single)</b><br>
                             จำนวน: ${s.singleC} โครงการ<br>งบประมาณ: ${s.singleB.toLocaleString()} บาท<br>
                             <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
-                            <b style="color:#f59e0b;">📦 ดำเนินการร่วมกับอำเภออื่น</b><br>
-                            จำนวนโครงการที่เกี่ยวข้อง: ${s.multiC} โครงการ<br>ยอดรวมงบประมาณโครงการ: ${s.multiB.toLocaleString()} บาท<br>
-                            <span style="color:#ef4444; font-size:11px;">(งบประมาณที่แสดงผลเป็นยอดรวมของโครงการ ไม่ถูกนำมาคำนวณและระบายสีรายอำเภอ)</span><br>
+                            <b style="color:#f59e0b;">📦 ดำเนินการร่วมกับอำเภออื่น (Multi)</b><br>
+                            จำนวนโครงการที่เกี่ยวข้อง: ${s.multiC} โครงการ<br>
+                            ยอดรวมงบประมาณโครงการ: ${s.multiB.toLocaleString()} บาท<br>
+                            <span style="color:#ef4444; font-size:11px;">(งบประมาณส่วนนี้เป็นยอดรวม ไม่ถูกนำมาหารและไม่ถูกนำมาคำนวณเพื่อระบายสีในแผนที่)</span><br>
                             <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
-                            <b style="color:#ef4444;">🌐 ดำเนินการครอบคลุมทั้งจังหวัด</b><br>
-                            จำนวนโครงการที่ดำเนินการครอบคลุมถึง: ${s.provC} โครงการ<br>
+                            <b style="color:#ef4444;">🌐 ดำเนินการครอบคลุมทั้งจังหวัด (Provincial)</b><br>
+                            จำนวนโครงการที่ครอบคลุมถึง: ${s.provC} โครงการ<br>
                             <span style="color:#ef4444; font-size:11px;">(ไม่นำมาคำนวณความเข้มข้นในแผนที่)</span>
                         </div>
                     `;
