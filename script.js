@@ -22,9 +22,10 @@ let chartFilterAreaType = "all";
 let currentPage = 1;
 const rowsPerPage = 20;
 
-// 🎯 ตัวแปร Sorting แยกอิสระ 2 ตัว
-let isYearDesc = true;   // Default: ปีใหม่ -> เก่า
-let isBudgetDesc = true; // Default: งบมาก -> น้อย
+// 🎯 ตัวแปร Sorting แยกอิสระ 2 ตัว (Dual-Sorting)
+let isYearDesc = true;   // true = ใหม่ไปเก่า, false = เก่าไปใหม่
+let isBudgetDesc = true; // true = มากไปน้อย, false = น้อยไปมาก
+let primarySortKey = 'year'; // เก็บสถานะว่าปุ่มไหนเป็นแกนหลักตอนนี้
 
 let currentStratFilterId = 'filterProv'; 
 const stratMapping = {
@@ -219,7 +220,7 @@ function clearAllFilters() {
 }
 
 // ==========================================
-// 4. ระบบตาราง (Sorting อิสระ 2 ตัว, Pagination)
+// 4. ระบบตาราง (Dual-Level Sorting)
 // ==========================================
 
 function handleTableSearch() {
@@ -227,17 +228,22 @@ function handleTableSearch() {
     renderTable();   
 }
 
-// 🎯 ฟังก์ชัน Toggle แบบอิสระ ไม่รีเซ็ตกัน
+// 🎯 ฟังก์ชันจัดการปุ่มเรียง (กดอิสระ ไม่รีเซ็ตกัน)
 function toggleSort(type) {
     if (type === 'year') {
-        isYearDesc = !isYearDesc;
-        document.getElementById('btnSortYear').innerText = `📅 ปีงบประมาณ: ${isYearDesc ? '▼ ใหม่-เก่า' : '▲ เก่า-ใหม่'}`;
+        if(primarySortKey === 'year') isYearDesc = !isYearDesc;
+        primarySortKey = 'year';
     } else if (type === 'budget') {
-        isBudgetDesc = !isBudgetDesc;
-        document.getElementById('btnSortBudget').innerText = `💰 งบประมาณ: ${isBudgetDesc ? '▼ มาก-น้อย' : '▲ น้อย-มาก'}`;
+        if(primarySortKey === 'budget') isBudgetDesc = !isBudgetDesc;
+        primarySortKey = 'budget';
     }
     
-    // เรียก renderTable เพื่อจัดเรียงใหม่ตาม State ล่าสุด
+    document.getElementById('btnSortYear').innerText = `📅 ปีงบประมาณ: ${isYearDesc ? '▼ ใหม่ไปเก่า' : '▲ เก่าไปใหม่'}`;
+    document.getElementById('btnSortBudget').innerText = `💰 งบประมาณ: ${isBudgetDesc ? '▼ มากไปน้อย' : '▲ น้อยไปมาก'}`;
+    
+    document.getElementById('btnSortYear').classList.toggle('active', primarySortKey === 'year');
+    document.getElementById('btnSortBudget').classList.toggle('active', primarySortKey === 'budget');
+    
     renderTable();
 }
 
@@ -260,33 +266,33 @@ function renderTable() {
         return String(row["ชื่อโครงการ"] || "").toLowerCase().includes(tableSearchTxt);
     });
 
-    // 🎯 Logic การเรียงแบบซ้อนทับ (And)
+    // 🎯 Logic การจัดเรียง
     tableData.sort((a, b) => {
         let yearA = parseInt(a._year) || 0;
         let yearB = parseInt(b._year) || 0;
         let budgetA = a._budgetNum;
         let budgetB = b._budgetNum;
 
-        // ถ้ากรองอำเภอ -> ต้องเอาความเข้มข้นพื้นที่มาก่อน
+        // ถ้ากรองพื้นที่เจาะจง -> เรียงความเข้มข้นตรงกลาง
         if (mapFilterDistrict !== "all") {
-            // 1. ปีงบประมาณ (ตาม Toggle)
-            if (yearA !== yearB) return isYearDesc ? yearA - yearB : yearB - yearA; 
-            
-            // 2. ลักษณะพื้นที่ (Fix: Single -> Multi -> Prov)
+            // 1. เรียงปี
+            if (yearA !== yearB) return isYearDesc ? yearB - yearA : yearA - yearB; 
+            // 2. ลักษณะพื้นที่
             const typeOrder = { "Single": 1, "Multi": 2, "Provincial": 3, "ไม่ระบุ": 4 };
             let typeA = typeOrder[a._areaType] || 5;
             let typeB = typeOrder[b._areaType] || 5;
             if (typeA !== typeB) return typeA - typeB;
-            
-            // 3. งบประมาณ (ตาม Toggle)
+            // 3. งบประมาณ
             return isBudgetDesc ? budgetB - budgetA : budgetA - budgetB;
         }
 
-        // ถ้าดูภาพรวม -> เรียงปี แล้วค่อยเรียงงบในเปีนั้น
-        if (yearA !== yearB) {
-            return isYearDesc ? yearB - yearA : yearA - yearB;
+        // ดูภาพรวม
+        if (primarySortKey === 'year') {
+            if (yearA !== yearB) return isYearDesc ? yearB - yearA : yearA - yearB;
+            return isBudgetDesc ? budgetB - budgetA : budgetA - budgetB; 
         } else {
-            return isBudgetDesc ? budgetB - budgetA : budgetA - budgetB;
+            if (budgetA !== budgetB) return isBudgetDesc ? budgetB - budgetA : budgetA - budgetB;
+            return isYearDesc ? yearB - yearA : yearA - yearB;
         }
     });
 
@@ -373,11 +379,11 @@ function updateDashboard() {
     document.getElementById('activeFiltersText').innerHTML = `<div style="margin-bottom:6px;"><strong>🔍 สถานะการกรองข้อมูลปัจจุบัน:</strong> ${mainStratStatus}</div><div style="font-size:13px;"><strong>เงื่อนไขการกรองเพิ่มเติม:</strong> ${filterStr === "" ? "ไม่มี" : filterStr.substring(3)}</div>`;
 
     renderProvincialTable(activeStrat, selectedValue);
-    renderCharts(activeStrat.key);
+    renderCharts();
     setTimeout(renderMap, 300); 
 }
 
-// 🎯 สร้างตารางยุทธศาสตร์ระดับจังหวัดแบบ Single/Joint 분리
+// 🎯 สร้างตารางยุทธศาสตร์ระดับจังหวัดแบบแยก Single/Joint และ Footer
 function renderProvincialTable(activeStrat, selectedValue) {
     let provData = filteredData.filter(r => r._areaType === "Provincial");
     let stratStats = {};
@@ -411,7 +417,7 @@ function renderProvincialTable(activeStrat, selectedValue) {
             
             if (isSingle) {
                 stratStats[s].singleC += 1;
-                stratStats[s].singleB += row._budgetNum; 
+                stratStats[s].singleB += row._budgetNum; // เก็บเฉพาะงบ Single
             } else {
                 stratStats[s].jointC += 1;
             }
@@ -443,24 +449,17 @@ function renderProvincialTable(activeStrat, selectedValue) {
     }
     document.getElementById('provincialTableBody').innerHTML = tbodyHtml;
 
-    // 🎯 Footer สรุป Joint
-    let footerHtml = `
-        <tr class="footer-row">
-            <td class="footer-label">สรุปรวมประเด็นที่ตอบสนองมากกว่า 1 เป้าหมาย</td>
-            <td style="text-align:center; padding:12px;"><b>${globalJointSet.size}</b></td>
-            <td style="text-align:right; padding:12px;"><b>${globalJointBudget.toLocaleString()}</b></td>
-        </tr>
-    `;
-    document.getElementById('provincialTableFooter').innerHTML = footerHtml;
+    // 🎯 อัปเดต Footer (รวมยอด Joint)
+    document.getElementById('provJointCount').innerText = globalJointSet.size;
+    document.getElementById('provJointBudget').innerText = globalJointBudget.toLocaleString();
 }
 
 
 // ==========================================
-// 5. วาดกราฟ 
+// 5. วาดกราฟ (ย่อคำ + โชว์ %)
 // ==========================================
-function renderCharts(activeStrategyKey) {
-    if(!activeStrategyKey) activeStrategyKey = stratMapping[currentStratFilterId].key;
-    
+function renderCharts() {
+    let activeStrategyKey = stratMapping[currentStratFilterId].key;
     let stratData = {};
     let integratedBudget = 0;
     
@@ -504,7 +503,8 @@ function renderCharts(activeStrategyKey) {
     });
 
     let labels = sortedKeys;
-    let displayLabels = labels.map(k => k.length > 40 ? k.substring(0, 40) + "..." : k);
+    // 🎯 ตัดคำให้ยาวไม่เกิน 35 ตัวอักษร
+    let displayLabels = labels.map(k => k.length > 35 ? k.substring(0, 35) + "..." : k);
     
     if (chartType === 'bar') {
         let dataSingle = [], dataJoint = [];
@@ -527,7 +527,7 @@ function renderCharts(activeStrategyKey) {
         myChart = new Chart(ctxMain, {
             type: 'bar',
             data: {
-                labels: displayLabels,
+                labels: displayLabels, // ใช้ชื่อย่อบนแกน
                 datasets: [
                     { label: currentMode==='count' ? 'เฉพาะประเด็นเดียว (Single)' : 'งบประมาณ (เฉพาะประเด็นเดียว)', data: dataSingle, backgroundColor: '#3b82f6' },
                     { label: currentMode==='count' ? 'หลายประเด็น (Joint)' : 'งบประมาณ (หลายประเด็น)', data: dataJoint, backgroundColor: '#f59e0b' }
@@ -539,7 +539,7 @@ function renderCharts(activeStrategyKey) {
                 plugins: { 
                     tooltip: { 
                         mode: 'index', intersect: false,
-                        callbacks: { title: function(ctx) { return labels[ctx[0].dataIndex]; } }
+                        callbacks: { title: function(ctx) { return labels[ctx[0].dataIndex]; } } // โชว์ชื่อเต็มใน Tooltip
                     }, 
                     datalabels: { display: false } 
                 }
@@ -557,6 +557,7 @@ function renderCharts(activeStrategyKey) {
             data.push(integratedBudget);
         }
 
+        // 🎯 เติม % ลงไปใน Legend ของ Donut
         let dataSum = data.reduce((a, b) => a + b, 0);
         let labelsWithPct = displayLabels.map((lbl, idx) => {
             let pct = dataSum > 0 ? ((data[idx] * 100) / dataSum).toFixed(1) : 0;
@@ -574,7 +575,7 @@ function renderCharts(activeStrategyKey) {
                         callbacks: {
                             label: function(ctx) {
                                 let pct = dataSum > 0 ? ((ctx.raw * 100) / dataSum).toFixed(1) : 0;
-                                let k = labels[ctx.dataIndex]; 
+                                let k = labels[ctx.dataIndex]; // ดึงชื่อเต็มมาโชว์ใน Tooltip
                                 if(currentMode === 'count') {
                                     return ` ${k}: ${ctx.raw} โครงการ (${pct}%) | ประเด็นเดียว: ${stratData[k]?.singleC || 0}, หลายประเด็น: ${stratData[k]?.jointC || 0}`;
                                 } else {
@@ -777,17 +778,17 @@ function renderMap() {
                 let s = districtStats[dName] || {singleC: 0, singleB: 0, multiC: 0, multiB: 0, totalProjects: 0};
                 let color = '#FFEDA0';
                 
-                // 🎯 Heatmap: Count (Single+Multi), Budget (Single Only)
+                // 🎯 Heatmap Count: ใช้ Single+Multi | Heatmap Budget: ใช้เฉพาะ Single 100%
                 if (mapMode === 'overview') {
                     if (currentMode === 'budget') {
-                        let val = s.singleB; // สีงบตาม Single เท่านั้น
+                        let val = s.singleB; // สีงบตาม Single เท่านั้น ไม่หาร ไม่บวกเพิ่ม
                         color = val > 50000000 ? '#800026' : val > 10000000 ? '#BD0026' : val > 1000000 ? '#E31A1C' : val > 0 ? '#FC4E2A' : '#FFEDA0';
                     } else {
                         let val = s.singleC + s.multiC; // สีจำนวนโครงการใช้ Single+Multi
                         color = val > 10 ? '#800026' : val > 5 ? '#BD0026' : val > 2 ? '#E31A1C' : val > 0 ? '#FC4E2A' : '#FFEDA0';
                     }
                 } else {
-                    let val = s.totalProjects; // 4D Mode
+                    let val = isSpecificStrat ? (s.matrix.single_single + s.matrix.multi_single + s.matrix.single_joint + s.matrix.multi_joint) : s.totalProjects;
                     if (val > 15) color = '#800026';
                     else if (val > 8) color = '#BD0026';
                     else if (val > 3) color = '#E31A1C';
@@ -802,17 +803,19 @@ function renderMap() {
                 let popupHtml = `<div style="font-family:'Sarabun'; width: 290px;"><b style="font-size:16px; color:#1e3a8a;">📍 ข้อมูลอำเภอ${dName}</b><hr style="margin:5px 0;">`;
                 
                 if (mapMode === 'overview') {
+                    // 🎯 Popup อธิบายชัดเจนว่า Joint โชว์งบรวม แต่ไม่ระบายสี
                     popupHtml += `
                         <div style="font-size:13px; line-height: 1.4;">
-                            <b style="color:#10b981;">🎯 ดำเนินการเฉพาะพื้นที่อำเภอนี้</b><br>
+                            <b style="color:#10b981;">🎯 ดำเนินการเฉพาะอำเภอนี้ (Single)</b><br>
                             จำนวน: ${s.singleC} โครงการ<br>งบประมาณ: ${s.singleB.toLocaleString()} บาท<br>
                             <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
-                            <b style="color:#f59e0b;">📦 ดำเนินการร่วมกับอำเภออื่น</b><br>
-                            จำนวนโครงการที่เกี่ยวข้อง: ${s.multiC} โครงการ<br>ยอดรวมงบประมาณโครงการ: ${s.multiB.toLocaleString()} บาท<br>
-                            <span style="color:#ef4444; font-size:11px; margin-top:2px;">(งบประมาณที่แสดงผลเป็นยอดรวมของโครงการ ไม่ถูกนำมาคำนวณและระบายสีรายอำเภอ)</span><br>
+                            <b style="color:#f59e0b;">📦 ดำเนินการร่วมกับอำเภออื่น (Multi)</b><br>
+                            จำนวนโครงการที่เกี่ยวข้อง: ${s.multiC} โครงการ<br>
+                            ยอดรวมงบประมาณโครงการ: ${s.multiB.toLocaleString()} บาท<br>
+                            <span style="color:#ef4444; font-size:11px;">(งบประมาณส่วนนี้เป็นยอดรวม ไม่ถูกนำมาหารและไม่ถูกนำมาคำนวณเพื่อระบายสีในแผนที่)</span><br>
                             <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
-                            <b style="color:#ef4444;">🌐 ดำเนินการครอบคลุมทั้งจังหวัด</b><br>
-                            จำนวนโครงการที่ดำเนินการครอบคลุมถึง: ${s.provC} โครงการ<br>
+                            <b style="color:#ef4444;">🌐 ดำเนินการครอบคลุมทั้งจังหวัด (Provincial)</b><br>
+                            จำนวนโครงการที่ครอบคลุมถึง: ${s.provC} โครงการ<br>
                             <span style="color:#ef4444; font-size:11px;">(ไม่นำมาคำนวณความเข้มข้นในแผนที่)</span>
                         </div>
                     `;
@@ -843,7 +846,7 @@ function renderMap() {
                     }
                 }
                 
-                popupHtml += `<button onclick="setDistrictFilter('${dName}')" style="margin-top:10px; width:100%; padding:6px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer;">🔍 กรองข้อมูลเฉพาะอำเภอนี้</button></div>`;
+                popupHtml += `<button type="button" onclick="setDistrictFilter('${dName}')" style="margin-top:10px; width:100%; padding:6px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer;">🔍 กรองข้อมูลเฉพาะอำเภอนี้</button></div>`;
                 
                 l.bindPopup(popupHtml);
                 l.on('mouseover', e => { e.target.setStyle({weight: 3, color: '#f59e0b'}); e.target.bringToFront(); });
