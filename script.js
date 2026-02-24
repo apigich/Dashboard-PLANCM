@@ -6,7 +6,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycby4zmatIMhxh2K4PIiabU5q
 let masterData = [];   
 let filteredData = []; 
 let currentMode = 'count'; 
-let myChart = null; // กราฟยุทธศาสตร์ (สลับแท่ง/โดนัท)
+let myChart = null; 
 let areaChart = null;
 let trendChart = null;
 let map = null;
@@ -17,7 +17,7 @@ let mapFilterProject = "all";
 let chartFilterAreaType = "all"; 
 let sortAscending = false; 
 
-// ตัวจำสถานะยุทธศาสตร์ 
+// ตัวจำสถานะยุทธศาสตร์ (ค่าเริ่มต้น: แผนจังหวัด)
 let currentStratFilterId = 'filterProv'; 
 const stratMapping = {
     'filterNat': { key: 'ยุทธศาสตร์ชาติ 20 ปี', name: 'ยุทธศาสตร์ชาติ 20 ปี' },
@@ -53,6 +53,7 @@ function buildStaticSlicers() {
     document.getElementById('modeSwitch').addEventListener('change', (e) => { currentMode = e.target.checked ? 'budget' : 'count'; updateDashboard(); });
 }
 
+// ฟังก์ชัน "กรองเฉพาะด้านนี้" 
 function exclusiveFilter(targetId) {
     currentStratFilterId = targetId;
     const slicerIds = ['filterNat', 'filterMaster', 'filterPlan13', 'filterNorth', 'filterProv'];
@@ -65,18 +66,21 @@ function exclusiveFilter(targetId) {
 function clearAreaFilter() { chartFilterAreaType = "all"; applyFilters(); }
 
 // ==========================================
-// 2. ดึงข้อมูล (ดักบัคขั้นสูง)
+// 2. ดึงข้อมูล (ดักบัคขั้นสุด: ข้ามบรรทัดว่าง)
 // ==========================================
 async function init() {
     buildStaticSlicers(); 
 
     try {
         const response = await fetch(API_URL);
-        masterData = await response.json();
-        if (!Array.isArray(masterData)) throw new Error("ข้อมูลขัดข้อง กรุณาเช็ค API");
+        const rawData = await response.json();
+        if (!Array.isArray(rawData)) throw new Error("ข้อมูลขัดข้อง กรุณาเช็ค API");
 
         const years = new Set();
-        masterData.forEach(row => {
+        
+        // วนลูปและเช็คว่าบรรทัดนั้นมีข้อมูลจริงๆ (ชื่อโครงการไม่ว่าง) เพื่อกันบัค NaN ท้ายไฟล์ Excel
+        masterData = rawData.filter(row => row["ชื่อโครงการ"] && String(row["ชื่อโครงการ"]).trim() !== "").map(row => {
+            
             // งบประมาณ
             let budgetRaw = row["งบประมาณ (ตัวเลข)"] || row["งบประมาณ"] || "0";
             row._budgetNum = parseFloat(String(budgetRaw).replace(/,/g, '')) || 0;
@@ -101,6 +105,8 @@ async function init() {
             else if (row._cleanArea.includes(",")) { row._areaType = "Multi"; row._areaList = row._cleanArea.split(",").map(a => a.trim()).filter(a => a !== ""); }
             else if (row._cleanArea === "ไม่ระบุ" || row._cleanArea === "-") { row._areaType = "ไม่ระบุ"; row._areaList = ["ไม่ระบุข้อมูลพื้นที่"]; }
             else { row._areaType = "Single"; row._areaList = [row._cleanArea]; }
+            
+            return row;
         });
 
         const yearBox = document.getElementById('yearCheckboxes');
@@ -248,8 +254,10 @@ function renderCharts() {
     let integratedBudget = 0;
     let integratedBudgetDetails = {};
 
+    // อ่านข้อมูลจากคอลัมน์ยุทธศาสตร์ที่ถูกเลือก
     filteredData.forEach(row => {
         let val = row[activeStrategyKey];
+        // แก้บัคไม่ระบุ
         let rawProv = (val && String(val).trim() !== "" && val !== "NaN" && val !== "-") ? String(val) : "ไม่ระบุ";
         
         let strategies = rawProv.split(",").map(s => s.trim()).filter(s => s !== "");
@@ -361,31 +369,43 @@ function renderCharts() {
         });
     }
 
-    // โดนัท พื้นที่
+    // 5.3 Area Doughnut
     const ctxArea = document.getElementById('areaChart');
     let areaCounts = { 'Single': 0, 'Multi': 0, 'Provincial': 0, 'ไม่ระบุ': 0 };
     filteredData.forEach(row => { areaCounts[row._areaType] += (currentMode === 'budget' ? row._budgetNum : 1); });
+
+    // เอาข้อมูลที่ไม่ระบุออกถ้าเป็น 0
+    let aLabels = ['Single (เฉพาะพื้นที่)', 'Multi (หลายอำเภอ)', 'Provincial (ทั้งจังหวัด)'];
+    let aData = [areaCounts['Single'], areaCounts['Multi'], areaCounts['Provincial']];
+    let aColors = ['#10b981', '#f59e0b', '#ef4444'];
+    
+    if (areaCounts['ไม่ระบุ'] > 0) {
+        aLabels.push('ไม่ระบุ');
+        aData.push(areaCounts['ไม่ระบุ']);
+        aColors.push('#9ca3af');
+    }
 
     if (areaChart) areaChart.destroy();
     areaChart = new Chart(ctxArea, {
         type: 'doughnut',
         data: {
-            labels: ['Single (เฉพาะพื้นที่)', 'Multi (หลายอำเภอ)', 'Provincial (ทั้งจังหวัด)', 'ไม่ระบุ'],
-            datasets: [{ data: [areaCounts['Single'], areaCounts['Multi'], areaCounts['Provincial'], areaCounts['ไม่ระบุ']], backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#9ca3af'] }]
+            labels: aLabels,
+            datasets: [{ data: aData, backgroundColor: aColors }]
         },
         options: { 
             responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } },
             onClick: (e, elements) => {
                 if(elements.length > 0) {
                     const idx = elements[0].index;
-                    chartFilterAreaType = ['Single', 'Multi', 'Provincial', 'ไม่ระบุ'][idx];
+                    let selectedLabel = aLabels[idx].split(" ")[0]; // เอาคำว่า Single, Multi ออกมา
+                    chartFilterAreaType = selectedLabel;
                     applyFilters();
                 }
             }
         }
     });
 
-    // กราฟ Trend
+    // 5.4 Trend Chart
     const ctxTrend = document.getElementById('trendChart');
     let yearCounts = {};
     filteredData.forEach(row => {
@@ -469,7 +489,7 @@ function renderMap() {
 }
 
 // ==========================================
-// 7. ตาราง & Modal 
+// 7. ตาราง & Modal
 // ==========================================
 function setProjectFilter(projName) { mapFilterProject = projName; mapFilterDistrict = "all"; chartFilterAreaType = "all"; closeModal(); applyFilters(); }
 
@@ -506,12 +526,12 @@ function openModal(idx) {
     let aLabel = aType === 'Single' ? " (เฉพาะพื้นที่)" : aType === 'Multi' ? " (หลายพื้นที่)" : aType === 'Provincial' ? " (ทั้งจังหวัด)" : " (ไม่ได้ระบุพื้นที่)";
     document.getElementById('modalAreaType').innerText = aType + aLabel;
 
-    // ระบบเว้นบรรทัดรายละเอียดย่อย
+    // แก้บัค Modal: แปลง \n และเว้นวรรคให้ถูกต้อง
     const subDiv = document.getElementById('modalSubActivities');
     const rawSub = String(row["รายละเอียดย่อย"] || "");
-    const cleanSub = rawSub.replace(/\r\n/g, "<br>").replace(/\n/g, "<br>").trim();
+    const cleanSub = rawSub.replace(/\n/g, "<br>").trim();
     
-    subDiv.innerHTML = (!cleanSub || cleanSub === "undefined" || cleanSub === "") ? "<p style='color:gray;'>- ไม่มีข้อมูลรายละเอียด -</p>" : `<div class="sub-activity-box">${cleanSub}</div>`;
+    subDiv.innerHTML = (!cleanSub || cleanSub === "undefined" || cleanSub === "NaN" || cleanSub === "") ? "<p style='color:gray;'>- ไม่มีข้อมูลรายละเอียด -</p>" : `<div class="sub-activity-box">${cleanSub}</div>`;
     
     document.getElementById('modalFilterBtnContainer').innerHTML = `<button class="btn-filter-project" onclick="setProjectFilter(\`${row["ชื่อโครงการ"]}\`)">📍 กดเพื่อแสดงพื้นที่ดำเนินการของโครงการนี้บนแผนที่</button>`;
 
