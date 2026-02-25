@@ -1,6 +1,10 @@
 // ==========================================
-// 🚨 เปลี่ยน URL เป็นของคุณที่นี่
+// 🛡️ Safe Setters (ป้องกัน Error Cannot set properties of null 100%)
 // ==========================================
+const safeSetText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
+const safeSetHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+
+// 🚨 เปลี่ยน URL เป็นของคุณที่นี่
 const API_URL = "https://script.google.com/macros/s/AKfycby4zmatIMhxh2K4PIiabU5qhgEiJT2RMWhY7N_0TGi9DalIfrGsthWd_6NXj62UQrhc/exec";
 
 Chart.register(ChartDataLabels);
@@ -24,9 +28,11 @@ const rowsPerPage = 20;
 
 let isYearDesc = true;   
 let isBudgetDesc = true; 
-let primarySortKey = 'year'; 
 
 let currentStratFilterId = 'filterProv'; 
+
+let districtGeoJSON = null; 
+let renderMapTimer = null;
 
 const STRAT_MASTER_LISTS = {
     filterNat: ["ด้าน 1 ความมั่นคง", "ด้าน 2 การสร้างความสามารถในการแข่งขัน", "ด้าน 3 การพัฒนาและเสริมสร้างศักยภาพทรัพยากรมนุษย์", "ด้าน 4 การสร้างโอกาสและความเสมอภาคทางสังคม", "ด้าน 5 การสร้างการเติบโตบนคุณภาพชีวิตที่เป็นมิตรกับสิ่งแวดล้อม", "ด้าน 6 การปรับสมดุลและพัฒนาระบบการบริหารจัดการภาครัฐ"],
@@ -45,9 +51,14 @@ const stratMapping = {
 };
 
 const checkList = document.getElementById('yearDropdown');
-checkList.getElementsByClassName('anchor')[0].onclick = function(evt) {
-    if (checkList.classList.contains('visible')) checkList.classList.remove('visible');
-    else checkList.classList.add('visible');
+if(checkList) {
+    let anchor = checkList.getElementsByClassName('anchor')[0];
+    if(anchor) {
+        anchor.onclick = function(evt) {
+            if (checkList.classList.contains('visible')) checkList.classList.remove('visible');
+            else checkList.classList.add('visible');
+        }
+    }
 }
 
 function buildStaticSlicers() {
@@ -55,13 +66,19 @@ function buildStaticSlicers() {
         const select = document.getElementById(id);
         if(select) options.forEach(opt => select.innerHTML += `<option value="${opt}">${opt}</option>`);
     }
-    document.getElementById('modeSwitch').addEventListener('change', (e) => { currentMode = e.target.checked ? 'budget' : 'count'; updateDashboard(); });
+    const modeSwitch = document.getElementById('modeSwitch');
+    if(modeSwitch) {
+        modeSwitch.addEventListener('change', (e) => { currentMode = e.target.checked ? 'budget' : 'count'; updateDashboard(); });
+    }
 }
 
 function exclusiveFilter(targetId) {
     currentStratFilterId = targetId; 
     const slicerIds = ['filterNat', 'filterMaster', 'filterPlan13', 'filterNorth', 'filterProv'];
-    slicerIds.forEach(id => { document.getElementById(id).value = "all"; });
+    slicerIds.forEach(id => { 
+        let el = document.getElementById(id);
+        if(el) el.value = "all"; 
+    });
     applyFilters();
 }
 
@@ -84,21 +101,22 @@ function resetMapView() {
 function toggleProvincialTable() {
     const dd = document.getElementById('provincialDropdown');
     const bar = document.getElementById('provincialStatusBar');
-    if (dd.style.display === 'none' || dd.style.display === '') {
-        dd.style.display = 'block';
-        bar.classList.add('open');
-    } else {
-        dd.style.display = 'none';
-        bar.classList.remove('open');
+    if(dd && bar) {
+        if (dd.style.display === 'none' || dd.style.display === '') {
+            dd.style.display = 'block';
+            bar.classList.add('open');
+        } else {
+            dd.style.display = 'none';
+            bar.classList.remove('open');
+        }
     }
 }
 
 function toggleSummaryBreakdown(id) {
     const el = document.getElementById(id);
-    el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+    if(el) el.style.display = (el.style.display === 'block') ? 'none' : 'block';
 }
 
-// 🎯 โค้ดดึงข้อมูลแบบดั้งเดิมที่ปลอดภัยที่สุด (ลบระบบ Cache แปลกๆ ออกทั้งหมด)
 async function init() {
     buildStaticSlicers(); 
 
@@ -106,6 +124,11 @@ async function init() {
         const response = await fetch(API_URL);
         const rawData = await response.json();
         if (!Array.isArray(rawData)) throw new Error("ข้อมูลขัดข้อง กรุณาตรวจสอบการเชื่อมต่อ API");
+
+        try {
+            const geoRes = await fetch("districts.json");
+            districtGeoJSON = await geoRes.json();
+        } catch(e) { console.warn("ไม่สามารถโหลดแผนที่ได้: ", e); }
 
         const years = new Set();
         masterData = rawData.filter(row => row["ชื่อโครงการ"] && String(row["ชื่อโครงการ"]).trim() !== "").map(row => {
@@ -139,17 +162,32 @@ async function init() {
         let sortedYears = [...years].sort((a,b) => b-a); 
         let maxYear = sortedYears.length > 0 ? sortedYears[0] : null;
 
-        sortedYears.forEach(y => {
-            let isChecked = (y === maxYear) ? 'checked' : '';
-            yearBox.innerHTML += `<li><input type="checkbox" class="year-cb" value="${y}" ${isChecked} onchange="handleYearChange()"> <span>ปีงบประมาณ ${y}</span></li>`;
-        });
-        document.getElementById('checkAllYears').checked = false;
+        if(yearBox) {
+            sortedYears.forEach(y => {
+                let isChecked = (y === maxYear) ? 'checked' : '';
+                yearBox.innerHTML += `<li><input type="checkbox" class="year-cb" value="${y}" ${isChecked} onchange="handleYearChange()"> <span>ปีงบประมาณ ${y}</span></li>`;
+            });
+        }
+        
+        let checkAll = document.getElementById('checkAllYears');
+        if(checkAll) checkAll.checked = false;
 
         filteredData = [...masterData];
         applyFilters(); 
 
+        const loader = document.getElementById('loadingOverlay');
+        if(loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
+        }
+
     } catch (error) {
-        document.getElementById('tableBody').innerHTML = `<tr><td colspan="4" style="color:red; text-align:center; padding: 30px;"><b>❌ เกิดข้อผิดพลาดในการโหลดข้อมูล</b><br>${error.message}</td></tr>`;
+        let loader = document.getElementById('loadingOverlay');
+        if(loader) {
+            loader.innerHTML = `<h3 style="color:red; font-family:'Sarabun';">❌ เกิดข้อผิดพลาด</h3><p style="font-family:'Sarabun';">${error.message}</p><button onclick="location.reload()" style="padding:10px; margin-top:10px; font-family:'Sarabun';">ลองใหม่อีกครั้ง</button>`;
+        } else {
+            safeSetHTML('tableBody', `<tr><td colspan="4" style="color:red; text-align:center; padding: 30px;"><b>❌ เกิดข้อผิดพลาดในการโหลดข้อมูล</b><br>${error.message}</td></tr>`);
+        }
     }
 }
 
@@ -161,7 +199,8 @@ function toggleAllYears(sourceCb) {
 
 function handleYearChange() {
     let allChecked = document.querySelectorAll('.year-cb:checked').length === document.querySelectorAll('.year-cb').length;
-    document.getElementById('checkAllYears').checked = allChecked;
+    let checkAll = document.getElementById('checkAllYears');
+    if(checkAll) checkAll.checked = allChecked;
     applyFilters();
 }
 
@@ -173,12 +212,11 @@ function resetPageAndFilter() {
 function updateYearDropdownLabel() {
     const selectedCbs = Array.from(document.querySelectorAll('.year-cb:checked'));
     const selectedYears = selectedCbs.map(cb => parseInt(cb.value)).sort((a,b) => a-b);
-    const label = document.getElementById('yearDropdownText');
     
     if (selectedYears.length === 0) {
-        label.innerHTML = "📅 กรุณาเลือกปีงบประมาณ";
+        safeSetHTML('yearDropdownText', "📅 กรุณาเลือกปีงบประมาณ");
     } else if (selectedYears.length === 1) {
-        label.innerHTML = `📅 ปีงบประมาณ <b>${selectedYears[0]}</b>`;
+        safeSetHTML('yearDropdownText', `📅 ปีงบประมาณ <b>${selectedYears[0]}</b>`);
     } else {
         let isContinuous = true;
         for (let i = 0; i < selectedYears.length - 1; i++) {
@@ -189,40 +227,45 @@ function updateYearDropdownLabel() {
         }
         
         if (isContinuous) {
-            label.innerHTML = `📅 ปีงบประมาณ <b>${selectedYears[0]} - ${selectedYears[selectedYears.length-1]}</b>`;
+            safeSetHTML('yearDropdownText', `📅 ปีงบประมาณ <b>${selectedYears[0]} - ${selectedYears[selectedYears.length-1]}</b>`);
         } else {
             if (selectedYears.length > 3) {
-                label.innerHTML = `📅 ปีงบประมาณ <b>${selectedYears[0]}...${selectedYears[selectedYears.length-1]}</b> (${selectedYears.length} ปี)`;
+                safeSetHTML('yearDropdownText', `📅 ปีงบประมาณ <b>${selectedYears[0]}...${selectedYears[selectedYears.length-1]}</b> (${selectedYears.length} ปี)`);
             } else {
-                label.innerHTML = `📅 ปีงบประมาณ <b>${selectedYears.join(', ')}</b>`;
+                safeSetHTML('yearDropdownText', `📅 ปีงบประมาณ <b>${selectedYears.join(', ')}</b>`);
             }
         }
     }
 }
 
 function applyFilters() {
-    const searchTxt = document.getElementById('globalSearch').value.toLowerCase(); 
+    let searchEl = document.getElementById('globalSearch');
+    const searchTxt = searchEl ? searchEl.value.toLowerCase() : ""; 
     const selectedYears = Array.from(document.querySelectorAll('.year-cb:checked')).map(cb => String(cb.value)); 
     
     updateYearDropdownLabel();
 
     const btnResetMap = document.getElementById('btnResetMap');
-    if (mapFilterDistrict !== "all" || mapFilterProject !== "all") {
-        btnResetMap.style.display = "block";
-    } else {
-        btnResetMap.style.display = "none";
+    if (btnResetMap) {
+        if (mapFilterDistrict !== "all" || mapFilterProject !== "all") {
+            btnResetMap.style.display = "block";
+        } else {
+            btnResetMap.style.display = "none";
+        }
     }
 
     const slicerIds = ['filterNat', 'filterMaster', 'filterPlan13', 'filterNorth', 'filterProv'];
     slicerIds.forEach(id => {
-        if(document.getElementById(id).value !== "all") currentStratFilterId = id;
+        let el = document.getElementById(id);
+        if(el && el.value !== "all") currentStratFilterId = id;
     });
 
-    const fNat = document.getElementById('filterNat').value;
-    const fMaster = document.getElementById('filterMaster').value;
-    const fPlan13 = document.getElementById('filterPlan13').value;
-    const fNorth = document.getElementById('filterNorth').value;
-    const fProv = document.getElementById('filterProv').value;
+    const getValSafe = (id) => { let el = document.getElementById(id); return el ? el.value : "all"; };
+    const fNat = getValSafe('filterNat');
+    const fMaster = getValSafe('filterMaster');
+    const fPlan13 = getValSafe('filterPlan13');
+    const fNorth = getValSafe('filterNorth');
+    const fProv = getValSafe('filterProv');
 
     filteredData = masterData.filter(row => {
         let getVal = (key) => {
@@ -261,14 +304,15 @@ function applyFilters() {
 }
 
 function clearAllFilters() {
-    document.getElementById('globalSearch').value = "";
-    document.getElementById('tableSearch').value = ""; 
+    let gs = document.getElementById('globalSearch'); if(gs) gs.value = "";
+    let ts = document.getElementById('tableSearch'); if(ts) ts.value = "";
     
     let cbs = document.querySelectorAll('.year-cb');
     if(cbs.length > 0) {
         cbs.forEach(cb => cb.checked = false);
         cbs[0].checked = true; 
-        document.getElementById('checkAllYears').checked = false;
+        let checkAll = document.getElementById('checkAllYears');
+        if(checkAll) checkAll.checked = false;
     }
     
     document.querySelectorAll('.slicer').forEach(el => el.value = "all");
@@ -284,10 +328,10 @@ function handleTableSearch() { currentPage = 1; renderTable(); }
 function toggleSort(type) {
     if (type === 'year') {
         isYearDesc = !isYearDesc;
-        document.getElementById('btnSortYear').innerText = `📅 ปีงบประมาณ: ${isYearDesc ? '▼ ใหม่ ➜ เก่า' : '▲ เก่า ➜ ใหม่'}`;
+        safeSetText('btnSortYear', `📅 ปีงบประมาณ: ${isYearDesc ? '▼ ใหม่ ➜ เก่า' : '▲ เก่า ➜ ใหม่'}`);
     } else if (type === 'budget') {
         isBudgetDesc = !isBudgetDesc;
-        document.getElementById('btnSortBudget').innerText = `💰 งบประมาณ: ${isBudgetDesc ? '▼ มาก ➜ น้อย' : '▲ น้อย ➜ มาก'}`;
+        safeSetText('btnSortBudget', `💰 งบประมาณ: ${isBudgetDesc ? '▼ มาก ➜ น้อย' : '▲ น้อย ➜ มาก'}`);
     }
     renderTable();
 }
@@ -301,9 +345,12 @@ function changePage(dir) {
 }
 
 function renderTable() {
-    const tbody = document.getElementById('tableBody');
+    let tbody = document.getElementById('tableBody');
+    if (!tbody) return;
+    
     tbody.innerHTML = "";
-    const tableSearchTxt = document.getElementById('tableSearch').value.toLowerCase();
+    let ts = document.getElementById('tableSearch');
+    const tableSearchTxt = ts ? ts.value.toLowerCase() : "";
     
     tableData = filteredData.filter(row => {
         if (tableSearchTxt === "") return true;
@@ -330,9 +377,9 @@ function renderTable() {
 
     if(tableData.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 30px;">ไม่พบข้อมูลโครงการที่ตรงกับเงื่อนไขการค้นหา</td></tr>`; 
-        document.getElementById('pageInfo').innerText = "แสดง 0 รายการ";
-        document.getElementById('btnPrevPage').disabled = true;
-        document.getElementById('btnNextPage').disabled = true;
+        safeSetText('pageInfo', "แสดง 0 รายการ");
+        let bp = document.getElementById('btnPrevPage'); if(bp) bp.disabled = true;
+        let bn = document.getElementById('btnNextPage'); if(bn) bn.disabled = true;
         return;
     }
 
@@ -344,9 +391,10 @@ function renderTable() {
     let endIdx = startIdx + rowsPerPage;
     let paginatedRows = tableData.slice(startIdx, endIdx);
 
-    document.getElementById('pageInfo').innerText = `แสดงรายการที่ ${startIdx + 1} - ${Math.min(endIdx, tableData.length)} จากทั้งหมด ${tableData.length} รายการ`;
-    document.getElementById('btnPrevPage').disabled = (currentPage === 1);
-    document.getElementById('btnNextPage').disabled = (currentPage === maxPage);
+    safeSetText('pageInfo', `แสดงรายการที่ ${startIdx + 1} - ${Math.min(endIdx, tableData.length)} จากทั้งหมด ${tableData.length} รายการ`);
+    
+    let bp = document.getElementById('btnPrevPage'); if(bp) bp.disabled = (currentPage === 1);
+    let bn = document.getElementById('btnNextPage'); if(bn) bn.disabled = (currentPage === maxPage);
 
     paginatedRows.forEach((row) => {
         let originalIdx = masterData.indexOf(row);
@@ -368,9 +416,9 @@ function renderTable() {
 }
 
 function updateDashboard() {
-    document.getElementById('sumProjects').innerText = filteredData.length.toLocaleString();
+    safeSetText('sumProjects', filteredData.length.toLocaleString());
     const totalBudget = filteredData.reduce((sum, row) => sum + row._budgetNum, 0);
-    document.getElementById('sumBudget').innerText = totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2});
+    safeSetText('sumBudget', totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2}));
 
     let yearStats = {};
     filteredData.forEach(r => {
@@ -388,21 +436,24 @@ function updateDashboard() {
     projBreakdownHtml += "</table>";
     budgetBreakdownHtml += "</table>";
     
-    document.getElementById('projectBreakdown').innerHTML = Object.keys(yearStats).length > 0 ? projBreakdownHtml : 'ไม่มีข้อมูล';
-    document.getElementById('budgetBreakdown').innerHTML = Object.keys(yearStats).length > 0 ? budgetBreakdownHtml : 'ไม่มีข้อมูล';
+    safeSetHTML('projectBreakdown', Object.keys(yearStats).length > 0 ? projBreakdownHtml : 'ไม่มีข้อมูล');
+    safeSetHTML('budgetBreakdown', Object.keys(yearStats).length > 0 ? budgetBreakdownHtml : 'ไม่มีข้อมูล');
 
     let provCount = 0; let provBudget = 0;
     filteredData.forEach(r => { if(r._areaType === "Provincial") { provCount++; provBudget += r._budgetNum; } });
-    document.getElementById('provincialStatusContent').innerHTML = `
+    
+    safeSetHTML('provincialStatusContent', `
         <div style="font-size:14px; font-weight:normal; margin-bottom:5px;">ส่วนประมวลผลโครงการระดับจังหวัด (ดำเนินการครอบคลุมทุกอำเภอ)</div>
         <div style="display:flex; gap:20px;">
             <span>📋 จำนวนโครงการรวม: <b>${provCount}</b> โครงการ</span> 
             <span>💰 งบประมาณรวม: <b>${provBudget.toLocaleString()}</b> บาท</span>
-        </div>`;
+        </div>`);
 
     let activeStrat = stratMapping[currentStratFilterId];
-    let selectedValue = document.getElementById(currentStratFilterId).value;
-    document.getElementById('strategyChartSubtitle').innerText = `(แสดงผลตามค่าเริ่มต้น: ${activeStrat.name})`;
+    let filterEl = document.getElementById(currentStratFilterId);
+    let selectedValue = filterEl ? filterEl.value : "all";
+    
+    safeSetText('strategyChartSubtitle', `(แสดงผลตามค่าเริ่มต้น: ${activeStrat.name})`);
 
     let mainStratStatus = `<span style="color:#1e3a8a;">ประเด็นยุทธศาสตร์ที่เลือก: <b>${activeStrat.name}</b></span>`;
     if(selectedValue !== "all") mainStratStatus += ` ➡️ <span style="color:#b45309;">${selectedValue}</span>`; 
@@ -413,8 +464,9 @@ function updateDashboard() {
     if(selectedYears.length > 0) activeTexts.push(`ปีงบประมาณ: ${selectedYears.join(', ')}`);
     const slicerIds = ['filterNat', 'filterMaster', 'filterPlan13', 'filterNorth', 'filterProv'];
     slicerIds.forEach(id => {
-        if(id !== currentStratFilterId && document.getElementById(id).value !== "all") {
-            activeTexts.push(`${stratMapping[id].name}: ${document.getElementById(id).value}`);
+        let el = document.getElementById(id);
+        if(el && el.value !== "all" && id !== currentStratFilterId) {
+            activeTexts.push(`${stratMapping[id].name}: ${el.value}`);
         }
     });
     if(mapFilterDistrict !== "all") activeTexts.push(`อำเภอ: ${mapFilterDistrict}`);
@@ -422,27 +474,26 @@ function updateDashboard() {
     if(chartFilterAreaType !== "all") activeTexts.push(`พื้นที่: ${chartFilterAreaType}`);
     
     let filterStr = activeTexts.length > 0 ? " | " + activeTexts.join(" | ") : "";
-    document.getElementById('activeFiltersText').innerHTML = `<div style="margin-bottom:6px;"><strong>🔍 สถานะการกรองข้อมูลปัจจุบัน:</strong> ${mainStratStatus}</div><div style="font-size:13px;"><strong>เงื่อนไขการกรองเพิ่มเติม:</strong> ${filterStr === "" ? "ไม่มี" : filterStr.substring(3)}</div>`;
+    safeSetHTML('activeFiltersText', `<div style="margin-bottom:6px;"><strong>🔍 สถานะการกรองข้อมูลปัจจุบัน:</strong> ${mainStratStatus}</div><div style="font-size:13px;"><strong>เงื่อนไขการกรองเพิ่มเติม:</strong> ${filterStr === "" ? "ไม่มี" : filterStr.substring(3)}</div>`);
 
     let isMultiYear = selectedYears.length > 1;
     let chartSelect = document.getElementById('chartTypeSelect');
     let overlay = document.getElementById('areaChartOverlay');
 
     if(isMultiYear) {
-        chartSelect.value = 'bar';
-        chartSelect.disabled = true;
-        chartSelect.title = "หากเลือกหลายปีงบประมาณระบบแผนภูมิโดนัทจะไม่สามารถใช้ได้";
-        overlay.style.display = 'flex'; 
+        if(chartSelect) { chartSelect.value = 'bar'; chartSelect.disabled = true; chartSelect.title = "หากเลือกหลายปีงบประมาณระบบแผนภูมิโดนัทจะไม่สามารถใช้ได้"; }
+        if(overlay) overlay.style.display = 'flex'; 
     } else {
-        chartSelect.disabled = false;
-        chartSelect.title = "";
-        overlay.style.display = 'none';
+        if(chartSelect) { chartSelect.disabled = false; chartSelect.title = ""; }
+        if(overlay) overlay.style.display = 'none';
     }
 
     renderProvincialTable(activeStrat, selectedValue, isMultiYear, selectedYears);
     renderCharts(isMultiYear, selectedYears);
     
-    setTimeout(() => renderMap(isMultiYear, selectedYears), 300); 
+    // 🛡️ Debounce 
+    clearTimeout(renderMapTimer);
+    renderMapTimer = setTimeout(() => renderMap(isMultiYear, selectedYears), 300); 
 }
 
 function renderProvincialTable(activeStrat, selectedValue, isMultiYear, selectedYears) {
@@ -505,32 +556,19 @@ function renderProvincialTable(activeStrat, selectedValue, isMultiYear, selected
         <span style="font-size:15px; color:#666;">ประเด็นยุทธศาสตร์ที่แสดงผล: <b style="color:#1e3a8a">${activeStrat.name}</b> 
         ➡️ <b style="color:#b45309">${selectedValue === "all" ? "แสดงภาพรวมทุกประเด็น" : selectedValue}</b></span>
     `;
-    document.getElementById('provincialTableHeader').innerHTML = headerHtml;
+    safeSetHTML('provincialTableHeader', headerHtml);
 
-    let headHtml = `
-        <tr style="background:#f1f5f9;">
-            <th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:left; min-width: 250px;">ประเด็นยุทธศาสตร์ที่สอดคล้อง</th>
-    `;
-    
+    let headHtml = `<tr style="background:#f1f5f9;"><th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:left; min-width: 250px;">ประเด็นยุทธศาสตร์ที่สอดคล้อง</th>`;
     if (isMultiYear) {
-        headHtml += `
-            <th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:center; min-width: 150px; background:#e0e7ff;">ภาพรวม (โครงการ)</th>
-            <th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:right; min-width: 150px; background:#e0e7ff;">งบรวม (เฉพาะเดี่ยว)</th>
-        `;
+        headHtml += `<th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:center; min-width: 150px; background:#e0e7ff;">ภาพรวม (โครงการ)</th><th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:right; min-width: 150px; background:#e0e7ff;">งบรวม (เฉพาะเดี่ยว)</th>`;
         [...selectedYears].sort((a,b)=>b-a).forEach(y => {
-            headHtml += `
-                <th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:center; min-width: 120px; border-left: 2px solid #fff;">ปี ${y} (โครงการ)</th>
-                <th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:right; min-width: 120px;">ปี ${y} (งบประมาณ)</th>
-            `;
+            headHtml += `<th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:center; min-width: 120px; border-left: 2px solid #fff;">ปี ${y} (โครงการ)</th><th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:right; min-width: 120px;">ปี ${y} (งบประมาณ)</th>`;
         });
     } else {
-        headHtml += `
-            <th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:center; width:25%;">จำนวนโครงการ<br><small>เฉพาะประเด็นเดียว <span class="joint-stat">(+หลายประเด็น)</span></small></th>
-            <th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:right; width:30%;">งบประมาณ (บาท)<br><small>(เฉพาะโครงการประเด็นเดียว)</small></th>
-        `;
+        headHtml += `<th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:center; width:25%;">จำนวนโครงการ<br><small>เฉพาะประเด็นเดียว <span class="joint-stat">(+หลายประเด็น)</span></small></th><th style="border-bottom:2px solid #cbd5e1; padding:8px; text-align:right; width:30%;">งบประมาณ (บาท)<br><small>(เฉพาะโครงการประเด็นเดียว)</small></th>`;
     }
     headHtml += `</tr>`;
-    document.getElementById('provincialTableHead').innerHTML = headHtml;
+    safeSetHTML('provincialTableHead', headHtml);
 
     let masterList = STRAT_MASTER_LISTS[currentStratFilterId] || [];
     let sortedKeys = Object.keys(stratStats).sort((a,b) => {
@@ -551,55 +589,33 @@ function renderProvincialTable(activeStrat, selectedValue, isMultiYear, selected
         sortedKeys.forEach(k => {
             let st = stratStats[k];
             let tJointText = st.total.jC > 0 ? `<span class="joint-stat">(+${st.total.jC})</span>` : '';
-            
             tbodyHtml += `<tr style="border-bottom: 1px dashed #e2e8f0;"><td style="padding:10px;">${k}</td>`;
-            
             if(isMultiYear) {
-                tbodyHtml += `
-                    <td style="text-align:center; padding:10px; background:#f8fafc;"><b>${st.total.sC}</b> ${tJointText}</td>
-                    <td style="text-align:right; padding:10px; color:#059669; background:#f8fafc;"><b>${st.total.sB.toLocaleString()}</b></td>
-                `;
+                tbodyHtml += `<td style="text-align:center; padding:10px; background:#f8fafc;"><b>${st.total.sC}</b> ${tJointText}</td><td style="text-align:right; padding:10px; color:#059669; background:#f8fafc;"><b>${st.total.sB.toLocaleString()}</b></td>`;
                 [...selectedYears].sort((a,b)=>b-a).forEach(y => {
                     let ySt = st.years[y];
                     let yJointText = ySt.jC > 0 ? `<span class="joint-stat">(+${ySt.jC})</span>` : '';
-                    tbodyHtml += `
-                        <td style="text-align:center; padding:10px; border-left: 1px solid #f1f5f9;"><b>${ySt.sC}</b> ${yJointText}</td>
-                        <td style="text-align:right; padding:10px; color:#059669;"><b>${ySt.sB.toLocaleString()}</b></td>
-                    `;
+                    tbodyHtml += `<td style="text-align:center; padding:10px; border-left: 1px solid #f1f5f9;"><b>${ySt.sC}</b> ${yJointText}</td><td style="text-align:right; padding:10px; color:#059669;"><b>${ySt.sB.toLocaleString()}</b></td>`;
                 });
             } else {
-                tbodyHtml += `
-                    <td style="text-align:center; padding:10px;"><b>${st.total.sC}</b> ${tJointText}</td>
-                    <td style="text-align:right; padding:10px; color:#059669;"><b>${st.total.sB.toLocaleString()}</b></td>
-                `;
+                tbodyHtml += `<td style="text-align:center; padding:10px;"><b>${st.total.sC}</b> ${tJointText}</td><td style="text-align:right; padding:10px; color:#059669;"><b>${st.total.sB.toLocaleString()}</b></td>`;
             }
             tbodyHtml += `</tr>`;
         });
     }
-    document.getElementById('provincialTableBody').innerHTML = tbodyHtml;
+    safeSetHTML('provincialTableBody', tbodyHtml);
 
-    let tfoot = document.getElementById('provincialTableFooter');
     let footHtml = `<tr class="footer-row"><td class="footer-label" style="text-align: right; padding-right: 15px;">สรุปรวมประเด็นที่ตอบสนองมากกว่า 1 เป้าหมาย</td>`;
-    
     if (isMultiYear) {
-        footHtml += `
-            <td style="text-align:center; padding:12px; background:#fff7ed;"><b>${globalJointSet.size}</b></td>
-            <td style="text-align:right; padding:12px; background:#fff7ed;"><b>${globalJointBudget.toLocaleString()}</b></td>
-        `;
+        footHtml += `<td style="text-align:center; padding:12px; background:#fff7ed;"><b>${globalJointSet.size}</b></td><td style="text-align:right; padding:12px; background:#fff7ed;"><b>${globalJointBudget.toLocaleString()}</b></td>`;
         [...selectedYears].sort((a,b)=>b-a).forEach(y => {
-            footHtml += `
-                <td style="text-align:center; padding:12px; border-left: 2px solid #fff;"><b>${yearJointSets[y].size}</b></td>
-                <td style="text-align:right; padding:12px;"><b>${yearJointBudgets[y].toLocaleString()}</b></td>
-            `;
+            footHtml += `<td style="text-align:center; padding:12px; border-left: 2px solid #fff;"><b>${yearJointSets[y].size}</b></td><td style="text-align:right; padding:12px;"><b>${yearJointBudgets[y].toLocaleString()}</b></td>`;
         });
     } else {
-        footHtml += `
-            <td style="text-align:center; padding:12px;"><b>${globalJointSet.size}</b></td>
-            <td style="text-align:right; padding:12px;"><b>${globalJointBudget.toLocaleString()}</b></td>
-        `;
+        footHtml += `<td style="text-align:center; padding:12px;"><b>${globalJointSet.size}</b></td><td style="text-align:right; padding:12px;"><b>${globalJointBudget.toLocaleString()}</b></td>`;
     }
     footHtml += `</tr>`;
-    tfoot.innerHTML = footHtml;
+    safeSetHTML('provincialTableFooter', footHtml);
 }
 
 function renderCharts(isMultiYear, selectedYears) {
@@ -652,8 +668,11 @@ function renderCharts(isMultiYear, selectedYears) {
     });
 
     const ctxMain = document.getElementById('mainChart');
+    if (!ctxMain) return; // Prevent error
+    
     if (myChart) myChart.destroy();
-    let chartType = document.getElementById('chartTypeSelect').value;
+    let chartSelect = document.getElementById('chartTypeSelect');
+    let chartType = chartSelect ? chartSelect.value : 'bar';
     
     let sortedKeys = Object.keys(stratData).sort((a,b) => {
         if(a === 'ไม่ระบุ') return 1;
@@ -781,7 +800,7 @@ function renderCharts(isMultiYear, selectedYears) {
         areaChart = null;
     }
 
-    if(!isMultiYear) {
+    if(!isMultiYear && ctxArea) {
         let areaCounts = { 'Single': 0, 'Multi': 0, 'Provincial': 0, 'ไม่ระบุ': 0 };
         filteredData.forEach(row => { areaCounts[row._areaType] += (currentMode === 'budget' ? row._budgetNum : 1); });
         
@@ -825,42 +844,45 @@ function renderCharts(isMultiYear, selectedYears) {
     }
 
     const ctxTrend = document.getElementById('trendChart');
-    let yearCounts = {};
-    let activeYears = (selectedYears && selectedYears.length > 0) ? [...selectedYears].sort((a,b)=>a-b) : Array.from(new Set(masterData.map(r=>r._year))).sort((a,b)=>a-b);
-    
-    activeYears.forEach(y => yearCounts[y] = 0); 
-    
-    filteredData.forEach(row => {
-        if(yearCounts[row._year] !== undefined) {
-            yearCounts[row._year] += currentMode === 'budget' ? row._budgetNum : 1;
-        }
-    });
-    
-    let sortedYearsTrend = Object.keys(yearCounts).sort((a,b)=>a-b);
-    let trendData = sortedYearsTrend.map(y => yearCounts[y]);
+    if(ctxTrend) {
+        let yearCounts = {};
+        let activeYears = (selectedYears && selectedYears.length > 0) ? [...selectedYears].sort((a,b)=>a-b) : Array.from(new Set(masterData.map(r=>r._year))).sort((a,b)=>a-b);
+        activeYears.forEach(y => yearCounts[y] = 0); 
+        
+        filteredData.forEach(row => {
+            if(yearCounts[row._year] !== undefined) yearCounts[row._year] += currentMode === 'budget' ? row._budgetNum : 1;
+        });
+        
+        let trendData = activeYears.map(y => yearCounts[y]);
 
-    if (trendChart) trendChart.destroy();
-    trendChart = new Chart(ctxTrend, {
-        type: 'line',
-        data: {
-            labels: sortedYearsTrend,
-            datasets: [
-                { type: 'bar', label: 'ปริมาณ', data: trendData, backgroundColor: '#cbd5e1', order: 2 }, 
-                { type: 'line', label: 'แนวโน้ม', data: trendData, borderColor: '#ef4444', backgroundColor: '#ef4444', borderWidth: 3, tension: 0.3, order: 1 }
-            ]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: false } } }
-    });
+        if (trendChart) trendChart.destroy();
+        trendChart = new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+                labels: activeYears,
+                datasets: [
+                    { type: 'bar', label: 'ปริมาณ', data: trendData, backgroundColor: '#cbd5e1', order: 2 }, 
+                    { type: 'line', label: 'แนวโน้ม', data: trendData, borderColor: '#ef4444', backgroundColor: '#ef4444', borderWidth: 3, tension: 0.3, order: 1 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: false } } }
+        });
+    }
 }
 
 // ==========================================
-// 6. แผนที่ Leaflet (โครงสร้าง 4D Top3 100%)
+// 6. แผนที่ Leaflet (Safe Mode + 4D Top3 100%)
 // ==========================================
 function renderMap(isMultiYear, selectedYears) {
-    let mapMode = document.getElementById('mapModeSelect').value;
+    let mapModeSelect = document.getElementById('mapModeSelect');
+    let mapMode = mapModeSelect ? mapModeSelect.value : 'overview';
 
     if (!map) {
-        map = L.map('map', {scrollWheelZoom: false, preferCanvas: true}).setView([18.7883, 98.9853], 8);
+        // 🚀 L.canvas() เพื่อประสิทธิภาพสูงสุด
+        let mapEl = document.getElementById('map');
+        if(!mapEl) return;
+        
+        map = L.map('map', {scrollWheelZoom: false, preferCanvas: true, closePopupOnClick: true}).setView([18.7883, 98.9853], 8);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
     }
 
@@ -901,10 +923,11 @@ function renderMap(isMultiYear, selectedYears) {
     }
 
     let activeStratKey = stratMapping[currentStratFilterId].key;
-    let selectedStratValue = document.getElementById(currentStratFilterId).value;
+    let filterEl = document.getElementById(currentStratFilterId);
+    let selectedStratValue = filterEl ? filterEl.value : "all";
     let isSpecificStrat = selectedStratValue !== "all";
 
-    // นับฐาน
+    // นับฐานโครงการทั้งหมด
     let overallProjects = {};
     dNames.forEach(d => overallProjects[d] = 0);
     masterData.forEach(row => {
@@ -948,13 +971,13 @@ function renderMap(isMultiYear, selectedYears) {
                 else if (areaType === "Multi" && isSingleStrat) districtStats[d].total.matrix.m_s++;
                 else if (areaType === "Multi" && !isSingleStrat) districtStats[d].total.matrix.m_j++;
 
-                // 📌 อัปเดตยอดรายปีอย่างถูกต้อง ไม่งั้น Top3 หาย
+                // 📌 อัปเดตรายปี
                 if(districtStats[d].years[rYear]) {
                     let ySt = districtStats[d].years[rYear];
                     if (areaType === "Single") { ySt.singleC += 1; ySt.singleB += row._budgetNum; }
                     if (areaType === "Multi") { ySt.multiC += 1; ySt.multiB += row._budgetNum; }
                     ySt.totalProjects += 1;
-                    strats.forEach(s => { ySt.stratCounts[s] = (ySt.stratCounts[s] || 0) + 1; }); // ✅ สำคัญมากตรงนี้
+                    strats.forEach(s => { ySt.stratCounts[s] = (ySt.stratCounts[s] || 0) + 1; }); 
 
                     if (areaType === "Single" && isSingleStrat) ySt.matrix.s_s++;
                     else if (areaType === "Single" && !isSingleStrat) ySt.matrix.s_j++;
@@ -1004,122 +1027,129 @@ function renderMap(isMultiYear, selectedYears) {
         },
         onEachFeature: function (f, l) {
             let dName = f.properties.amp_th || f.properties.AMP_TH || "ไม่ระบุ";
-            let dt = districtStats[dName];
-            let s = dt.total;
             
-            let popupHtml = `<div style="font-family:'Sarabun'; width: 320px; max-height: 380px; overflow-y: auto; overflow-x: hidden;">
-                             <b style="font-size:16px; color:#1e3a8a;">📍 ข้อมูลอำเภอ${dName}</b>`;
-            
-            if(isMultiYear) {
-                popupHtml += `<div style="font-size:12px; color:#f97316; font-weight:bold; margin-top:2px;">(สรุปรวมปีงบประมาณ ${activeYears.join(', ')})</div><hr style="margin:5px 0;">`;
-            } else {
-                popupHtml += `<hr style="margin:5px 0;">`;
-            }
-            
-            if (mapMode === 'overview') {
-                popupHtml += `
-                    <div style="font-size:13px; line-height: 1.4;">
-                        <b style="color:#10b981;">🎯 ดำเนินการเฉพาะอำเภอนี้ (Single)</b><br>
-                        รวมทั้งหมด: <b>${s.singleC}</b> โครงการ | <b>${s.singleB.toLocaleString()}</b> บาท<br>
-                `;
+            // 🚀 Lazy Popup: สั่งคำนวณและโชว์เมื่อคลิกเท่านั้น
+            l.on('click', function(e) {
+                let dt = districtStats[dName];
+                let s = dt.total;
+                
+                let popupHtml = `<div style="font-family:'Sarabun'; width: 300px; max-height: 350px; overflow-y: auto;">
+                                 <b style="font-size:16px; color:#1e3a8a;">📍 ข้อมูลอำเภอ${dName}</b>`;
+                
                 if(isMultiYear) {
-                    popupHtml += `<ul style="margin:2px 0 5px 0; padding-left:15px; font-size:11.5px; color:#475569;">`;
-                    activeYears.forEach(y => {
-                        popupHtml += `<li>ปี ${y}: ${dt.years[y].singleC} โครงการ (${dt.years[y].singleB.toLocaleString()} บ.)</li>`;
-                    });
-                    popupHtml += `</ul>`;
+                    popupHtml += `<div style="font-size:12px; color:#f97316; font-weight:bold; margin-top:2px;">(สรุปรวมปีงบประมาณ ${activeYears.join(', ')})</div><hr style="margin:5px 0;">`;
+                } else {
+                    popupHtml += `<hr style="margin:5px 0;">`;
                 }
-
-                popupHtml += `
-                        <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
-                        <b style="color:#f59e0b;">📦 ดำเนินการร่วมอำเภออื่น (Multi)</b><br>
-                        รวมที่เกี่ยวข้อง: <b>${s.multiC}</b> โครงการ<br>ยอดรวมกรอบงบ: <b>${s.multiB.toLocaleString()}</b> บาท<br>
-                `;
-                if(isMultiYear) {
-                    popupHtml += `<ul style="margin:2px 0 5px 0; padding-left:15px; font-size:11.5px; color:#475569;">`;
-                    activeYears.forEach(y => {
-                        popupHtml += `<li>ปี ${y}: ${dt.years[y].multiC} โครงการ (${dt.years[y].multiB.toLocaleString()} บ.)</li>`;
-                    });
-                    popupHtml += `</ul>`;
-                }
-
-                popupHtml += `<span style="color:#ef4444; font-size:11px;">(งบส่วนนี้เป็นยอดรวม ไม่ถูกนำมาหารและระบายสีในแผนที่)</span><br>
-                        <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
-                        <b style="color:#ef4444;">🌐 ครอบคลุมทั้งจังหวัด (Provincial)</b><br>
-                        รวมที่ครอบคลุมถึง: <b>${s.provC}</b> โครงการ<br>
-                `;
-                if(isMultiYear) {
-                    popupHtml += `<ul style="margin:2px 0 5px 0; padding-left:15px; font-size:11.5px; color:#475569;">`;
-                    activeYears.forEach(y => {
-                        popupHtml += `<li>ปี ${y}: ${dt.years[y].provC} โครงการ</li>`;
-                    });
-                    popupHtml += `</ul>`;
-                }
-                popupHtml += `<span style="color:#ef4444; font-size:11px;">(ไม่นำมาคำนวณความเข้มข้นในแผนที่)</span></div>`;
-            } else {
-                // 🎯 4D Matrix: กู้คืน 4 ลักษณะ และ Top 3 อย่างสมบูรณ์
-                let stratNameLabel = stratMapping[currentStratFilterId].name;
-
-                if (isSpecificStrat) {
+                
+                if (mapMode === 'overview') {
                     popupHtml += `
                         <div style="font-size:13px; line-height: 1.4;">
-                            <div style="margin-bottom:8px; color:#666;">โครงการฐานที่ลงในอำเภอนี้ (ปีที่เลือก): <b>${overallProjects[dName]}</b> โครงการ</div>
-                            <b>รวมสอดคล้องประเด็นยุทธศาสตร์ที่เลือก: <span style="color:#ef4444; font-size:15px;">${s.totalProjects}</span> โครงการ</b><br>
-                            <span style="color:#666; font-size:11px;">(จำแนกตาม 4 ลักษณะพื้นที่และยุทธศาสตร์)</span><br><br>
-                            <b style="color:#059669;">1. เดี่ยว (พื้นที่) + เดี่ยว (ประเด็น):</b> ${s.matrix.s_s}<br>
-                            <b style="color:#d97706;">2. เดี่ยว (พื้นที่) + ร่วม (ประเด็น):</b> ${s.matrix.s_j}<br>
-                            <b style="color:#2563eb;">3. ร่วม (พื้นที่) + เดี่ยว (ประเด็น):</b> ${s.matrix.m_s}<br>
-                            <b style="color:#7c3aed;">4. ร่วม (พื้นที่) + ร่วม (ประเด็น):</b> ${s.matrix.m_j}
+                            <b style="color:#10b981;">🎯 ดำเนินการเฉพาะอำเภอนี้ (Single)</b><br>
+                            รวมทั้งหมด: <b>${s.singleC}</b> โครงการ | <b>${s.singleB.toLocaleString()}</b> บาท<br>
                     `;
-                    
                     if(isMultiYear) {
-                        popupHtml += `<hr style="margin:5px 0;"><div style="font-size:12px; color:#475569;">`;
+                        popupHtml += `<ul style="margin:2px 0 5px 0; padding-left:15px; font-size:11.5px; color:#475569;">`;
                         activeYears.forEach(y => {
-                            let yM = dt.years[y].matrix;
-                            popupHtml += `<b style="color:#1e3a8a">ปี ${y}:</b> รวม ${dt.years[y].totalProjects} โครงการ<br>
-                                <div style="padding-left:10px; font-size:11px; margin-bottom:4px; line-height: 1.3;">
-                                    - <span style="color:#059669">เดี่ยว+เดี่ยว:</span> ${yM.s_s} | <span style="color:#d97706">เดี่ยว+ร่วม:</span> ${yM.s_j}<br>
-                                    - <span style="color:#2563eb">ร่วม+เดี่ยว:</span> ${yM.m_s} | <span style="color:#7c3aed">ร่วม+ร่วม:</span> ${yM.m_j}
-                                </div>`;
+                            popupHtml += `<li>ปี ${y}: ${dt.years[y].singleC} โครงการ (${dt.years[y].singleB.toLocaleString()} บ.)</li>`;
                         });
-                        popupHtml += `</div>`;
+                        popupHtml += `</ul>`;
                     }
-                    popupHtml += `</div>`;
+
+                    popupHtml += `
+                            <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
+                            <b style="color:#f59e0b;">📦 ดำเนินการร่วมอำเภออื่น (Multi)</b><br>
+                            รวมที่เกี่ยวข้อง: <b>${s.multiC}</b> โครงการ<br>ยอดรวมกรอบงบ: <b>${s.multiB.toLocaleString()}</b> บาท<br>
+                    `;
+                    if(isMultiYear) {
+                        popupHtml += `<ul style="margin:2px 0 5px 0; padding-left:15px; font-size:11.5px; color:#475569;">`;
+                        activeYears.forEach(y => {
+                            popupHtml += `<li>ปี ${y}: ${dt.years[y].multiC} โครงการ (${dt.years[y].multiB.toLocaleString()} บ.)</li>`;
+                        });
+                        popupHtml += `</ul>`;
+                    }
+
+                    popupHtml += `<span style="color:#ef4444; font-size:11px;">(งบส่วนนี้เป็นยอดรวม ไม่ถูกนำมาหารและระบายสีในแผนที่)</span><br>
+                            <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
+                            <b style="color:#ef4444;">🌐 ครอบคลุมทั้งจังหวัด (Provincial)</b><br>
+                            รวมที่ครอบคลุมถึง: <b>${s.provC}</b> โครงการ<br>
+                    `;
+                    if(isMultiYear) {
+                        popupHtml += `<ul style="margin:2px 0 5px 0; padding-left:15px; font-size:11.5px; color:#475569;">`;
+                        activeYears.forEach(y => {
+                            popupHtml += `<li>ปี ${y}: ${dt.years[y].provC} โครงการ</li>`;
+                        });
+                        popupHtml += `</ul>`;
+                    }
+                    popupHtml += `<span style="color:#ef4444; font-size:11px;">(ไม่นำมาคำนวณความเข้มข้นในแผนที่)</span></div>`;
                 } else {
-                    // 🌟 ระบบ Top 3 อย่างละเอียด
-                    let sortedStrats = Object.entries(s.stratCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
-                    let top3Html = "";
-                    
-                    sortedStrats.forEach((st, i) => {
-                        let sName = st[0];
-                        let sCount = st[1];
-                        top3Html += `<b>${i+1}. ${sName}</b> <span style="color:#ef4444">(${sCount})</span><br>`;
+                    // 🎯 4D Matrix
+                    let stratNameLabel = stratMapping[currentStratFilterId].name;
+
+                    if (isSpecificStrat) {
+                        // 🌟 เจาะจงประเด็น: 4 ลักษณะ 
+                        popupHtml += `
+                            <div style="font-size:13px; line-height: 1.4;">
+                                <div style="margin-bottom:8px; color:#666;">โครงการฐานที่ลงในอำเภอนี้ (ปีที่เลือก): <b>${overallProjects[dName]}</b> โครงการ</div>
+                                <b>รวมสอดคล้องประเด็นยุทธศาสตร์ที่เลือก: <span style="color:#ef4444; font-size:15px;">${s.totalProjects}</span> โครงการ</b><br>
+                                <span style="color:#666; font-size:11px;">(จำแนกตาม 4 ลักษณะพื้นที่และยุทธศาสตร์)</span><br><br>
+                                <b style="color:#059669;">1. เดี่ยว (พื้นที่) + เดี่ยว (ประเด็น):</b> ${s.matrix.s_s}<br>
+                                <b style="color:#d97706;">2. เดี่ยว (พื้นที่) + ร่วม (ประเด็น):</b> ${s.matrix.s_j}<br>
+                                <b style="color:#2563eb;">3. ร่วม (พื้นที่) + เดี่ยว (ประเด็น):</b> ${s.matrix.m_s}<br>
+                                <b style="color:#7c3aed;">4. ร่วม (พื้นที่) + ร่วม (ประเด็น):</b> ${s.matrix.m_j}
+                        `;
                         
                         if(isMultiYear) {
-                            top3Html += `<div style="padding-left:15px; font-size:10.5px; color:#64748b; margin-bottom:4px; line-height:1.2;">`;
+                            popupHtml += `<hr style="margin:5px 0;"><div style="font-size:12px; color:#475569;">`;
                             activeYears.forEach(y => {
-                                let countInYear = dt.years[y].stratCounts[sName] || 0;
-                                if(countInYear > 0) top3Html += `- ปี ${y}: ${countInYear} โครงการ<br>`;
+                                let yM = dt.years[y].matrix;
+                                popupHtml += `<b style="color:#1e3a8a">ปี ${y}:</b> รวม ${dt.years[y].totalProjects} โครงการ<br>
+                                    <div style="padding-left:10px; font-size:11px; margin-bottom:4px; line-height: 1.3;">
+                                        - <span style="color:#059669">เดี่ยว+เดี่ยว:</span> ${yM.s_s} | <span style="color:#d97706">เดี่ยว+ร่วม:</span> ${yM.s_j}<br>
+                                        - <span style="color:#2563eb">ร่วม+เดี่ยว:</span> ${yM.m_s} | <span style="color:#7c3aed">ร่วม+ร่วม:</span> ${yM.m_j}
+                                    </div>`;
                             });
-                            top3Html += `</div>`;
+                            popupHtml += `</div>`;
                         }
-                    });
+                        popupHtml += `</div>`;
+                    } else {
+                        // 🌟 ดูภาพรวม: Top 3 
+                        let sortedStrats = Object.entries(s.stratCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+                        let top3Html = "";
+                        
+                        sortedStrats.forEach((st, i) => {
+                            let sName = st[0];
+                            let sCount = st[1];
+                            top3Html += `<b>${i+1}. ${sName}</b> <span style="color:#ef4444">(${sCount})</span><br>`;
+                            
+                            // 🚀 แจกแจงปีใน Top 3
+                            if(isMultiYear) {
+                                top3Html += `<div style="padding-left:15px; font-size:10.5px; color:#64748b; margin-bottom:4px; line-height:1.2;">`;
+                                activeYears.forEach(y => {
+                                    let countInYear = dt.years[y].stratCounts[sName] || 0;
+                                    if(countInYear > 0) top3Html += `- ปี ${y}: ${countInYear} โครงการ<br>`;
+                                });
+                                top3Html += `</div>`;
+                            }
+                        });
 
-                    popupHtml += `
-                        <div style="font-size:13px; line-height: 1.4;">
-                            <div style="margin-bottom:8px; color:#666;">โครงการฐานที่ลงในอำเภอนี้ (ปีที่เลือก): <b>${overallProjects[dName]}</b> โครงการ</div>
-                            <b>รวมโครงการที่สอดคล้องตามเงื่อนไข: <span style="color:#ef4444; font-size:15px;">${s.totalProjects}</span> โครงการ</b><br>
-                            <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
-                            <b style="color:#1e3a8a;">🧬 3 ลำดับ ${stratNameLabel} สูงสุด:</b><br>
-                            <div style="margin-top:5px;">${top3Html || '<span style="color:gray">- ไม่มีข้อมูล -</span>'}</div>
-                        </div>
-                    `;
+                        popupHtml += `
+                            <div style="font-size:13px; line-height: 1.4;">
+                                <div style="margin-bottom:8px; color:#666;">โครงการฐานที่ลงในอำเภอนี้ (ปีที่เลือก): <b>${overallProjects[dName]}</b> โครงการ</div>
+                                <b>รวมโครงการที่สอดคล้องตามเงื่อนไข: <span style="color:#ef4444; font-size:15px;">${s.totalProjects}</span> โครงการ</b><br>
+                                <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
+                                <b style="color:#1e3a8a;">🧬 3 ลำดับ ${stratNameLabel} สูงสุด:</b><br>
+                                <div style="margin-top:5px;">${top3Html || '<span style="color:gray">- ไม่มีข้อมูล -</span>'}</div>
+                            </div>
+                        `;
+                    }
                 }
-            }
+
+                popupHtml += `<button type="button" onclick="setDistrictFilter('${dName}')" style="margin-top:10px; width:100%; padding:6px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer; position:sticky; bottom:-5px; z-index:100;">🔍 กรองข้อมูลเฉพาะอำเภอนี้</button></div>`;
+                
+                L.popup().setLatLng(e.latlng).setContent(popupHtml).openOn(map);
+            });
             
-            popupHtml += `<button type="button" onclick="setDistrictFilter('${dName}')" style="margin-top:10px; width:100%; padding:6px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer; position:sticky; bottom:-5px; z-index:100;">🔍 กรองข้อมูลเฉพาะอำเภอนี้</button></div>`;
-            
-            l.bindPopup(popupHtml);
             l.on('mouseover', e => { e.target.setStyle({weight: 3, color: '#f59e0b'}); e.target.bringToFront(); });
             l.on('mouseout', e => geojsonLayer.resetStyle(e.target));
         }
@@ -1139,20 +1169,20 @@ function formatList(str) {
 
 function openModal(idx) {
     const row = masterData[idx]; 
-    document.getElementById('modalTitle').innerText = row["ชื่อโครงการ"] || "-";
-    document.getElementById('modalArea').innerHTML = row._areaList.join(", ");
+    safeSetText('modalTitle', row["ชื่อโครงการ"] || "-");
+    safeSetHTML('modalArea', row._areaList.join(", "));
     
     let budgetDisplay = row._budgetNum.toLocaleString() + " บาท";
     if (row._budgetText) budgetDisplay += `<br><small style="color:#666; font-weight:normal;">(${row._budgetText})</small>`;
-    document.getElementById('modalBudget').innerHTML = budgetDisplay;
+    safeSetHTML('modalBudget', budgetDisplay);
     
-    document.getElementById('modalYear').innerText = row._year;
+    safeSetText('modalYear', row._year);
     
     let aType = row._areaType;
     let aLabel = aType === 'Single' ? " (ดำเนินการเฉพาะพื้นที่)" : aType === 'Multi' ? " (ดำเนินการหลายพื้นที่)" : aType === 'Provincial' ? " (ดำเนินการครอบคลุมทั้งจังหวัด)" : " (ไม่ได้ระบุข้อมูลพื้นที่)";
-    document.getElementById('modalAreaType').innerText = aType + aLabel;
+    safeSetText('modalAreaType', aType + aLabel);
     
-    document.getElementById('modalAgency').innerText = row["หน่วยงานรับผิดชอบ"] || "- ไม่ระบุข้อมูล -";
+    safeSetText('modalAgency', row["หน่วยงานรับผิดชอบ"] || "- ไม่ระบุข้อมูล -");
 
     let getVal = (key) => {
         if(row[key] !== undefined) return String(row[key]);
@@ -1190,17 +1220,23 @@ function openModal(idx) {
             </tr>
         </table>
     `;
-    document.getElementById('modalStrategyTable').innerHTML = strategyTableHTML;
+    safeSetHTML('modalStrategyTable', strategyTableHTML);
 
-    const subDiv = document.getElementById('modalSubActivities');
     const rawSub = String(row["รายละเอียดย่อย"] || "");
     const cleanSub = rawSub.replace(/\r\n/g, "<br>").replace(/\n/g, "<br>").trim();
-    subDiv.innerHTML = (!cleanSub || cleanSub === "undefined" || cleanSub === "NaN") ? "<p style='color:gray;'>- ไม่พบข้อมูลรายละเอียด -</p>" : `<div class="sub-activity-box">${cleanSub}</div>`;
+    safeSetHTML('modalSubActivities', (!cleanSub || cleanSub === "undefined" || cleanSub === "NaN") ? "<p style='color:gray;'>- ไม่พบข้อมูลรายละเอียด -</p>" : `<div class="sub-activity-box">${cleanSub}</div>`);
     
-    document.getElementById('modalFilterBtnContainer').innerHTML = `<button class="btn-filter-project" onclick="setProjectFilter(\`${row["ชื่อโครงการ"]}\`)">📍 ตรวจสอบพื้นที่ดำเนินการบนแผนที่</button>`;
-    document.getElementById('projectModal').style.display = "block";
+    safeSetHTML('modalFilterBtnContainer', `<button class="btn-filter-project" onclick="setProjectFilter(\`${row["ชื่อโครงการ"]}\`)">📍 ตรวจสอบพื้นที่ดำเนินการบนแผนที่</button>`);
+    
+    let pm = document.getElementById('projectModal');
+    if(pm) pm.style.display = "block";
 }
-function closeModal() { document.getElementById('projectModal').style.display = "none"; }
+
+function closeModal() { 
+    let pm = document.getElementById('projectModal');
+    if(pm) pm.style.display = "none"; 
+}
+
 window.onclick = e => { if (e.target == document.getElementById('projectModal')) closeModal(); }
 
 init();
