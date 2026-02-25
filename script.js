@@ -28,7 +28,7 @@ let primarySortKey = 'year';
 
 let currentStratFilterId = 'filterProv'; 
 
-// 🛡️ ตัวแปรเสริมความเสถียร
+// 🛡️ ตัวแปรเสริมความเสถียร (Cache & Debounce)
 let districtGeoJSON = null; 
 let renderMapTimer = null;
 
@@ -48,6 +48,9 @@ const stratMapping = {
     'filterProv': { key: 'ประเด็นการพัฒนาจังหวัด (2566-2570)', name: 'แผนพัฒนาจังหวัดเชียงใหม่ (พ.ศ. 2566-2570)' }
 };
 
+// ==========================================
+// 1. สร้าง UI 
+// ==========================================
 const checkList = document.getElementById('yearDropdown');
 checkList.getElementsByClassName('anchor')[0].onclick = function(evt) {
     if (checkList.classList.contains('visible')) checkList.classList.remove('visible');
@@ -99,6 +102,9 @@ function toggleSummaryBreakdown(id) {
     el.style.display = (el.style.display === 'block') ? 'none' : 'block';
 }
 
+// ==========================================
+// 2. ดึงข้อมูล 
+// ==========================================
 async function init() {
     buildStaticSlicers(); 
 
@@ -216,6 +222,9 @@ function updateYearDropdownLabel() {
     }
 }
 
+// ==========================================
+// 3. ระบบกรอง
+// ==========================================
 function applyFilters() {
     const searchTxt = document.getElementById('globalSearch').value.toLowerCase(); 
     const selectedYears = Array.from(document.querySelectorAll('.year-cb:checked')).map(cb => String(cb.value)); 
@@ -295,6 +304,9 @@ function clearAllFilters() {
     resetPageAndFilter();
 }
 
+// ==========================================
+// 4. ระบบตาราง (Sorting)
+// ==========================================
 function handleTableSearch() { currentPage = 1; renderTable(); }
 
 function toggleSort(type) {
@@ -383,6 +395,9 @@ function renderTable() {
     });
 }
 
+// ==========================================
+// 5. อัปเดต UI 
+// ==========================================
 function updateDashboard() {
     document.getElementById('sumProjects').innerText = filteredData.length.toLocaleString();
     const totalBudget = filteredData.reduce((sum, row) => sum + row._budgetNum, 0);
@@ -458,7 +473,7 @@ function updateDashboard() {
     renderProvincialTable(activeStrat, selectedValue, isMultiYear, selectedYears);
     renderCharts(isMultiYear, selectedYears);
     
-    // 🛡️ Anti-Freeze: Debounce 
+    // 🛡️ Debounce แผนที่
     clearTimeout(renderMapTimer);
     renderMapTimer = setTimeout(() => renderMap(isMultiYear, selectedYears), 150); 
 }
@@ -891,16 +906,16 @@ function renderCharts(isMultiYear, selectedYears) {
 }
 
 // ==========================================
-// 6. แผนที่ Leaflet (Heatmap & Lazy Popup)
+// 6. แผนที่ Leaflet (Lazy Popup + 4D Top3)
 // ==========================================
 function renderMap(isMultiYear, selectedYears) {
     let mapMode = document.getElementById('mapModeSelect').value;
 
     if (!map) {
+        // 👆 ปิด Popup เมื่อคลิกที่แผนที่ (ช่วยมือถือ)
         map = L.map('map', {scrollWheelZoom: false, closePopupOnClick: true}).setView([18.7883, 98.9853], 8);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
         
-        // 👆 คลิกที่ว่างเพื่อปิด Popup
         map.on('click', function() {
             map.closePopup();
         });
@@ -911,13 +926,12 @@ function renderMap(isMultiYear, selectedYears) {
         isMultiYear = selectedYears.length > 1;
     }
     
-    let activeYears = selectedYears;
+    let activeYears = selectedYears.sort((a,b)=>a-b);
     if (activeYears.length === 0) {
         if(geojsonLayer) map.removeLayer(geojsonLayer);
         return; 
     }
 
-    // 🎯 โครงสร้างข้อมูลสำหรับ 4D Top 3 รายปี
     let districtStats = {};
     const dNames = ["กัลยาณิวัฒนา", "จอมทอง", "เชียงดาว", "ไชยปราการ", "ดอยเต่า", "ดอยสะเก็ด", "ดอยหล่อ", "ฝาง", "พร้าว", "เมืองเชียงใหม่", "แม่แจ่ม", "แม่แตง", "แม่ริม", "แม่วาง", "แม่ออน", "แม่อาย", "เวียงแหง", "สะเมิง", "สันกำแพง", "สันทราย", "สันป่าตอง", "สารภี", "หางดง", "อมก๋อย", "ฮอด"];
     
@@ -927,9 +941,7 @@ function renderMap(isMultiYear, selectedYears) {
             years: {} 
         };
         activeYears.forEach(y => {
-            districtStats[d].years[y] = { 
-                singleC: 0, singleB: 0, multiC: 0, multiB: 0, provC: 0, totalProjects: 0, stratCounts: {}, matrix: { s_s:0, s_j:0, m_s:0, m_j:0 } 
-            };
+            districtStats[d].years[y] = { singleC: 0, singleB: 0, multiC: 0, multiB: 0, provC: 0, totalProjects: 0, stratCounts: {}, matrix: { s_s:0, s_j:0, m_s:0, m_j:0 } };
         });
     });
 
@@ -947,7 +959,7 @@ function renderMap(isMultiYear, selectedYears) {
     let selectedStratValue = document.getElementById(currentStratFilterId).value;
     let isSpecificStrat = selectedStratValue !== "all";
 
-    // นับฐานโครงการทั้งหมด
+    // 🎯 คำนวณฐานรวม
     let overallProjects = {};
     dNames.forEach(d => overallProjects[d] = 0);
     masterData.forEach(row => {
@@ -981,7 +993,6 @@ function renderMap(isMultiYear, selectedYears) {
         if (areaType === "Single" || areaType === "Multi") {
             let matchedDistricts = dNames.filter(d => row._cleanArea.includes(d));
             matchedDistricts.forEach(d => {
-                // Update Total
                 if (areaType === "Single") { districtStats[d].total.singleC += 1; districtStats[d].total.singleB += row._budgetNum; }
                 if (areaType === "Multi") { districtStats[d].total.multiC += 1; districtStats[d].total.multiB += row._budgetNum; }
                 districtStats[d].total.totalProjects += 1;
@@ -992,13 +1003,12 @@ function renderMap(isMultiYear, selectedYears) {
                 else if (areaType === "Multi" && isSingleStrat) districtStats[d].total.matrix.m_s++;
                 else if (areaType === "Multi" && !isSingleStrat) districtStats[d].total.matrix.m_j++;
 
-                // Update Yearly
                 if(districtStats[d].years[rYear]) {
                     let ySt = districtStats[d].years[rYear];
                     if (areaType === "Single") { ySt.singleC += 1; ySt.singleB += row._budgetNum; }
                     if (areaType === "Multi") { ySt.multiC += 1; ySt.multiB += row._budgetNum; }
                     ySt.totalProjects += 1;
-                    strats.forEach(s => { ySt.stratCounts[s] = (ySt.stratCounts[s] || 0) + 1; }); // เก็บสถิติยุทธศาสตร์รายปีด้วย!
+                    strats.forEach(s => { ySt.stratCounts[s] = (ySt.stratCounts[s] || 0) + 1; });
 
                     if (areaType === "Single" && isSingleStrat) ySt.matrix.s_s++;
                     else if (areaType === "Single" && !isSingleStrat) ySt.matrix.s_j++;
@@ -1048,7 +1058,7 @@ function renderMap(isMultiYear, selectedYears) {
         onEachFeature: function (f, l) {
             let dName = f.properties.amp_th || f.properties.AMP_TH || "ไม่ระบุ";
             
-            // 🚀 Lazy Popup: สร้างเนื้อหาเฉพาะตอนคลิกเท่านั้น (แก้โทรศัพท์ค้าง)
+            // 🚀 Lazy Popup: ประมวลผลข้อความเมื่อ User คลิกเท่านั้น
             l.on('click', function(e) {
                 let dt = districtStats[dName];
                 let s = dt.total;
@@ -1063,7 +1073,7 @@ function renderMap(isMultiYear, selectedYears) {
                 }
                 
                 if (mapMode === 'overview') {
-                     popupHtml += `
+                    popupHtml += `
                         <div style="font-size:13px; line-height: 1.4;">
                             <b style="color:#10b981;">🎯 ดำเนินการเฉพาะอำเภอนี้ (Single)</b><br>
                             รวมทั้งหมด: <b>${s.singleC}</b> โครงการ | <b>${s.singleB.toLocaleString()}</b> บาท<br>
@@ -1142,7 +1152,7 @@ function renderMap(isMultiYear, selectedYears) {
                             let sCount = st[1];
                             top3Html += `${i+1}. ${sName} <span style="color:#ef4444">(${sCount})</span><br>`;
                             
-                            // 🚀 แจกแจงปีใน Top 3 (ถ้าเลือกหลายปี)
+                            // 🚀 แจกแจงปีใน Top 3
                             if(isMultiYear) {
                                 top3Html += `<div style="padding-left:15px; font-size:10.5px; color:#64748b; margin-bottom:4px; line-height:1.2;">`;
                                 activeYears.forEach(y => {
@@ -1167,11 +1177,9 @@ function renderMap(isMultiYear, selectedYears) {
 
                 popupHtml += `<button type="button" onclick="setDistrictFilter('${dName}')" style="margin-top:10px; width:100%; padding:6px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer; position:sticky; bottom:-5px; z-index:100;">🔍 กรองข้อมูลเฉพาะอำเภอนี้</button></div>`;
                 
-                // สร้าง Popup และเปิดทันที (On Demand)
                 L.popup().setLatLng(e.latlng).setContent(popupHtml).openOn(map);
             });
             
-            // Highlight effect
             l.on('mouseover', e => { e.target.setStyle({weight: 3, color: '#f59e0b'}); e.target.bringToFront(); });
             l.on('mouseout', e => geojsonLayer.resetStyle(e.target));
         }
