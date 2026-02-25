@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
     <style>
-        /* CSS Reset พื้นฐานสำหรับมือถือ */
+        /* CSS Reset */
         * { box-sizing: border-box; }
         
         :root { --primary: #1e3a8a; --secondary: #3b82f6; --bg: #f3f4f6; --card: #ffffff; --joint: #f97316; }
@@ -89,26 +89,27 @@
         #map { flex-grow: 1; width: 100%; border-radius: 8px; z-index: 1; border: 1px solid #e2e8f0; min-height: 400px;}
         .chart-container { flex-grow: 1; position: relative; width: 100%; height: 100%; min-height: 300px;}
 
-        /* Overlay บล็อกการคลิกกราฟโดนัท */
         .chart-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); z-index: 100; border-radius: 8px; justify-content: center; align-items: center; text-align: center; padding: 20px; pointer-events: all; cursor: not-allowed;}
         .chart-overlay-text { color: #dc2626; font-weight: bold; font-size: 16px; line-height: 1.5; border: 2px dashed #fca5a5; padding: 15px; border-radius: 8px; background: #fef2f2;}
 
-        /* ปุ่มล้างพื้นที่ (Minimal) */
+        /* ปุ่มล้างพื้นที่ & ปุ่ม Home (Minimal) */
+        .map-btn-group { position: absolute; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 5px; }
         .btn-reset-map { 
             display: none; 
-            background: #ffffff; 
-            color: #dc2626; 
-            border: 1px solid #f87171; 
-            padding: 6px 12px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-family: 'Sarabun'; 
-            font-weight: bold; 
-            font-size: 13px; 
-            transition: 0.2s;
+            background: #ffffff; color: #dc2626; border: 1px solid #f87171; 
+            padding: 6px 12px; border-radius: 6px; cursor: pointer; 
+            font-family: 'Sarabun'; font-weight: bold; font-size: 13px; 
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
-        .btn-reset-map:hover { background: #fef2f2; border-color: #dc2626; }
+        .btn-reset-map:hover { background: #fef2f2; }
+        
+        .btn-home-map { 
+            background: #ffffff; color: var(--primary); border: 2px solid var(--secondary); 
+            width: 32px; height: 32px; border-radius: 6px; cursor: pointer; 
+            font-size: 16px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .btn-home-map:hover { background: #eff6ff; }
 
         .table-section { background: var(--card); padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 40px;}
         .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
@@ -146,7 +147,6 @@
         .btn-filter-project { margin-top: 15px; background: #10b981; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; width: 100%; transition: 0.2s;}
         .btn-filter-project:hover { background: #059669; }
 
-        /* 📱 ปรับ CSS สำหรับมือถือ (แก้บัคจอเล็ก/แนวตั้ง) */
         @media (max-width: 768px) {
             .header { flex-direction: column; align-items: center; text-align: center; gap: 15px; }
             .main-controls { width: 100%; justify-content: center; flex-direction: column; align-items: stretch; gap: 10px; }
@@ -164,9 +164,8 @@
             .btn-sort, .btn-clear-small, .summary-breakdown-btn, .btn-reset-map { width: 100%; padding: 10px !important; font-size: 14px !important; text-align: center; margin-bottom: 5px;}
             .slicer-box select { padding: 10px !important; font-size: 14px !important; }
             
-            /* จัดปุ่มล้างแผนที่บนมือถือให้วางซ้อนกันสวยๆ */
-            .dash-card h3 div { flex-direction: column; align-items: stretch !important; width: 100%; margin-top: 10px;}
-            .dash-card h3 select { width: 100%; }
+            .dash-card h3 div { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; width: 100%; margin-top: 5px;}
+            .dash-card h3 select { flex-grow: 1; }
         }
     </style>
 </head>
@@ -265,6 +264,7 @@
             <h3 style="margin-top:0; color: var(--primary); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <span>📍 แผนที่วิเคราะห์การกระจายตัวระดับพื้นที่</span>
                 <div style="display:flex; gap:8px; align-items:center;">
+                    <button id="btnHomeMap" class="btn-home-map" onclick="resetMapView()" title="กลับไปจุดเริ่มต้น">🏠</button>
                     <button id="btnResetMap" class="btn-reset-map" onclick="clearMapFilter()">↺ ล้างพื้นที่เจาะจง</button>
                     <select id="mapModeSelect" onchange="renderMap()" style="padding:6px; border-radius:6px; font-family:'Sarabun'; border: 2px solid var(--secondary); color: var(--primary); font-weight:bold; cursor: pointer; background: #eff6ff;">
                         <option value="overview">รูปแบบที่ 1: ภาพรวมการกระจายตัวของโครงการและงบประมาณ</option>
