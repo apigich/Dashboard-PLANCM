@@ -22,9 +22,9 @@ let chartFilterAreaType = "all";
 let currentPage = 1;
 const rowsPerPage = 20;
 
+// 🎯 ตัวแปร Sorting
 let isYearDesc = true;   
 let isBudgetDesc = true; 
-let primarySortKey = 'year'; 
 
 let currentStratFilterId = 'filterProv'; 
 
@@ -126,6 +126,7 @@ async function init() {
             return row;
         });
 
+        // 🎯 เรียงปี และ บังคับ Default ปีล่าสุดปีเดียว
         const yearBox = document.getElementById('yearCheckboxes');
         let sortedYears = [...years].sort((a,b) => b-a); 
         let maxYear = sortedYears.length > 0 ? sortedYears[0] : null;
@@ -162,6 +163,7 @@ function resetPageAndFilter() {
     applyFilters();
 }
 
+// 🎯 อัปเดตข้อความบนปุ่ม Dropdown เลือกปีงบประมาณอัจฉริยะ
 function updateYearDropdownLabel() {
     const selectedCbs = Array.from(document.querySelectorAll('.year-cb:checked'));
     const selectedYears = selectedCbs.map(cb => parseInt(cb.value)).sort((a,b) => a-b);
@@ -268,22 +270,18 @@ function clearAllFilters() {
 }
 
 // ==========================================
-// 4. ระบบตาราง (Sorting)
+// 4. ระบบตาราง (Sorting แบบห้ามปีผสมกัน)
 // ==========================================
 function handleTableSearch() { currentPage = 1; renderTable(); }
 
 function toggleSort(type) {
     if (type === 'year') {
-        if(primarySortKey === 'year') isYearDesc = !isYearDesc;
-        primarySortKey = 'year';
+        isYearDesc = !isYearDesc;
+        document.getElementById('btnSortYear').innerText = `📅 ปีงบประมาณ: ${isYearDesc ? '▼ ใหม่ ➜ เก่า' : '▲ เก่า ➜ ใหม่'}`;
     } else if (type === 'budget') {
-        if(primarySortKey === 'budget') isBudgetDesc = !isBudgetDesc;
-        primarySortKey = 'budget';
+        isBudgetDesc = !isBudgetDesc;
+        document.getElementById('btnSortBudget').innerText = `💰 งบประมาณ: ${isBudgetDesc ? '▼ มาก ➜ น้อย' : '▲ น้อย ➜ มาก'}`;
     }
-    document.getElementById('btnSortYear').innerText = `📅 ปีงบประมาณ: ${isYearDesc ? '▼ ใหม่ ➜ เก่า' : '▲ เก่า ➜ ใหม่'}`;
-    document.getElementById('btnSortBudget').innerText = `💰 งบประมาณ: ${isBudgetDesc ? '▼ มาก ➜ น้อย' : '▲ น้อย ➜ มาก'}`;
-    document.getElementById('btnSortYear').classList.toggle('active', primarySortKey === 'year');
-    document.getElementById('btnSortBudget').classList.toggle('active', primarySortKey === 'budget');
     renderTable();
 }
 
@@ -305,28 +303,26 @@ function renderTable() {
         return String(row["ชื่อโครงการ"] || "").toLowerCase().includes(tableSearchTxt);
     });
 
+    // 🎯 กฎเหล็ก: จัดกลุ่มด้วย "ปีงบประมาณ" ก่อนเสมอ ห้ามผสมปี
     tableData.sort((a, b) => {
         let yearA = parseInt(a._year) || 0;
         let yearB = parseInt(b._year) || 0;
         let budgetA = a._budgetNum;
         let budgetB = b._budgetNum;
 
+        // 1. แยกก้อนปีงบประมาณให้ชัดเจนก่อน
+        if (yearA !== yearB) return isYearDesc ? yearB - yearA : yearA - yearB; 
+
+        // 2. ถ้าอยู่ปีเดียวกัน และมีการกรองพื้นที่ ให้เรียงความเข้มข้น
         if (mapFilterDistrict !== "all") {
-            if (yearA !== yearB) return isYearDesc ? yearB - yearA : yearA - yearB; 
             const typeOrder = { "Single": 1, "Multi": 2, "Provincial": 3, "ไม่ระบุ": 4 };
             let typeA = typeOrder[a._areaType] || 5;
             let typeB = typeOrder[b._areaType] || 5;
             if (typeA !== typeB) return typeA - typeB;
-            return isBudgetDesc ? budgetB - budgetA : budgetA - budgetB;
         }
 
-        if (primarySortKey === 'year') {
-            if (yearA !== yearB) return isYearDesc ? yearB - yearA : yearA - yearB;
-            return isBudgetDesc ? budgetB - budgetA : budgetA - budgetB; 
-        } else {
-            if (budgetA !== budgetB) return isBudgetDesc ? budgetB - budgetA : budgetA - budgetB;
-            return isYearDesc ? yearB - yearA : yearA - yearB;
-        }
+        // 3. สุดท้ายเรียงงบประมาณ (ภายในปีนั้นๆ เท่านั้น)
+        return isBudgetDesc ? budgetB - budgetA : budgetA - budgetB;
     });
 
     if(tableData.length === 0) {
@@ -428,6 +424,7 @@ function updateDashboard() {
     let filterStr = activeTexts.length > 0 ? " | " + activeTexts.join(" | ") : "";
     document.getElementById('activeFiltersText').innerHTML = `<div style="margin-bottom:6px;"><strong>🔍 สถานะการกรองข้อมูลปัจจุบัน:</strong> ${mainStratStatus}</div><div style="font-size:13px;"><strong>เงื่อนไขการกรองเพิ่มเติม:</strong> ${filterStr === "" ? "ไม่มี" : filterStr.substring(3)}</div>`;
 
+    // 🎯 ระบบป้องกันการคลิกโดนัท (แก้บัคคลิกทะลุ 100%)
     let isMultiYear = selectedYears.length > 1;
     let chartSelect = document.getElementById('chartTypeSelect');
     let overlay = document.getElementById('areaChartOverlay');
@@ -801,6 +798,12 @@ function renderCharts(isMultiYear, selectedYears) {
     }
 
     const ctxArea = document.getElementById('areaChart');
+    if (areaChart) {
+        areaChart.destroy();
+        areaChart = null;
+    }
+
+    // สร้างกราฟโดนัทถ้าไม่ใช่ Multi Year
     if(!isMultiYear) {
         let areaCounts = { 'Single': 0, 'Multi': 0, 'Provincial': 0, 'ไม่ระบุ': 0 };
         filteredData.forEach(row => { areaCounts[row._areaType] += (currentMode === 'budget' ? row._budgetNum : 1); });
@@ -816,7 +819,6 @@ function renderCharts(isMultiYear, selectedYears) {
             return `${lbl} (${pct}%)`;
         });
 
-        if (areaChart) areaChart.destroy();
         areaChart = new Chart(ctxArea, {
             type: 'doughnut',
             data: { labels: aLabelsWithPct, datasets: [{ data: aData, backgroundColor: aColors }] },
@@ -852,14 +854,14 @@ function renderCharts(isMultiYear, selectedYears) {
         });
     }
 
-    // 🎯 กราฟแนวโน้ม: บังคับให้แสดงแกน X ตามปีที่เลือกทั้งหมด แม้จะเป็น 0
+    // 🎯 Trend Chart: แสดงแกน X ตามปีที่ถูกเลือกทั้งหมดเสมอ (แม้จะเป็น 0)
     const ctxTrend = document.getElementById('trendChart');
     let yearCounts = {};
     
     // ดึงปีทั้งหมดที่ติ๊กเลือก หรือถ้าไม่ได้เลือกอะไรให้เอาทุกปีที่มีในระบบ
-    let activeYears = selectedYears.length > 0 ? selectedYears : Array.from(document.querySelectorAll('.year-cb')).map(cb => cb.value);
+    let activeYears = (selectedYears && selectedYears.length > 0) ? selectedYears : Array.from(document.querySelectorAll('.year-cb')).map(cb => cb.value);
     
-    // สร้างโครงปีรอไว้ก่อน จะได้ไม่แหว่ง
+    // จองที่นั่งให้ทุกปี
     activeYears.forEach(y => yearCounts[y] = 0);
     
     filteredData.forEach(row => {
@@ -886,7 +888,7 @@ function renderCharts(isMultiYear, selectedYears) {
 }
 
 // ==========================================
-// 6. แผนที่ Leaflet (Heatmap & Popup แจกแจงยิบทุกปีแม้เป็น 0)
+// 6. แผนที่ Leaflet (Heatmap & Popup แจกแจงยิบ 4 ลักษณะทุกปี)
 // ==========================================
 function setDistrictFilter(dName) { 
     mapFilterDistrict = dName; 
@@ -913,15 +915,13 @@ function renderMap(isMultiYear, selectedYears) {
     let districtStats = {};
     const dNames = ["กัลยาณิวัฒนา", "จอมทอง", "เชียงดาว", "ไชยปราการ", "ดอยเต่า", "ดอยสะเก็ด", "ดอยหล่อ", "ฝาง", "พร้าว", "เมืองเชียงใหม่", "แม่แจ่ม", "แม่แตง", "แม่ริม", "แม่วาง", "แม่ออน", "แม่อาย", "เวียงแหง", "สะเมิง", "สันกำแพง", "สันทราย", "สันป่าตอง", "สารภี", "หางดง", "อมก๋อย", "ฮอด"];
     
-    // ดึงปีที่กำลังถูกประมวลผล (ถ้าไม่ติ๊กเลือกปีเลย จะอิงจากปีทั้งหมดที่มี)
-    let activeYears = selectedYears && selectedYears.length > 0 ? selectedYears : Array.from(document.querySelectorAll('.year-cb')).map(cb => cb.value);
+    let activeYears = (selectedYears && selectedYears.length > 0) ? selectedYears : Array.from(document.querySelectorAll('.year-cb')).map(cb => cb.value);
 
     dNames.forEach(d => {
         districtStats[d] = { 
             total: { singleC: 0, singleB: 0, multiC: 0, multiB: 0, provC: 0, totalProjects: 0, stratCounts: {}, matrix: { s_s:0, s_j:0, m_s:0, m_j:0 } },
             years: {} 
         };
-        // สร้าง Slot รอให้ทุกปีที่เปิดดูเสมอ
         activeYears.forEach(y => {
             districtStats[d].years[y] = { singleC: 0, singleB: 0, multiC: 0, multiB: 0, provC: 0, totalProjects: 0, stratCounts: {}, matrix: { s_s:0, s_j:0, m_s:0, m_j:0 } };
         });
@@ -936,7 +936,6 @@ function renderMap(isMultiYear, selectedYears) {
 
     let activeStratKey = stratMapping[currentStratFilterId].key;
     let selectedStratValue = document.getElementById(currentStratFilterId).value;
-    let isSpecificStrat = selectedStratValue !== "all";
 
     let overallProjects = {};
     dNames.forEach(d => overallProjects[d] = 0);
@@ -972,12 +971,11 @@ function renderMap(isMultiYear, selectedYears) {
                 districtStats[d].total.totalProjects += 1;
                 strats.forEach(s => { districtStats[d].total.stratCounts[s] = (districtStats[d].total.stratCounts[s] || 0) + 1; });
 
-                if (isSpecificStrat) {
-                    if (areaType === "Single" && isSingleStrat) districtStats[d].total.matrix.s_s++;
-                    else if (areaType === "Single" && !isSingleStrat) districtStats[d].total.matrix.s_j++;
-                    else if (areaType === "Multi" && isSingleStrat) districtStats[d].total.matrix.m_s++;
-                    else if (areaType === "Multi" && !isSingleStrat) districtStats[d].total.matrix.m_j++;
-                }
+                // 🎯 4D Matrix: นับตลอดไม่ว่าจะเป็นทุกยุทธศาสตร์หรือเจาะจง
+                if (areaType === "Single" && isSingleStrat) districtStats[d].total.matrix.s_s++;
+                else if (areaType === "Single" && !isSingleStrat) districtStats[d].total.matrix.s_j++;
+                else if (areaType === "Multi" && isSingleStrat) districtStats[d].total.matrix.m_s++;
+                else if (areaType === "Multi" && !isSingleStrat) districtStats[d].total.matrix.m_j++;
 
                 if(districtStats[d].years[rYear]) {
                     let ySt = districtStats[d].years[rYear];
@@ -986,12 +984,10 @@ function renderMap(isMultiYear, selectedYears) {
                     ySt.totalProjects += 1;
                     strats.forEach(s => { ySt.stratCounts[s] = (ySt.stratCounts[s] || 0) + 1; });
 
-                    if (isSpecificStrat) {
-                        if (areaType === "Single" && isSingleStrat) ySt.matrix.s_s++;
-                        else if (areaType === "Single" && !isSingleStrat) ySt.matrix.s_j++;
-                        else if (areaType === "Multi" && isSingleStrat) ySt.matrix.m_s++;
-                        else if (areaType === "Multi" && !isSingleStrat) ySt.matrix.m_j++;
-                    }
+                    if (areaType === "Single" && isSingleStrat) ySt.matrix.s_s++;
+                    else if (areaType === "Single" && !isSingleStrat) ySt.matrix.s_j++;
+                    else if (areaType === "Multi" && isSingleStrat) ySt.matrix.m_s++;
+                    else if (areaType === "Multi" && !isSingleStrat) ySt.matrix.m_j++;
                 }
             });
         } else if (areaType === "Provincial") {
@@ -1024,7 +1020,7 @@ function renderMap(isMultiYear, selectedYears) {
                         color = val > 10 ? '#800026' : val > 5 ? '#BD0026' : val > 2 ? '#E31A1C' : val > 0 ? '#FC4E2A' : '#FFEDA0';
                     }
                 } else {
-                    let val = isSpecificStrat ? (s.matrix.s_s + s.matrix.m_s + s.matrix.s_j + s.matrix.m_j) : s.totalProjects;
+                    let val = s.totalProjects;
                     if (val > 15) color = '#800026';
                     else if (val > 8) color = '#BD0026';
                     else if (val > 3) color = '#E31A1C';
@@ -1037,7 +1033,6 @@ function renderMap(isMultiYear, selectedYears) {
                 let dt = districtStats[dName];
                 let s = dt.total;
                 
-                // 🎯 ปรับ Popup ให้แจกแจงปีเสมอ
                 let popupHtml = `<div style="font-family:'Sarabun'; width: 320px; max-height: 380px; overflow-y: auto; overflow-x: hidden;">
                                  <b style="font-size:16px; color:#1e3a8a;">📍 ข้อมูลอำเภอ${dName}</b>`;
                 
@@ -1053,7 +1048,6 @@ function renderMap(isMultiYear, selectedYears) {
                             <b style="color:#10b981;">🎯 ดำเนินการเฉพาะอำเภอนี้ (Single)</b><br>
                             รวมทั้งหมด: <b>${s.singleC}</b> โครงการ | <b>${s.singleB.toLocaleString()}</b> บาท<br>
                     `;
-                    // 🎯 แจกแจงปี (โชว์เสมอแม้เป็น 0)
                     popupHtml += `<ul style="margin:2px 0 5px 0; padding-left:15px; font-size:11.5px; color:#475569;">`;
                     activeYears.sort((a,b)=>a-b).forEach(y => {
                         popupHtml += `<li>ปี ${y}: ${dt.years[y].singleC} โครงการ (${dt.years[y].singleB.toLocaleString()} บ.)</li>`;
@@ -1083,44 +1077,29 @@ function renderMap(isMultiYear, selectedYears) {
                     popupHtml += `</ul>`;
                     popupHtml += `<span style="color:#ef4444; font-size:11px;">(ไม่นำมาคำนวณความเข้มข้นในแผนที่)</span></div>`;
                 } else {
-                    // โหมด 4D
-                    if (isSpecificStrat) {
-                        popupHtml += `
-                            <div style="font-size:13px; line-height: 1.4;">
-                                <div style="margin-bottom:8px; color:#666;">โครงการฐานที่ลงในอำเภอนี้: <b>${overallProjects[dName]}</b> โครงการ</div>
-                                <b>รวมสอดคล้องประเด็นยุทธศาสตร์ที่เลือก: <span style="color:#ef4444; font-size:15px;">${s.totalProjects}</span> โครงการ</b><br>
-                                <span style="color:#666; font-size:11px;">(จำแนกตามลักษณะพื้นที่และยุทธศาสตร์)</span><br><br>
-                                <b style="color:#10b981;">1. สอดคล้องประเด็นเดียว + ลงเฉพาะอำเภอนี้:</b> ${s.matrix.s_s}<br>
-                                <b style="color:#f59e0b;">2. สอดคล้องหลายประเด็น + ลงเฉพาะอำเภอนี้:</b> ${s.matrix.s_j}<br>
-                                <b style="color:#3b82f6;">3. สอดคล้องประเด็นเดียว + ร่วมอำเภออื่น:</b> ${s.matrix.m_s}<br>
-                                <b style="color:#8b5cf6;">4. สอดคล้องหลายประเด็น + ร่วมอำเภออื่น:</b> ${s.matrix.m_j}
-                        `;
-                        // 🎯 4D แจกแจงปี
-                        popupHtml += `<hr style="margin:5px 0;"><div style="font-size:12px; color:#475569;">`;
-                        activeYears.sort((a,b)=>a-b).forEach(y => {
-                            popupHtml += `<b style="color:#1e3a8a">ปี ${y}:</b> รวม ${dt.years[y].totalProjects} โครงการ<br><span style="font-size:11px;">(เดี่ยว: ${dt.years[y].matrix.s_s+dt.years[y].matrix.s_j} | ร่วม: ${dt.years[y].matrix.m_s+dt.years[y].matrix.m_j})</span><br>`;
-                        });
-                        popupHtml += `</div></div>`;
-                    } else {
-                        let sortedStrats = Object.entries(s.stratCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
-                        let top3Html = sortedStrats.map((st, i) => `${i+1}. ${st[0]} <span style="color:#ef4444">(${st[1]})</span>`).join('<br>');
-                        popupHtml += `
-                            <div style="font-size:13px; line-height: 1.4;">
-                                <b>รวมโครงการในพื้นที่: <span style="color:#ef4444">${s.totalProjects}</span> โครงการ</b><br>
-                        `;
-                        popupHtml += `<div style="font-size:12px; color:#475569; margin-bottom:5px;">`;
-                        activeYears.sort((a,b)=>a-b).forEach(y => {
-                            popupHtml += `ปี ${y}: ${dt.years[y].totalProjects} โครงการ<br>`;
-                        });
-                        popupHtml += `</div>`;
-
-                        popupHtml += `
-                                <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
-                                <b style="color:#1e3a8a;">🧬 3 ลำดับยุทธศาสตร์หลักในอำเภอนี้ (รวม):</b><br>
-                                ${top3Html || '<span style="color:gray">- ไม่มีข้อมูล -</span>'}
-                            </div>
-                        `;
-                    }
+                    // 🎯 โหมด 4D Matrix: แสดง 4 ลักษณะเสมอ (รวมทุกประเด็นหรือแยกประเด็นก็โชว์)
+                    popupHtml += `
+                        <div style="font-size:13px; line-height: 1.4;">
+                            <div style="margin-bottom:8px; color:#666;">โครงการฐานที่ลงในอำเภอนี้ (ทุกยุทธศาสตร์): <b>${overallProjects[dName]}</b> โครงการ</div>
+                            <b>รวมสอดคล้องประเด็นยุทธศาสตร์ที่เลือก: <span style="color:#ef4444; font-size:15px;">${s.totalProjects}</span> โครงการ</b><br>
+                            <span style="color:#666; font-size:11px;">(จำแนกตาม 4 ลักษณะพื้นที่และยุทธศาสตร์)</span><br><br>
+                            <b style="color:#10b981;">1. เดี่ยว (พื้นที่) + เดี่ยว (ประเด็น):</b> ${s.matrix.s_s}<br>
+                            <b style="color:#f59e0b;">2. เดี่ยว (พื้นที่) + ร่วม (ประเด็น):</b> ${s.matrix.s_j}<br>
+                            <b style="color:#3b82f6;">3. ร่วม (พื้นที่) + เดี่ยว (ประเด็น):</b> ${s.matrix.m_s}<br>
+                            <b style="color:#8b5cf6;">4. ร่วม (พื้นที่) + ร่วม (ประเด็น):</b> ${s.matrix.m_j}
+                    `;
+                    
+                    // แจกแจงรายปีแบบละเอียด
+                    popupHtml += `<hr style="margin:5px 0;"><div style="font-size:12px; color:#475569;">`;
+                    activeYears.sort((a,b)=>a-b).forEach(y => {
+                        let yM = dt.years[y].matrix;
+                        popupHtml += `<b style="color:#1e3a8a">ปี ${y}:</b> รวม ${dt.years[y].totalProjects} โครงการ<br>`;
+                        popupHtml += `<div style="padding-left:10px; font-size:11px; margin-bottom:4px; line-height: 1.3;">
+                            - เดี่ยว(พื้นที่)+เดี่ยว(ประเด็น): ${yM.s_s} | ร่วม(ประเด็น): ${yM.s_j}<br>
+                            - ร่วม(พื้นที่)+เดี่ยว(ประเด็น): ${yM.m_s} | ร่วม(ประเด็น): ${yM.m_j}
+                        </div>`;
+                    });
+                    popupHtml += `</div></div>`;
                 }
                 
                 popupHtml += `<button type="button" onclick="setDistrictFilter('${dName}')" style="margin-top:10px; width:100%; padding:6px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer; position:sticky; bottom:-5px; z-index:100;">🔍 กรองข้อมูลเฉพาะอำเภอนี้</button></div>`;
