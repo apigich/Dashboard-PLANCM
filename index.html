@@ -90,7 +90,25 @@
         /* Map Controls */
         .btn-reset-map { display: none; background: #ffffff; color: #dc2626; border: 1px solid #f87171; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: 0.2s; white-space: nowrap;}
         .btn-reset-map:hover { background: #fef2f2; }
-        .btn-home-map { background: #ffffff; color: var(--primary); border: 2px solid var(--secondary); width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: 0.2s;}
+        
+        /* เพิ่ม CSS ให้ปุ่มหมุดแผนที่ */
+        .btn-home-map { 
+            background: #ffffff; 
+            color: var(--primary); 
+            border: 2px solid var(--secondary); 
+            padding: 6px 12px; /* เพิ่ม padding ให้เหมือนปุ่มล้าง */
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-family: 'Sarabun'; 
+            font-weight: bold; 
+            font-size: 13px; /* ปรับขนาดฟอนต์ให้เท่าปุ่มล้าง */
+            display: flex; 
+            align-items: center; 
+            gap: 5px; /* เพิ่มช่องว่างระหว่างไอคอนกับข้อความ */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+            transition: 0.2s; 
+            white-space: nowrap; /* ป้องกันข้อความตกบรรทัด */
+        }
         .btn-home-map:hover { background: #eff6ff; }
 
         .table-section { background: var(--card); padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 40px;}
@@ -148,7 +166,8 @@
             /* Map Controls on Mobile */
             .dash-card h3 div { flex-direction: column-reverse; align-items: stretch !important; width: 100%; margin-top: 10px;}
             .dash-card h3 select { width: 100%; margin-bottom: 5px;}
-            .btn-home-map { width: 100%; justify-content: center; margin-bottom: 5px;}
+            /* ให้ปุ่มหมุดเต็มความกว้างในมือถือ */
+            .btn-home-map { width: 100%; justify-content: center; margin-bottom: 5px;} 
         }
     </style>
 </head>
@@ -164,24 +183,25 @@
     <div class="header">
         <h1>📊 Dashboard แผนพัฒนาจังหวัดเชียงใหม่</h1>
         <div class="main-controls">
-            <input type="search" id="globalSearch" class="search-box" placeholder="🔍 ค้นหาคำสำคัญ..." onsearch="applyFilters()" oninput="applyFilters()">
+            <input type="search" id="globalSearch" class="search-box" placeholder="🔍 ค้นหาคำสำคัญในระบบทั้งหมด..." onsearch="applyFilters()" oninput="applyFilters()">
             <div class="switch-container">
-                <span>จำนวน</span>
+                <span>วิเคราะห์จำนวนโครงการ</span>
                 <label class="switch"><input type="checkbox" id="modeSwitch"><span class="slider"></span></label>
-                <span>งบประมาณ</span>
+                <span>วิเคราะห์งบประมาณ</span>
             </div>
             <div id="yearDropdown" class="dropdown-check-list" tabindex="100">
                 <span id="yearDropdownText" class="anchor">📅 กำลังประมวลผล...</span>
                 <ul class="items" id="yearCheckboxes">
-                    </ul>
+                    <li><input type="checkbox" id="checkAllYears" checked onchange="toggleAllYears(this)" /> <strong>ทุกปีงบประมาณที่มีข้อมูล</strong></li>
+                </ul>
             </div>
-            <button type="button" class="btn-clear" onclick="clearAllFilters()">🔄 ล้าง</button>
+            <button type="button" class="btn-clear" onclick="clearAllFilters()">🔄 ล้างการกรองทั้งหมด</button>
         </div>
     </div>
 
     <div class="instructions-panel">
         <h3>ℹ️ คำแนะนำการใช้งาน Dashboard</h3>
-        <p>Dashboard นี้นำข้อมูลมาจากแผนปฏิบัติราชการของจังหวัดเชียงใหม่ตั้งแต่ปีงบประมาณ 2566 - 2568 ซึ่งเป็นเพียงการตั้งเป้าหมายสำหรับ "งบจังหวัดเท่านั้น"</p>
+        <p>Dashboard นี้นำข้อมูลมาจากแผนปฏิบัติราชการของจังหวัดเชียงใหม่ตั้งแต่ปีงบประมาณ 2566 - 2568 ซึ่งเป็นเพียงการตั้งเป้าหมายสำหรับ "งบจังหวัดเท่านั้น" ! <br>ในการพัฒนาจังหวัดยังมีงบประมาณจากอีกหลายส่วน เช่น งบ Function และงบ อปท. ซึ่งไม่ได้อยู่ในการประมวลผลครั้งนี้</p>
     </div>
 
     <div class="slicer-grid">
@@ -194,25 +214,25 @@
 
     <div class="summary-wrapper">
         <div class="summary-card">
-            <h3 style="margin: 0;">📌 จำนวนโครงการ</h3>
+            <h3 style="margin: 0;">📌 จำนวนโครงการที่สอดคล้อง</h3>
             <div class="summary-value" id="sumProjects">0</div>
-            <button class="summary-breakdown-btn" onclick="toggleSummaryBreakdown('projectBreakdown')">▼ รายละเอียดรายปี</button>
+            <button class="summary-breakdown-btn" onclick="toggleSummaryBreakdown('projectBreakdown')">▼ ดูรายละเอียดรายปีงบประมาณ</button>
             <div id="projectBreakdown" class="summary-breakdown-content"></div>
         </div>
         <div class="summary-card" style="background: linear-gradient(135deg, #059669, #10b981);">
-            <h3 style="margin: 0;">💰 งบประมาณรวม</h3>
+            <h3 style="margin: 0;">💰 งบประมาณรวม (บาท)</h3>
             <div class="summary-value" id="sumBudget">0.00</div>
-            <button class="summary-breakdown-btn" onclick="toggleSummaryBreakdown('budgetBreakdown')">▼ รายละเอียดรายปี</button>
+            <button class="summary-breakdown-btn" onclick="toggleSummaryBreakdown('budgetBreakdown')">▼ ดูรายละเอียดรายปีงบประมาณ</button>
             <div id="budgetBreakdown" class="summary-breakdown-content"></div>
         </div>
     </div>
     
     <div class="status-container">
-        <div id="activeFiltersText" class="active-filters-bar"><strong>🔍 สถานะ:</strong> กำลังเตรียมระบบ...</div>
+        <div id="activeFiltersText" class="active-filters-bar"><strong>🔍 สถานะการกรองข้อมูลปัจจุบัน:</strong> กำลังเตรียมระบบ...</div>
         <div class="provincial-wrapper">
             <div id="provincialStatusBar" class="provincial-status-bar" onclick="toggleProvincialTable()">
                 <div id="provincialStatusContent">🌟 ประมวลผลโครงการระดับจังหวัด...</div>
-                <div style="text-align:center; margin-top:5px; font-size:12px; color:#1d4ed8; font-weight:bold;">▼ คลิกเพื่อดูตาราง ▼</div>
+                <div style="text-align:center; margin-top:5px; font-size:12px; color:#1d4ed8; font-weight:bold;">▼ คลิกเพื่อดูตารางแจกแจงความสอดคล้องยุทธศาสตร์ ▼</div>
             </div>
             <div id="provincialDropdown" class="provincial-dropdown">
                 <h4 id="provincialTableHeader" style="margin-top:0; margin-bottom:10px; color:var(--primary); line-height:1.5;"></h4>
@@ -225,6 +245,7 @@
                         </table>
                     </div>
                 </div>
+                <div id="provincialNote" style="font-size:11px; color:#666; margin-top:10px;">* หมายเหตุ: ตัวเลขในวงเล็บ <span class="joint-stat">(+...)</span> คือจำนวนโครงการที่ตอบสนองมากกว่า 1 เป้าหมาย (Joint)</div>
             </div>
         </div>
     </div>
@@ -232,13 +253,13 @@
     <div class="dash-grid-top">
         <div class="dash-card">
             <h3 style="margin-top:0; color: var(--primary); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                <span>📍 แผนที่วิเคราะห์</span>
+                <span>📍 แผนที่วิเคราะห์การกระจายตัวระดับพื้นที่</span>
                 <div style="display:flex; gap:8px; align-items:center;">
-                    <button id="btnHomeMap" class="btn-home-map" onclick="resetMapView()" title="กลับไปจุดเริ่มต้น">🏠</button>
+                    <button id="btnHomeMap" class="btn-home-map" onclick="resetMapView()" title="กลับไปจุดเริ่มต้น">📍 หมุดแผนที่จังหวัดเชียงใหม่</button>
                     <button id="btnResetMap" class="btn-reset-map" onclick="clearMapFilter()">↺ ล้างพื้นที่เจาะจง</button>
                     <select id="mapModeSelect" onchange="renderMap()" style="padding:6px; border-radius:6px; font-family:'Sarabun'; border: 2px solid var(--secondary); color: var(--primary); font-weight:bold; cursor: pointer; background: #eff6ff;">
-                        <option value="overview">รูปแบบที่ 1: ภาพรวม</option>
-                        <option value="strategic">รูปแบบที่ 2: 4D Matrix</option>
+                        <option value="overview">รูปแบบที่ 1: ภาพรวมการกระจายตัวของโครงการและงบประมาณ</option>
+                        <option value="strategic">รูปแบบที่ 2: การวิเคราะห์ความสอดคล้องเชิงยุทธศาสตร์ (4D Matrix)</option>
                     </select>
                 </div>
             </h3>
@@ -246,13 +267,13 @@
         </div>
         <div class="dash-card" style="position: relative;">
             <h3 style="margin-top:0; color: #059669; display:flex; justify-content:space-between; align-items:flex-start;">
-                <div>🍩 สัดส่วนพื้นที่ <br><small style="font-weight:normal; color:#666;">(คลิกเพื่อกรอง)</small></div>
-                <button type="button" class="btn-clear-small" onclick="clearAreaFilter()">🔄 ล้าง</button>
+                <div>🍩 สัดส่วนลักษณะพื้นที่ <br><small style="font-weight:normal; color:#666;">(คลิกบนแผนภูมิเพื่อกรองข้อมูล)</small></div>
+                <button type="button" class="btn-clear-small" onclick="clearAreaFilter()">🔄 ล้างการกรองนี้</button>
             </h3>
             <div class="chart-container" style="position: relative;">
                 <canvas id="areaChart"></canvas>
                 <div id="areaChartOverlay" class="chart-overlay">
-                    <div class="chart-overlay-text">⚠️ เลือกหลายปี<br>ปิดใช้งานกราฟนี้</div>
+                    <div class="chart-overlay-text">⚠️ หากเลือกหลายปีงบประมาณ<br>ระบบแผนภูมิโดนัทลักษณะพื้นที่<br>จะไม่สามารถแสดงผลได้</div>
                 </div>
             </div>
         </div>
@@ -261,37 +282,40 @@
     <div class="dash-grid-mid">
         <div class="dash-card">
             <h3 style="margin-top:0; color: var(--primary); display:flex; justify-content:space-between; align-items:flex-start;">
-                <div>📊 สัดส่วนประเด็นยุทธศาสตร์<br><small id="strategyChartSubtitle" style="font-weight:normal; color:#666;"></small></div>
+                <div>
+                    📊 สัดส่วนตามประเด็นยุทธศาสตร์<br>
+                    <small id="strategyChartSubtitle" style="font-weight:normal; color:#666;"></small>
+                </div>
                 <select id="chartTypeSelect" onchange="renderCharts()" style="padding:4px 8px; border-radius:4px; font-family:'Sarabun'; border: 1px solid #ccc; cursor: pointer; background: white;">
-                    <option value="bar" selected>กราฟแท่ง</option>
-                    <option value="doughnut">กราฟโดนัท</option>
+                    <option value="bar" selected>กราฟแท่ง (Bar Chart)</option>
+                    <option value="doughnut">กราฟโดนัท (Donut Chart)</option>
                 </select>
             </h3>
             <div class="chart-container"><canvas id="mainChart"></canvas></div>
         </div>
         <div class="dash-card">
-            <h3 style="margin-top:0; color: #dc2626;">📈 แนวโน้มรายปีงบประมาณ</h3>
+            <h3 style="margin-top:0; color: #dc2626;">📈 แนวโน้มการจัดสรรโครงการและงบประมาณรายปีงบประมาณ</h3>
             <div class="chart-container"><canvas id="trendChart"></canvas></div>
         </div>
     </div>
 
     <div class="table-section">
         <div class="table-header">
-            <h3 style="margin:0; color: var(--primary);">📋 รายชื่อโครงการ</h3>
+            <h3 style="margin:0; color: var(--primary);">📋 รายชื่อโครงการ (คลิกเพื่อดูรายละเอียดโครงการ)</h3>
             <div class="table-controls">
                 <div class="table-search-box">
-                    <input type="text" id="tableSearch" placeholder="🔍 ค้นหาโครงการ..." oninput="handleTableSearch()">
+                    <input type="text" id="tableSearch" placeholder="🔍 ค้นหาเฉพาะชื่อโครงการ..." oninput="handleTableSearch()">
                     <span class="clear-icon" onclick="document.getElementById('tableSearch').value=''; handleTableSearch()">✖</span>
                 </div>
-                <button id="btnSortYear" class="btn-sort active" onclick="toggleSort('year')">📅 ปีงบ: ▼ ใหม่ ➜ เก่า</button>
-                <button id="btnSortBudget" class="btn-sort" onclick="toggleSort('budget')">💰 งบ: ▼ มาก ➜ น้อย</button>
-                <button type="button" class="btn-clear-small" onclick="clearAllFilters()">🔄 ล้างทั้งหมด</button>
+                <button id="btnSortYear" class="btn-sort active" onclick="toggleSort('year')">📅 ปีงบประมาณ: ▼ ใหม่ ➜ เก่า</button>
+                <button id="btnSortBudget" class="btn-sort" onclick="toggleSort('budget')">💰 งบประมาณ: ▼ มาก ➜ น้อย</button>
+                <button type="button" class="btn-clear-small" onclick="clearAllFilters()">🔄 ล้างการกรองทั้งหมด</button>
             </div>
         </div>
         <div style="overflow-x: auto;">
             <table id="dataTable">
-                <thead><tr><th style="width: 35%;">ชื่อโครงการ</th><th style="width: 10%; text-align: center;">ปีงบ</th><th style="width: 35%;">พื้นที่</th><th style="width: 20%; text-align: right;">งบประมาณ</th></tr></thead>
-                <tbody id="tableBody"><tr><td colspan="4" style="text-align:center; padding: 40px; font-weight:bold; color:#d69e2e;">⏳ กำลังโหลด...</td></tr></tbody>
+                <thead><tr><th style="width: 35%;">ชื่อโครงการ</th><th style="width: 10%; text-align: center;">ปีงบประมาณ</th><th style="width: 35%;">พื้นที่ดำเนินการ</th><th style="width: 20%; text-align: right;">งบประมาณ (บาท)</th></tr></thead>
+                <tbody id="tableBody"><tr><td colspan="4" style="text-align:center; padding: 40px; font-weight:bold; color:#d69e2e;">⏳ กำลังโหลดข้อมูลจากฐานข้อมูล...</td></tr></tbody>
             </table>
         </div>
         <div class="pagination">
