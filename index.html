@@ -12,6 +12,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
     <style>
+        /* CSS Reset พื้นฐานสำหรับมือถือ */
+        * { box-sizing: border-box; }
+        
         :root { --primary: #1e3a8a; --secondary: #3b82f6; --bg: #f3f4f6; --card: #ffffff; --joint: #f97316; }
         body { font-family: 'Sarabun', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: #333; }
         .container { max-width: 1400px; margin: auto; }
@@ -86,7 +89,7 @@
         #map { flex-grow: 1; width: 100%; border-radius: 8px; z-index: 1; border: 1px solid #e2e8f0; min-height: 400px;}
         .chart-container { flex-grow: 1; position: relative; width: 100%; height: 100%; min-height: 300px;}
 
-        /* Overlay ปิดตายกราฟโดนัท */
+        /* Overlay บล็อกการคลิกกราฟโดนัท */
         .chart-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); z-index: 100; border-radius: 8px; justify-content: center; align-items: center; text-align: center; padding: 20px; pointer-events: all; cursor: not-allowed;}
         .chart-overlay-text { color: #dc2626; font-weight: bold; font-size: 16px; line-height: 1.5; border: 2px dashed #fca5a5; padding: 15px; border-radius: 8px; background: #fef2f2;}
 
@@ -143,17 +146,27 @@
         .btn-filter-project { margin-top: 15px; background: #10b981; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; width: 100%; transition: 0.2s;}
         .btn-filter-project:hover { background: #059669; }
 
-        /* ปรับ CSS สำหรับมือถือ/แนวตั้ง */
+        /* 📱 ปรับ CSS สำหรับมือถือ (แก้บัคจอเล็ก/แนวตั้ง) */
         @media (max-width: 768px) {
+            .header { flex-direction: column; align-items: center; text-align: center; gap: 15px; }
+            .main-controls { width: 100%; justify-content: center; flex-direction: column; align-items: stretch; gap: 10px; }
+            .search-box { width: 100% !important; font-size: 16px !important; }
+            .switch-container { width: 100%; justify-content: center; }
+            .dropdown-check-list { width: 100%; text-align: center; }
+            .dropdown-check-list .anchor { width: 100%; }
+            .btn-clear { width: 100%; }
+
             .dash-grid-top, .dash-grid-mid, .status-container { grid-template-columns: 1fr; flex-direction: column; }
             .dash-card { height: auto; min-height: 450px; }
             #map { min-height: 350px; z-index: 1;}
+            
             .provincial-status-bar::after { position: static; display: block; margin-top: 5px; }
-            .btn-sort, .btn-clear, .btn-clear-small, .summary-breakdown-btn, .btn-reset-map { padding: 10px 15px !important; font-size: 14px !important; margin-bottom: 5px; width: 100%; text-align: center; } /* ขยายปุ่มเต็มความกว้างในมือถือ */
-            .search-box, .table-search-box input { width: 100% !important; font-size: 16px !important; }
+            .btn-sort, .btn-clear-small, .summary-breakdown-btn, .btn-reset-map { width: 100%; padding: 10px !important; font-size: 14px !important; text-align: center; margin-bottom: 5px;}
             .slicer-box select { padding: 10px !important; font-size: 14px !important; }
-            .header { flex-direction: column; align-items: stretch; } /* จัด header ให้เป็นแนวตั้งในมือถือ */
-            .main-controls { justify-content: center; } /* จัดปุ่มควบคุมให้อยู่ตรงกลาง */
+            
+            /* จัดปุ่มล้างแผนที่บนมือถือให้วางซ้อนกันสวยๆ */
+            .dash-card h3 div { flex-direction: column; align-items: stretch !important; width: 100%; margin-top: 10px;}
+            .dash-card h3 select { width: 100%; }
         }
     </style>
 </head>
@@ -251,7 +264,8 @@
         <div class="dash-card">
             <h3 style="margin-top:0; color: var(--primary); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <span>📍 แผนที่วิเคราะห์การกระจายตัวระดับพื้นที่</span>
-                <div style="display:flex; gap:8px; align-items:center; flex-wrap: wrap;"> <button id="btnResetMap" class="btn-reset-map" onclick="clearMapFilter()">↺ ล้างพื้นที่เจาะจง</button>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button id="btnResetMap" class="btn-reset-map" onclick="clearMapFilter()">↺ ล้างพื้นที่เจาะจง</button>
                     <select id="mapModeSelect" onchange="renderMap()" style="padding:6px; border-radius:6px; font-family:'Sarabun'; border: 2px solid var(--secondary); color: var(--primary); font-weight:bold; cursor: pointer; background: #eff6ff;">
                         <option value="overview">รูปแบบที่ 1: ภาพรวมการกระจายตัวของโครงการและงบประมาณ</option>
                         <option value="strategic">รูปแบบที่ 2: การวิเคราะห์ความสอดคล้องเชิงยุทธศาสตร์ (4D Matrix)</option>
