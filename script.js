@@ -121,6 +121,7 @@ async function init() {
     buildStaticSlicers(); 
 
     try {
+        // ใช้ fetch ปกติ (ไม่มี Anti-Cache) เพื่อความเสถียร
         const response = await fetch(API_URL);
         const rawData = await response.json();
         if (!Array.isArray(rawData)) throw new Error("ข้อมูลขัดข้อง กรุณาตรวจสอบการเชื่อมต่อ API");
@@ -491,8 +492,8 @@ function updateDashboard() {
     renderProvincialTable(activeStrat, selectedValue, isMultiYear, selectedYears);
     renderCharts(isMultiYear, selectedYears);
     
-    clearTimeout(renderMapTimer);
-    renderMapTimer = setTimeout(() => renderMap(isMultiYear, selectedYears), 300); 
+    // ไม่ใช้ Debounce เพราะเป็นสาเหตุหนึ่งของปัญหา
+    renderMap(isMultiYear, selectedYears);
 }
 
 function renderProvincialTable(activeStrat, selectedValue, isMultiYear, selectedYears) {
@@ -667,7 +668,7 @@ function renderCharts(isMultiYear, selectedYears) {
     });
 
     const ctxMain = document.getElementById('mainChart');
-    if (!ctxMain) return; 
+    if (!ctxMain) return;
     
     if (myChart) myChart.destroy();
     let chartSelect = document.getElementById('chartTypeSelect');
@@ -845,6 +846,7 @@ function renderCharts(isMultiYear, selectedYears) {
     const ctxTrend = document.getElementById('trendChart');
     if(ctxTrend) {
         let yearCounts = {};
+        // 🎯 แก้ไข: ใช้ activeYears ตามที่เลือกจริงเท่านั้น (ไม่มีการเติมปีที่ไม่ได้เลือก)
         let activeYears = (selectedYears && selectedYears.length > 0) ? [...selectedYears].sort((a,b)=>a-b) : Array.from(new Set(masterData.map(r=>r._year))).sort((a,b)=>a-b);
         activeYears.forEach(y => yearCounts[y] = 0); 
         
@@ -869,15 +871,14 @@ function renderCharts(isMultiYear, selectedYears) {
     }
 }
 
+// ==========================================
+// 6. แผนที่ Leaflet (โครงสร้าง 4D เดิม + แก้บัค Top3 รายปีหาย)
+// ==========================================
 function renderMap(isMultiYear, selectedYears) {
-    let mapModeSelect = document.getElementById('mapModeSelect');
-    let mapMode = mapModeSelect ? mapModeSelect.value : 'overview';
+    let mapMode = document.getElementById('mapModeSelect').value;
 
     if (!map) {
-        let mapEl = document.getElementById('map');
-        if(!mapEl) return;
-        
-        map = L.map('map', {scrollWheelZoom: false}).setView([18.7883, 98.9853], 8);
+        map = L.map('map', {scrollWheelZoom: false, preferCanvas: true}).setView([18.7883, 98.9853], 8);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
     }
 
@@ -922,6 +923,7 @@ function renderMap(isMultiYear, selectedYears) {
     let selectedStratValue = filterEl ? filterEl.value : "all";
     let isSpecificStrat = selectedStratValue !== "all";
 
+    // นับฐาน
     let overallProjects = {};
     dNames.forEach(d => overallProjects[d] = 0);
     masterData.forEach(row => {
@@ -965,6 +967,7 @@ function renderMap(isMultiYear, selectedYears) {
                 else if (areaType === "Multi" && isSingleStrat) districtStats[d].total.matrix.m_s++;
                 else if (areaType === "Multi" && !isSingleStrat) districtStats[d].total.matrix.m_j++;
 
+                // 📌 อัปเดตรายปี
                 if(districtStats[d].years[rYear]) {
                     let ySt = districtStats[d].years[rYear];
                     if (areaType === "Single") { ySt.singleC += 1; ySt.singleB += row._budgetNum; }
@@ -1025,7 +1028,7 @@ function renderMap(isMultiYear, selectedYears) {
             let dt = districtStats[dName];
             let s = dt.total;
             
-            let popupHtml = `<div style="font-family:'Sarabun'; width: 300px; max-height: 350px; overflow-y: auto;">
+            let popupHtml = `<div style="font-family:'Sarabun'; width: 320px; max-height: 380px; overflow-y: auto; overflow-x: hidden;">
                              <b style="font-size:16px; color:#1e3a8a;">📍 ข้อมูลอำเภอ${dName}</b>`;
             
             if(isMultiYear) {
