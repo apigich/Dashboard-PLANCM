@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
     <style>
-        /* CSS Reset & Base */
+        /* CSS เดิมที่เสถียร */
         * { box-sizing: border-box; }
         :root { --primary: #1e3a8a; --secondary: #3b82f6; --bg: #f3f4f6; --card: #ffffff; --joint: #f97316; }
         body { font-family: 'Sarabun', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: #333; }
@@ -26,8 +26,6 @@
         
         .btn-clear { background: #ef4444; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 14px; transition: 0.2s;}
         .btn-clear:hover { background: #dc2626; }
-        .btn-clear-small { background: #fca5a5; color: #7f1d1d; border: 1px solid #f87171; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 12px; transition: 0.2s;}
-        .btn-clear-small:hover { background: #ef4444; color: white; }
         
         .switch-container { display: flex; align-items: center; gap: 8px; font-weight: bold; background: #e0e7ff; padding: 10px; border-radius: 8px; }
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
@@ -86,11 +84,10 @@
         #map { flex-grow: 1; width: 100%; border-radius: 8px; z-index: 1; border: 1px solid #e2e8f0; min-height: 400px;}
         .chart-container { flex-grow: 1; position: relative; width: 100%; height: 100%; min-height: 300px;}
         
-        /* Overlay ปิดตายกราฟโดนัท */
         .chart-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); z-index: 100; border-radius: 8px; justify-content: center; align-items: center; text-align: center; padding: 20px; pointer-events: all; cursor: not-allowed;}
         .chart-overlay-text { color: #dc2626; font-weight: bold; font-size: 16px; line-height: 1.5; border: 2px dashed #fca5a5; padding: 15px; border-radius: 8px; background: #fef2f2;}
 
-        /* ปุ่มล้างพื้นที่ & ปุ่มหมุดแผนที่ */
+        /* ปุ่มล้างพื้นที่ & ปุ่มหมุดแผนที่ (แก้ไขตามสั่ง) */
         .btn-reset-map { display: none; background: #ffffff; color: #dc2626; border: 1px solid #f87171; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: 0.2s; white-space: nowrap;}
         .btn-reset-map:hover { background: #fef2f2; }
         .btn-home-map { background: #ffffff; color: var(--primary); border: 2px solid var(--secondary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: 0.2s; white-space: nowrap;}
@@ -121,6 +118,8 @@
         .btn-page { background: #e2e8f0; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; color: var(--primary); transition: 0.2s;}
         .btn-page:hover { background: #cbd5e1; }
         .btn-page:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+        .btn-clear-small { background: #fca5a5; color: #7f1d1d; border: 1px solid #f87171; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 12px; transition: 0.2s;}
+        .btn-clear-small:hover { background: #ef4444; color: white; }
 
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px);}
         .modal-content { background-color: #fff; margin: 3% auto; padding: 30px; border-radius: 12px; width: 85%; max-width: 900px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;}
@@ -135,25 +134,16 @@
         .leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 3px 14px rgba(0,0,0,0.4); }
         .leaflet-popup-close-button { width: 30px !important; height: 30px !important; font-size: 24px !important; color: #dc2626 !important;}
 
-        /* Mobile Fixes */
-        @media (max-width: 1024px) {
-            .dash-grid-top, .dash-grid-mid, .status-container { grid-template-columns: 1fr; flex-direction: column; }
-            .dash-card { height: auto; min-height: 450px; }
-            #map { min-height: 400px; z-index: 1; }
-            .provincial-status-bar::after { position: static; display: block; margin-top: 5px; }
-            
-            /* Mobile Specific */
+        @media (max-width: 768px) {
             .header { flex-direction: column; align-items: stretch; text-align: center; gap: 10px;}
             .main-controls { justify-content: center; flex-direction: column; width: 100%;}
             .search-box { width: 100% !important; font-size: 16px !important; }
             .dropdown-check-list, .dropdown-check-list .anchor { width: 100%; }
             .btn-clear { width: 100%; }
-            .btn-sort, .summary-breakdown-btn, .btn-reset-map { width: 100%; padding: 10px !important; font-size: 14px !important; margin-bottom: 5px; }
+            .btn-sort, .summary-breakdown-btn, .btn-reset-map, .btn-home-map { width: 100%; padding: 10px !important; font-size: 14px !important; text-align: center; margin-bottom: 5px; justify-content: center; }
             
-            /* Map Controls on Mobile */
             .dash-card h3 div { flex-direction: column-reverse; align-items: stretch !important; width: 100%; margin-top: 10px;}
             .dash-card h3 select { width: 100%; margin-bottom: 5px;}
-            .btn-home-map { width: 100%; justify-content: center; margin-bottom: 5px;}
         }
     </style>
 </head>
@@ -161,7 +151,7 @@
 
 <div id="loadingOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; transition: opacity 0.5s;">
     <div style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #1e3a8a; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-    <h3 style="color:#1e3a8a; font-family:'Sarabun'; margin-top:20px;">กำลังประมวลผลข้อมูล...</h3>
+    <h3 style="color:#1e3a8a; font-family:'Sarabun'; margin-top:20px;">กำลังโหลดข้อมูล...</h3>
 </div>
 <style> @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } </style>
 
@@ -177,8 +167,7 @@
             </div>
             <div id="yearDropdown" class="dropdown-check-list" tabindex="100">
                 <span id="yearDropdownText" class="anchor">📅 กำลังประมวลผล...</span>
-                <ul class="items" id="yearCheckboxes">
-                    </ul>
+                <ul class="items" id="yearCheckboxes"></ul>
             </div>
             <button type="button" class="btn-clear" onclick="clearAllFilters()">🔄 ล้างการกรองทั้งหมด</button>
         </div>
@@ -269,7 +258,7 @@
             <h3 style="margin-top:0; color: var(--primary); display:flex; justify-content:space-between; align-items:flex-start;">
                 <div>
                     📊 สัดส่วนตามประเด็นยุทธศาสตร์<br>
-                    <small id="strategyChartSubtitle" style="font-weight:normal; color:#666;">(แสดงผลตามค่าเริ่มต้น: แผนพัฒนาจังหวัดเชียงใหม่)</small>
+                    <small id="strategyChartSubtitle" style="font-weight:normal; color:#666;"></small>
                 </div>
                 <select id="chartTypeSelect" onchange="renderCharts()" style="padding:4px 8px; border-radius:4px; font-family:'Sarabun'; border: 1px solid #ccc; cursor: pointer; background: white;">
                     <option value="bar" selected>กราฟแท่ง (Bar Chart)</option>
