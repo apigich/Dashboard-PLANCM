@@ -36,8 +36,7 @@
         input:checked + .slider:before { transform: translateX(20px); }
 
         .dropdown-check-list { display: inline-block; position: relative; font-family: 'Sarabun'; }
-        /* เพิ่ม ID ให้ anchor เพื่อเปลี่ยนข้อความด้วย JS */
-        .dropdown-check-list .anchor { display: inline-block; padding: 8px 15px; background: #eff6ff; border: 2px solid var(--secondary); border-radius: 6px; color: var(--primary); font-weight: bold; cursor: pointer; font-size: 16px; min-width: 200px;}
+        .dropdown-check-list .anchor { display: inline-block; padding: 8px 15px; background: #eff6ff; border: 2px solid var(--secondary); border-radius: 6px; color: var(--primary); font-weight: bold; cursor: pointer; font-size: 16px; min-width: 220px;}
         .dropdown-check-list .anchor::after { content: ' ▼'; font-size: 12px;}
         .dropdown-check-list .items { padding: 10px; display: none; margin: 0; border: 1px solid #ccc; border-top: none; position: absolute; background: white; z-index: 1000; list-style: none; width: 300px; border-radius: 0 0 6px 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto;}
         .dropdown-check-list.visible .items { display: block; }
@@ -148,7 +147,7 @@
             </div>
             
             <div id="yearDropdown" class="dropdown-check-list" tabindex="100">
-                <span id="yearDropdownText" class="anchor">📅 เลือกปีงบประมาณ</span>
+                <span id="yearDropdownText" class="anchor">📅 กำลังประมวลผล...</span>
                 <ul class="items" id="yearCheckboxes">
                     <li><input type="checkbox" id="checkAllYears" checked onchange="toggleAllYears(this)" /> <strong>ทุกปีงบประมาณที่มีข้อมูล</strong></li>
                 </ul>
@@ -310,11 +309,13 @@
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal()">&times;</span>
         <h2 id="modalTitle" style="color: var(--primary); margin-top: 0; margin-bottom: 20px; line-height: 1.4;">ชื่อโครงการ</h2>
+        
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; font-size: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
             <p style="margin:0;"><strong>📍 พื้นที่ดำเนินการ:</strong> <span id="modalArea"></span></p>
             <p style="margin:0;"><strong>💰 งบประมาณรวม:</strong> <span id="modalBudget" style="color: #10b981; font-weight: bold;"></span></p>
             <p style="margin:0;"><strong>📅 ปีงบประมาณ:</strong> <span id="modalYear"></span></p>
             <p style="margin:0;"><strong>🎯 ลักษณะพื้นที่:</strong> <span id="modalAreaType" style="color: #f59e0b; font-weight: bold;"></span></p>
+            <p style="margin:0; grid-column: span 2;"><strong>🏢 หน่วยดำเนินการ:</strong> <span id="modalAgency" style="color: #1e3a8a;"></span></p>
         </div>
         
         <div id="modalStrategyTable"></div>
