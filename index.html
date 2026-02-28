@@ -12,135 +12,116 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
     <style>
-        /* === โครงสร้างพื้นฐานของคุณ (ไม่แตะต้อง) === */
+        /* === โครงสร้างแบบ Power BI Dashboard === */
         * { box-sizing: border-box; }
-        :root { --primary: #1e3a8a; --secondary: #3b82f6; --bg: #f3f4f6; --card: #ffffff; --joint: #f97316; }
-        body { font-family: 'Sarabun', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1400px; margin: auto; }
+        :root { --primary: #1e3a8a; --secondary: #3b82f6; --bg: #e2e8f0; --card: #ffffff; }
+        body { font-family: 'Sarabun', sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: #333; display: flex; height: 100vh; overflow: hidden; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
-        h1 { color: var(--primary); margin: 0; font-size: 26px; }
+        /* 🌟 แถบด้านซ้าย (Sidebar) */
+        .sidebar { width: 280px; background: var(--card); padding: 20px; box-shadow: 2px 0 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 20px; overflow-y: auto; z-index: 10; }
+        .sidebar h2 { color: var(--primary); font-size: 18px; margin: 0 0 10px 0; padding-bottom: 10px; border-bottom: 2px solid var(--secondary); }
         
-        .main-controls { display: flex; gap: 10px; align-items: center; background: var(--card); padding: 12px 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex-wrap: wrap;}
-        .search-box { padding: 10px; width: 250px; border: 1px solid #ccc; border-radius: 6px; font-family: 'Sarabun'; font-size: 15px;}
+        /* การ์ดสรุปใน Sidebar */
+        .summary-box { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .summary-box.green { background: linear-gradient(135deg, #059669, #10b981); }
+        .summary-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; }
+        .summary-value { font-size: 24px; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
+
+        /* ตัวกรองใน Sidebar */
+        .filter-section { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; }
+        .filter-title { font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 10px; }
         
-        .btn-clear { background: #ef4444; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 14px; transition: 0.2s;}
-        .btn-clear:hover { background: #dc2626; }
+        /* Checkbox ปีงบประมาณ (โชว์ให้เห็นเลย) */
+        .year-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+        .year-list li { display: flex; align-items: center; gap: 8px; cursor: pointer; }
         
-        .switch-container { display: flex; align-items: center; gap: 8px; font-weight: bold; background: #e0e7ff; padding: 10px; border-radius: 8px; }
-        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        /* Switch */
+        .switch-container { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 13px; background: #e0e7ff; padding: 10px; border-radius: 8px; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--secondary); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        .dropdown-check-list { display: inline-block; position: relative; font-family: 'Sarabun'; }
-        .dropdown-check-list .anchor { display: inline-block; padding: 8px 15px; background: #eff6ff; border: 2px solid var(--secondary); border-radius: 6px; color: var(--primary); font-weight: bold; cursor: pointer; font-size: 16px; min-width: 220px;}
-        .dropdown-check-list .anchor::after { content: ' ▼'; font-size: 12px;}
-        .dropdown-check-list .items { padding: 10px; display: none; margin: 0; border: 1px solid #ccc; border-top: none; position: absolute; background: white; z-index: 1000; list-style: none; width: 300px; border-radius: 0 0 6px 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto;}
-        .dropdown-check-list.visible .items { display: block; }
-        .dropdown-check-list .items li { margin-bottom: 8px; display: flex; align-items: center; gap: 8px;}
+        .btn-clear { background: #ef4444; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 14px; width: 100%; transition: 0.2s; }
+        .btn-clear:hover { background: #dc2626; }
 
-        /* === 🌟 เพิ่มเติม: ปุ่มกดไปหน้าข้อมูลเชิงลึก === */
-        .btn-go-advanced {
-            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-family: 'Sarabun';
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: 0.3s;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
+        /* 🌟 พื้นที่หลัก (Main Content) */
+        .main-content { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+        
+        /* Header ของพื้นที่หลัก */
+        .top-header { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .top-header h1 { margin: 0; font-size: 22px; color: var(--primary); }
+        .btn-go-advanced { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-family: 'Sarabun'; font-weight: bold; font-size: 15px; cursor: pointer; text-decoration: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.3s; }
         .btn-go-advanced:hover { transform: translateY(-2px); box-shadow: 0 6px 8px rgba(0,0,0,0.15); }
 
-        /* === 🌟 เพิ่มเติม: แถบ 5 ยุทธศาสตร์ (อยู่บนสุด) === */
-        .master-filters { 
-            display: grid; 
-            grid-template-columns: repeat(5, 1fr); 
-            gap: 10px; 
-            background: var(--card); 
-            padding: 15px; 
-            border-radius: 10px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
-            margin-bottom: 20px; 
-            border-top: 4px solid var(--secondary);
-        }
+        /* 🌟 แถบ 5 ยุทธศาสตร์ (ด้านบน) */
+        .master-filters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; background: var(--card); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid var(--secondary); }
         .filter-group { display: flex; flex-direction: column; gap: 5px; }
-        .filter-group label { font-size: 12px; font-weight: bold; color: var(--primary); display: flex; justify-content: space-between;}
-        .filter-group select { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: 'Sarabun'; font-size: 13px; cursor: pointer;}
+        .filter-group label { font-size: 12px; font-weight: bold; color: var(--primary); }
+        .filter-group select { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: 'Sarabun'; font-size: 13px; cursor: pointer; background: #f8fafc; width: 100%; }
+
+        /* Visuals Grid */
+        .visuals-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; flex: 1; min-height: 400px; }
+        .bottom-grid { display: grid; grid-template-columns: 1fr; gap: 15px; height: 350px; margin-top: 15px; }
         
-        /* === โครงสร้างการแสดงผล === */
-        .summary-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
-        .summary-card { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 25px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative;}
-        .summary-value { font-size: 42px; font-weight: bold; margin: 5px 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);}
+        .dash-card { background: var(--card); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; position: relative; }
+        .dash-card h3 { margin-top: 0; font-size: 16px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 10px; }
         
-        .dash-grid-top { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .dash-card { background: var(--card); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-direction: column; position: relative; }
-        #map { flex-grow: 1; width: 100%; border-radius: 8px; z-index: 1; border: 1px solid #e2e8f0; min-height: 450px;}
-        .chart-container { flex-grow: 1; position: relative; width: 100%; height: 100%; min-height: 350px;}
+        #map { flex-grow: 1; width: 100%; border-radius: 6px; z-index: 1; background: #e5e7eb;}
+        .chart-container { flex-grow: 1; position: relative; width: 100%; height: 100%; }
 
         /* ปุ่มบนแผนที่ */
-        .btn-reset-map { display: none; background: #ffffff; color: #dc2626; border: 1px solid #f87171; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 13px; transition: 0.2s; white-space: nowrap;}
+        .btn-reset-map { display: none; background: #ffffff; color: #dc2626; border: 1px solid #f87171; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 12px; transition: 0.2s; white-space: nowrap;}
         .btn-reset-map:hover { background: #fef2f2; }
-        .btn-home-map { background: #ffffff; color: var(--primary); border: 2px solid var(--secondary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: 0.2s;}
+        .btn-home-map { background: #ffffff; color: var(--primary); border: 2px solid var(--secondary); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 12px; display: flex; align-items: center; gap: 5px; transition: 0.2s; white-space: nowrap;}
         .btn-home-map:hover { background: #eff6ff; }
-        .btn-clear-small { background: #fca5a5; color: #7f1d1d; border: 1px solid #f87171; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 12px; transition: 0.2s;}
-        .btn-clear-small:hover { background: #ef4444; color: white; }
 
-        /* ตารางรายชื่อโครงการ */
-        .table-section { background: var(--card); padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 40px;}
-        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
-        .table-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap;}
-        .table-search-box { position: relative; display: inline-block;}
-        .table-search-box input { padding: 8px 30px 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: 'Sarabun'; font-size: 14px; width: 250px;}
-        .table-search-box .clear-icon { position: absolute; right: 10px; top: 8px; cursor: pointer; color: #94a3b8; font-weight: bold;}
-        .table-search-box .clear-icon:hover { color: #ef4444; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th, td { border-bottom: 1px solid #e2e8f0; padding: 12px; text-align: left; vertical-align: top; }
-        th { background: #f8fafc; color: var(--primary); position: sticky; top: 0;}
-        tr:hover { background: #f1f5f9; cursor: pointer;}
-        
-        .area-list { margin: 0; padding-left: 18px; list-style-type: square; color: #374151;}
-        .area-list li { margin-bottom: 4px; line-height: 1.4; border-bottom: 1px dashed #e5e7eb; padding-bottom: 2px;}
-        .area-list li:last-child { border-bottom: none; }
-
-        /* Modal ของคุณ */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px);}
-        .modal-content { background-color: #fff; margin: 3% auto; padding: 30px; border-radius: 12px; width: 85%; max-width: 900px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;}
-        .close-btn { color: #aaa; float: right; font-size: 32px; font-weight: bold; cursor: pointer; line-height: 1; }
-        .close-btn:hover { color: #000; }
-        .sub-activity-box { background: #f8fafc; border-left: 4px solid var(--secondary); padding: 20px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #e2e8f0; line-height: 1.8; font-family: 'Sarabun'; font-size: 14px;}
-
-        /* ย่อหน้าจอ */
         @media (max-width: 1024px) {
-            .master-filters { grid-template-columns: 1fr; }
-            .dash-grid-top { grid-template-columns: 1fr; }
-            .header { flex-direction: column; align-items: stretch; text-align: center;}
-            .main-controls { justify-content: center; flex-direction: column; width: 100%;}
-            .search-box, .dropdown-check-list, .dropdown-check-list .anchor { width: 100%; }
+            body { flex-direction: column; overflow-y: auto; }
+            .sidebar { width: 100%; height: auto; max-height: none; overflow-y: visible; order: 2; }
+            .main-content { overflow-y: visible; order: 1; }
+            .master-filters, .visuals-grid { grid-template-columns: 1fr; }
+            .bottom-grid { height: auto; min-height: 350px; }
+            #map { min-height: 350px; }
         }
     </style>
 </head>
 <body>
 
-<div id="loadingOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; transition: opacity 0.5s;">
-    <div style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #1e3a8a; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-    <h3 style="color:#1e3a8a; font-family:'Sarabun'; margin-top:20px;">กำลังโหลดข้อมูลภาพรวม...</h3>
-</div>
-<style> @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } </style>
-
-<div class="container">
+<div class="sidebar">
+    <h2>ตัวกรองข้อมูล (Filters)</h2>
     
-    <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+    <div class="summary-box">
+        <div class="summary-title">📌 จำนวนโครงการรวม</div>
+        <div class="summary-value" id="sumProjects">0</div>
+    </div>
+    <div class="summary-box green">
+        <div class="summary-title">💰 งบประมาณรวม (บาท)</div>
+        <div class="summary-value" id="sumBudget">0.00</div>
+    </div>
+
+    <div class="switch-container">
+        <span>จำนวนโครงการ</span>
+        <label class="switch"><input type="checkbox" id="modeSwitch"><span class="slider"></span></label>
+        <span>งบประมาณ</span>
+    </div>
+
+    <div class="filter-section">
+        <div class="filter-title">📅 ปีงบประมาณ</div>
+        <ul class="year-list" id="yearCheckboxes">
+            <li><label><input type="checkbox" id="checkAllYears" checked onchange="toggleAllYears(this)" /> <strong>ทุกปีที่มีข้อมูล</strong></label></li>
+            </ul>
+    </div>
+
+    <button type="button" class="btn-clear" onclick="clearAllFilters()">🔄 ล้างการกรองทั้งหมด</button>
+</div>
+
+<div class="main-content">
+    
+    <div class="top-header">
+        <h1>📊 สรุปภาพรวมแผนพัฒนาจังหวัดเชียงใหม่</h1>
         <a href="advanced.html" target="_blank" class="btn-go-advanced">
             🔬 ไปยังระบบวิเคราะห์ข้อมูลเชิงลึก
         </a>
@@ -154,42 +135,11 @@
         <div class="filter-group"><label>แผนพัฒนาจังหวัด</label><select id="filterProv" onchange="applyFilters()"><option value="all">-- ดูทั้งหมด --</option></select></div>
     </div>
 
-    <div class="header">
-        <h1>📊 สรุปภาพรวมแผนพัฒนาจังหวัดเชียงใหม่</h1>
-        <div class="main-controls">
-            <input type="search" id="globalSearch" class="search-box" placeholder="🔍 ค้นหาคำสำคัญในระบบทั้งหมด..." onsearch="applyFilters()" oninput="applyFilters()">
-            <div id="yearDropdown" class="dropdown-check-list" tabindex="100">
-                <span id="yearDropdownText" class="anchor">📅 กำลังประมวลผล...</span>
-                <ul class="items" id="yearCheckboxes">
-                    <li><input type="checkbox" id="checkAllYears" checked onchange="toggleAllYears(this)" /> <strong>ทุกปีงบประมาณที่มีข้อมูล</strong></li>
-                </ul>
-            </div>
-            <button type="button" class="btn-clear" onclick="clearAllFilters()">🔄 ล้างการกรองทั้งหมด</button>
-        </div>
-    </div>
-
-    <div class="summary-wrapper">
-        <div class="summary-card">
-            <h3 style="margin: 0; font-size: 20px;">📌 จำนวนโครงการรวม</h3>
-            <div class="summary-value" id="sumProjects">0</div>
-        </div>
-        <div class="summary-card" style="background: linear-gradient(135deg, #059669, #10b981);">
-            <h3 style="margin: 0; font-size: 20px;">💰 งบประมาณรวม (บาท)</h3>
-            <div class="summary-value" id="sumBudget">0.00</div>
-        </div>
-    </div>
-
-    <div class="dash-grid-top">
+    <div class="visuals-grid">
         <div class="dash-card">
-            <h3 style="margin-top:0; color: var(--primary); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                <span>📍 แผนที่แสดงพื้นที่ดำเนินการ <span id="mapTitleContext" style="font-size: 14px; color: #f59e0b;">(ระบายสีตาม: จำนวนโครงการ)</span></span>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <span style="font-size: 13px; color: #666;">เลือกระบายสีแผนที่ตาม: </span>
-                    <div class="switch-container" style="padding: 5px; margin-right: 5px;">
-                        <span style="font-size: 12px;">จำนวน</span>
-                        <label class="switch" style="width: 34px; height: 18px;"><input type="checkbox" id="modeSwitch"><span class="slider" style="border-radius: 18px;"></span></label>
-                        <span style="font-size: 12px;">งบประมาณ</span>
-                    </div>
+            <h3>
+                <span>📍 แผนที่ระดับพื้นที่ <span id="mapTitleContext" style="font-size: 13px; color: #f59e0b;">(ระบายสีตาม: จำนวน)</span></span>
+                <div style="display:flex; gap:8px;">
                     <button id="btnHomeMap" class="btn-home-map" onclick="resetMapView()">📍 หมุดแผนที่จังหวัดเชียงใหม่</button>
                     <button id="btnResetMap" class="btn-reset-map" onclick="clearMapFilter()">↺ ล้างพื้นที่เจาะจง</button>
                 </div>
@@ -198,73 +148,18 @@
         </div>
         
         <div class="dash-card">
-            <h3 style="margin-top:0; color: #059669; display:flex; justify-content:space-between; align-items:flex-start;">
-                <div>🍩 สัดส่วนตามประเด็นการพัฒนาจังหวัด<br><small style="font-weight:normal; color:#666;">(คลิกบนแผนภูมิเพื่อกรองข้อมูล)</small></div>
-                <button type="button" class="btn-clear-small" onclick="clearAreaFilter()">🔄 ล้างการกรองนี้</button>
-            </h3>
-            <div class="chart-container" style="position: relative;">
-                <canvas id="areaChart"></canvas>
-            </div>
+            <h3>🍩 สัดส่วนประเด็นการพัฒนาจังหวัด</h3>
+            <div class="chart-container"><canvas id="areaChart"></canvas></div>
         </div>
     </div>
 
-    <div class="dash-card" style="height: 450px; margin-bottom: 40px;">
-        <h3 style="margin-top:0; color: #dc2626;">📈 แนวโน้มเปรียบเทียบ จำนวนโครงการและงบประมาณ</h3>
-        <div class="chart-container"><canvas id="trendChart"></canvas></div>
-    </div>
-
-    <div class="table-section">
-        <div class="table-header">
-            <h3 style="margin:0; color: var(--primary);">📋 รายชื่อโครงการ (คลิกเพื่อดูรายละเอียด)</h3>
-            <div class="table-controls">
-                <div class="table-search-box">
-                    <input type="text" id="tableSearch" placeholder="🔍 ค้นหาเฉพาะชื่อโครงการ..." oninput="handleTableSearch()">
-                    <span class="clear-icon" onclick="document.getElementById('tableSearch').value=''; handleTableSearch()">✖</span>
-                </div>
-            </div>
-        </div>
-        <div style="overflow-x: auto;">
-            <table id="dataTable">
-                <thead>
-                    <tr>
-                        <th style="width: 40%;">ชื่อโครงการ</th>
-                        <th style="width: 15%; text-align: center;">ปีงบประมาณ</th>
-                        <th style="width: 25%;">พื้นที่ดำเนินการ</th>
-                        <th style="width: 20%; text-align: right;">งบประมาณ (บาท)</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody"><tr><td colspan="4" style="text-align:center; padding: 40px; font-weight:bold; color:#d69e2e;">⏳ กำลังโหลดข้อมูล...</td></tr></tbody>
-            </table>
-        </div>
-        <div class="pagination">
-            <span id="pageInfo" style="font-size:14px; font-weight:bold; color:#475569;">แสดงรายการ...</span>
-            <div style="display:flex; gap: 8px;">
-                <button id="btnPrevPage" class="btn-page" onclick="changePage(-1)">◀ ก่อนหน้า</button>
-                <button id="btnNextPage" class="btn-page" onclick="changePage(1)">ถัดไป ▶</button>
-            </div>
+    <div class="bottom-grid">
+        <div class="dash-card">
+            <h3 style="color: #dc2626;">📈 แนวโน้มเปรียบเทียบ จำนวนโครงการและงบประมาณ</h3>
+            <div class="chart-container"><canvas id="trendChart"></canvas></div>
         </div>
     </div>
 
-</div>
-
-<div id="projectModal" class="modal">
-    <div class="modal-content">
-        <span class="close-btn" onclick="closeModal()">&times;</span>
-        <h2 id="modalTitle" style="color: var(--primary); margin-top: 0; margin-bottom: 20px; line-height: 1.4;">ชื่อโครงการ</h2>
-        
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; font-size: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
-            <p style="margin:0;"><strong>📍 พื้นที่ดำเนินการ:</strong> <span id="modalArea"></span></p>
-            <p style="margin:0;"><strong>💰 งบประมาณรวม:</strong> <span id="modalBudget" style="color: #10b981; font-weight: bold;"></span></p>
-            <p style="margin:0;"><strong>📅 ปีงบประมาณ:</strong> <span id="modalYear"></span></p>
-            <p style="margin:0;"><strong>🎯 ลักษณะพื้นที่:</strong> <span id="modalAreaType" style="color: #f59e0b; font-weight: bold;"></span></p>
-            <p style="margin:0; grid-column: span 2;"><strong>🏢 หน่วยดำเนินการ:</strong> <span id="modalAgency" style="color: #1e3a8a;"></span></p>
-        </div>
-        
-        <div id="modalStrategyTable"></div>
-
-        <h3 style="border-bottom: 2px solid var(--secondary); padding-bottom: 8px; color: var(--primary); margin-top: 25px;">📑 รายละเอียดโครงการ</h3>
-        <div id="modalSubActivities"></div>
-    </div>
 </div>
 
 <script src="script_simple.js"></script>
