@@ -923,7 +923,7 @@ function renderMap(isMultiYear, selectedYears) {
     let selectedStratValue = filterEl ? filterEl.value : "all";
     let isSpecificStrat = selectedStratValue !== "all";
 
-    // นับฐานโครงการทั้งหมด
+    // นับฐาน
     let overallProjects = {};
     dNames.forEach(d => overallProjects[d] = 0);
     masterData.forEach(row => {
@@ -957,7 +957,6 @@ function renderMap(isMultiYear, selectedYears) {
         if (areaType === "Single" || areaType === "Multi") {
             let matchedDistricts = dNames.filter(d => row._cleanArea.includes(d));
             matchedDistricts.forEach(d => {
-                // Update Total
                 if (areaType === "Single") { districtStats[d].total.singleC += 1; districtStats[d].total.singleB += row._budgetNum; }
                 if (areaType === "Multi") { districtStats[d].total.multiC += 1; districtStats[d].total.multiB += row._budgetNum; }
                 districtStats[d].total.totalProjects += 1;
@@ -968,13 +967,12 @@ function renderMap(isMultiYear, selectedYears) {
                 else if (areaType === "Multi" && isSingleStrat) districtStats[d].total.matrix.m_s++;
                 else if (areaType === "Multi" && !isSingleStrat) districtStats[d].total.matrix.m_j++;
 
-                // Update Yearly
                 if(districtStats[d].years[rYear]) {
                     let ySt = districtStats[d].years[rYear];
                     if (areaType === "Single") { ySt.singleC += 1; ySt.singleB += row._budgetNum; }
                     if (areaType === "Multi") { ySt.multiC += 1; ySt.multiB += row._budgetNum; }
                     ySt.totalProjects += 1;
-                    strats.forEach(s => { ySt.stratCounts[s] = (ySt.stratCounts[s] || 0) + 1; });
+                    strats.forEach(s => { ySt.stratCounts[s] = (ySt.stratCounts[s] || 0) + 1; }); 
 
                     if (areaType === "Single" && isSingleStrat) ySt.matrix.s_s++;
                     else if (areaType === "Single" && !isSingleStrat) ySt.matrix.s_j++;
@@ -1024,11 +1022,11 @@ function renderMap(isMultiYear, selectedYears) {
         },
         onEachFeature: function (f, l) {
             let dName = f.properties.amp_th || f.properties.AMP_TH || "ไม่ระบุ";
-            let dt = districtStats[dName];
-            let s = dt.total;
             
-            // 🚀 Lazy Popup
             l.on('click', function(e) {
+                let dt = districtStats[dName];
+                let s = dt.total;
+                
                 let popupHtml = `<div style="font-family:'Sarabun'; width: 320px; max-height: 380px; overflow-y: auto; overflow-x: hidden;">
                                  <b style="font-size:16px; color:#1e3a8a;">📍 ข้อมูลอำเภอ${dName}</b>`;
                 
@@ -1136,10 +1134,10 @@ function renderMap(isMultiYear, selectedYears) {
                         `;
                     }
                 }
-                
+
                 popupHtml += `<button type="button" onclick="setDistrictFilter('${dName}')" style="margin-top:10px; width:100%; padding:6px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer; position:sticky; bottom:-5px; z-index:100;">🔍 กรองข้อมูลเฉพาะอำเภอนี้</button></div>`;
                 
-                e.layer.bindPopup(popupHtml).openPopup();
+                l.bindPopup(popupHtml);
             });
             
             l.on('mouseover', e => { e.target.setStyle({weight: 3, color: '#f59e0b'}); e.target.bringToFront(); });
@@ -1150,7 +1148,6 @@ function renderMap(isMultiYear, selectedYears) {
 }
 
 function setProjectFilter(projName) { mapFilterProject = projName; mapFilterDistrict = "all"; chartFilterAreaType = "all"; closeModal(); applyFilters(); }
-function setDistrictFilter(dName) { mapFilterDistrict = dName; if(map) map.closePopup(); applyFilters(); }
 
 function formatList(str) {
     if (!str || str === "NaN" || str === "-" || str.trim() === "") return "<span style='color:gray'>- ไม่ระบุข้อมูล -</span>";
@@ -1229,4 +1226,7 @@ function closeModal() {
 
 window.onclick = e => { if (e.target == document.getElementById('projectModal')) closeModal(); }
 
-init();
+// 🌟 เพิ่ม Event เรียกใช้งานฟังก์ชันต่างๆ หลังโหลดเสร็จ
+document.addEventListener("DOMContentLoaded", () => {
+    init();
+});
