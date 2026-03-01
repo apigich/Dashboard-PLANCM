@@ -26,7 +26,6 @@ let lastClickTime = 0; let lastClickedIndex = -1;
 
 function toggleDropdown() { document.getElementById('distList').classList.toggle('show'); }
 
-// 🌟 แก้บั๊ก Dropdown ปิดเองเมื่อกด Checkbox ข้างใน
 window.onclick = function(event) {
     if (!event.target.closest('.custom-dropdown')) {
         document.querySelectorAll('.dropdown-content').forEach(el => el.classList.remove('show'));
@@ -79,7 +78,6 @@ document.addEventListener("DOMContentLoaded", () => {
     init();
 });
 
-// 🌟 ระบบป้องกันการพัง แยกดึงข้อมูลออกจากกัน
 async function init() {
     try {
         document.getElementById('loadingText').innerText = "กำลังดึงข้อมูลแผนที่...";
@@ -268,7 +266,6 @@ function openStratModal(stratName, sC, jC, sB, jB, totalVal, yearLabel) {
 
 function closeStratModal() { document.getElementById('stratModal').style.display = 'none'; }
 
-// 🌟 กราฟแก้ไข Tooltip เรียบร้อยแล้ว (ชี้แล้วแสดงยอดรวม / แท่งแสดงตามปี)
 function renderDonutOrBar(sYears) {
     const ctx = document.getElementById('donutChart');
     if(!ctx) return;
@@ -484,37 +481,42 @@ function renderDonutOrBar(sYears) {
                 },
                 plugins: { 
                     legend: { position: 'bottom', labels: {font:{family:'Sarabun', size: 10}} },
-                    tooltip: { mode: 'index', intersect: false, callbacks: { 
-                        title: c => fullLabels[c[0].dataIndex],
-                        label: c => {
-                            let k = fullLabels[c[0].dataIndex]; 
-                            let labelStr = c.dataset.label;
-                            let yearMatch = labelStr.match(/ปี (\d+)/);
-                            if(!yearMatch) return null;
-                            
-                            let y = yearMatch[1];
-                            let st = stratStats[k].yData[y];
-                            
-                            if(currentMode === 'count') {
-                                let totalC = st.sC + st.jC;
-                                if (totalC === 0) return null;
-                                if (labelStr.includes('เดี่ยว')) {
-                                    let jointText = st.jC > 0 ? ` (+${st.jC})` : '';
-                                    return ` ปี ${y}: ${st.sC}${jointText} โครงการ`;
+                    // 🌟 Tooltip กราฟแท่งแก้ไขแล้ว 100%
+                    tooltip: { 
+                        mode: 'index', 
+                        intersect: false, 
+                        callbacks: { 
+                            title: c => fullLabels[c[0].dataIndex],
+                            label: c => {
+                                let labelStr = c.dataset.label || '';
+                                let yearMatch = labelStr.match(/ปี (\d+)/);
+                                if(!yearMatch) return null;
+                                let y = yearMatch[1];
+                                
+                                // 🌟 แก้บั๊ก c[0].dataIndex เป็น c.dataIndex
+                                let k = fullLabels[c.dataIndex];
+                                let st = stratStats[k]?.yData[y];
+                                if (!st) return null;
+
+                                if (currentMode === 'count') {
+                                    if (labelStr.includes('เดี่ยว')) {
+                                        let jC = st.jC || 0;
+                                        let sC = st.sC || 0;
+                                        if (sC + jC === 0) return null;
+                                        let jointText = jC > 0 ? ` (+${jC})` : '';
+                                        return ` ปี ${y}: ${sC}${jointText} โครงการ`;
+                                    }
                                 } else {
-                                    return null; 
+                                    if (labelStr.includes('เดี่ยว')) {
+                                        let totalB = (st.sB || 0) + (st.jB || 0);
+                                        if (totalB === 0) return null;
+                                        return ` ปี ${y}: ${totalB.toLocaleString()} บาท`;
+                                    }
                                 }
-                            } else {
-                                let totalB = st.sB + st.jB;
-                                if (totalB === 0) return null;
-                                if (labelStr.includes('เดี่ยว')) {
-                                    return ` ปี ${y}: ${totalB.toLocaleString()} บาท`;
-                                } else {
-                                    return null;
-                                }
+                                return null; 
                             }
                         }
-                    }},
+                    },
                     datalabels: { display: false } 
                 },
                 onClick: clickHandlerMulti
@@ -622,42 +624,42 @@ function renderMap(sDists, sYears) {
             let st = dStats[d];
             let s = st.total;
             
-            let pop = `<div style="font-family:'Sarabun'; width: 300px; max-height:350px; overflow-y:auto;">
-                <b style="font-size:16px; color:#1e3a8a;">📍 อำเภอ${d}</b>
-                <hr style="margin:5px 0;">
-                <div style="font-size:13px; line-height: 1.5;">
-                    <b style="color:#10b981;">✅ โครงการเฉพาะพื้นที่อำเภอนี้:</b><br>
-                    รวมทั้งหมด: <b>${s.cS}</b> โครงการ | งบตรง <b>${s.bS.toLocaleString()}</b> บาท<br>`;
+            // 🌟 ปรับขนาด Popup ให้กะทัดรัด (250px) และลดขนาดฟอนต์เพื่อป้องกันการดันทะลุขอบ
+            let pop = `<div style="font-family:'Sarabun'; width: 250px; max-height:280px; overflow-y:auto; overflow-x:hidden; padding-right:5px; box-sizing: border-box;">
+                <b style="font-size:14px; color:#1e3a8a;">📍 อำเภอ${d}</b>
+                <hr style="margin:4px 0;">
+                <div style="font-size:11px; line-height: 1.4;">
+                    <b style="color:#10b981;">✅ โครงการเฉพาะพื้นที่:</b><br>
+                    รวม: <b>${s.cS}</b> โครงการ | <b>${s.bS.toLocaleString()}</b> บาท<br>`;
             
             if(sYears.length > 1) {
-                pop += `<ul style="padding-left:15px; margin:2px 0; color:#475569; font-size:11px;">`;
+                pop += `<ul style="padding-left:15px; margin:2px 0; color:#475569; font-size:10px;">`;
                 sYears.forEach(y => {
                     if (st.years[y].cS > 0) pop += `<li>ปี ${y}: ${st.years[y].cS} โครงการ (${st.years[y].bS.toLocaleString()} บ.)</li>`;
                 });
                 pop += `</ul>`;
             }
 
-            pop += `<hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
-                    <b style="color:#f59e0b;">📦 โครงการที่ทำร่วมกับพื้นที่อื่น:</b><br>
-                    รวมทั้งหมด: <b>${s.cM}</b> โครงการ<br>
-                    งบรวมที่ครอบคลุมถึง: <b>${s.bM.toLocaleString()}</b> บาท<br>
-                    <span style="color:#ef4444; font-size:11px;">(งบนี้เป็นยอดรวมโครงการทั้งหมด ไม่นำมาหารเฉลี่ย)</span><br>`;
+            pop += `<hr style="border:0; border-top:1px dashed #ccc; margin:4px 0;">
+                    <b style="color:#f59e0b;">📦 โครงการร่วมพื้นที่อื่น:</b><br>
+                    รวม: <b>${s.cM}</b> โครงการ<br>
+                    งบที่ครอบคลุม: <b>${s.bM.toLocaleString()}</b> บาท<br>`;
             
             if(sYears.length > 1) {
-                pop += `<ul style="padding-left:15px; margin:2px 0; color:#475569; font-size:11px;">`;
+                pop += `<ul style="padding-left:15px; margin:2px 0; color:#475569; font-size:10px;">`;
                 sYears.forEach(y => {
                     if (st.years[y].cM > 0) pop += `<li>ปี ${y}: ${st.years[y].cM} โครงการ (${st.years[y].bM.toLocaleString()} บ.)</li>`;
                 });
                 pop += `</ul>`;
             }
 
-            pop += `<hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
-                    <b style="color:#ef4444;">🌐 โครงการที่ครอบคลุมทั้งจังหวัด:</b><br>
-                    อำเภอนี้ได้รับประโยชน์จาก <b>${s.cP}</b> โครงการ<br>
-                    งบรวมระดับจังหวัด: <b>${s.bP.toLocaleString()}</b> บาท`;
+            pop += `<hr style="border:0; border-top:1px dashed #ccc; margin:4px 0;">
+                    <b style="color:#ef4444;">🌐 โครงการทั้งจังหวัด:</b><br>
+                    ครอบคลุมถึง: <b>${s.cP}</b> โครงการ<br>
+                    งบระดับจังหวัด: <b>${s.bP.toLocaleString()}</b> บาท`;
             
             if(sYears.length > 1) {
-                pop += `<ul style="padding-left:15px; margin:2px 0; color:#475569; font-size:11px;">`;
+                pop += `<ul style="padding-left:15px; margin:2px 0; color:#475569; font-size:10px;">`;
                 sYears.forEach(y => {
                     if (st.years[y].cP > 0) pop += `<li>ปี ${y}: ${st.years[y].cP} โครงการ (${st.years[y].bP.toLocaleString()} บ.)</li>`;
                 });
@@ -665,7 +667,10 @@ function renderMap(sDists, sYears) {
             }
 
             pop += `</div></div>`;
-            l.bindPopup(pop);
+            
+            // 🌟 บังคับ Leaflet ขยับแผนที่ (autoPan) ให้ Popup โผล่มาเต็มๆ
+            l.bindPopup(pop, { autoPan: true, autoPanPadding: [15, 15] }); 
+            
             l.on('mouseover', e => { e.target.setStyle({weight: 3, color: '#f59e0b'}); e.target.bringToFront(); });
             l.on('mouseout', e => geoLayer.resetStyle(e.target));
         }
