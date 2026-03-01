@@ -50,16 +50,33 @@ const stratMapping = {
     'filterProv': { key: 'ประเด็นการพัฒนาจังหวัด (2566-2570)', name: 'แผนพัฒนาจังหวัดเชียงใหม่ (พ.ศ. 2566-2570)' }
 };
 
+// ==========================================
+// 🛡️ จัดระเบียบ Event การคลิก ไม่ให้บั๊กทับซ้อนกัน
+// ==========================================
 const checkList = document.getElementById('yearDropdown');
 if(checkList) {
     let anchor = checkList.getElementsByClassName('anchor')[0];
     if(anchor) {
         anchor.onclick = function(evt) {
-            if (checkList.classList.contains('visible')) checkList.classList.remove('visible');
-            else checkList.classList.add('visible');
+            evt.stopPropagation(); // ไม่ให้คลิกทะลุไปโดนตัวปิดด้านล่าง
+            checkList.classList.toggle('visible');
         }
     }
 }
+
+document.addEventListener('click', function(event) {
+    // 1. ปิด Year Dropdown ถ้าไม่ได้คลิกในนั้น
+    if (checkList && !checkList.contains(event.target)) {
+        checkList.classList.remove('visible');
+    }
+    
+    // 2. ปิด Modal ถ้าคลิกขอบดำๆ ข้างนอก
+    const pm = document.getElementById('projectModal');
+    if (event.target === pm) {
+        closeModal();
+    }
+});
+
 
 function buildStaticSlicers() {
     for (const [id, options] of Object.entries(STRAT_MASTER_LISTS)) {
@@ -89,6 +106,24 @@ function clearMapFilter() {
     mapFilterProject = "all";
     closeModal();
     applyFilters();
+}
+
+// 🌟 เพิ่มฟังก์ชันนี้เพื่อรับคำสั่งจากปุ่มใน Popup แผนที่
+function setDistrictFilter(dName) {
+    mapFilterDistrict = dName;
+    mapFilterProject = "all"; 
+    chartFilterAreaType = "all"; 
+    if(map) map.closePopup();
+    closeModal();
+    applyFilters();
+}
+
+function setProjectFilter(projName) { 
+    mapFilterProject = projName; 
+    mapFilterDistrict = "all"; 
+    chartFilterAreaType = "all"; 
+    closeModal(); 
+    applyFilters(); 
 }
 
 function resetMapView() {
@@ -923,7 +958,6 @@ function renderMap(isMultiYear, selectedYears) {
     let selectedStratValue = filterEl ? filterEl.value : "all";
     let isSpecificStrat = selectedStratValue !== "all";
 
-    // นับฐาน
     let overallProjects = {};
     dNames.forEach(d => overallProjects[d] = 0);
     masterData.forEach(row => {
@@ -1135,6 +1169,7 @@ function renderMap(isMultiYear, selectedYears) {
                     }
                 }
 
+                // 🌟 ปุ่มนี้จะเรียกคำสั่ง setDistrictFilter ได้แล้วครับ
                 popupHtml += `<button type="button" onclick="setDistrictFilter('${dName}')" style="margin-top:10px; width:100%; padding:6px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer; position:sticky; bottom:-5px; z-index:100;">🔍 กรองข้อมูลเฉพาะอำเภอนี้</button></div>`;
                 
                 l.bindPopup(popupHtml);
@@ -1146,8 +1181,6 @@ function renderMap(isMultiYear, selectedYears) {
     }).addTo(map);
     if(mapFilterProject !== "all" && targetDistricts.length > 0) map.fitBounds(geojsonLayer.getBounds());
 }
-
-function setProjectFilter(projName) { mapFilterProject = projName; mapFilterDistrict = "all"; chartFilterAreaType = "all"; closeModal(); applyFilters(); }
 
 function formatList(str) {
     if (!str || str === "NaN" || str === "-" || str.trim() === "") return "<span style='color:gray'>- ไม่ระบุข้อมูล -</span>";
@@ -1224,9 +1257,7 @@ function closeModal() {
     if(pm) pm.style.display = "none"; 
 }
 
-window.onclick = e => { if (e.target == document.getElementById('projectModal')) closeModal(); }
-
-// 🌟 เพิ่ม Event เรียกใช้งานฟังก์ชันต่างๆ หลังโหลดเสร็จ
+// 🌟 เรียกใช้งานระบบเมื่อโหลดไฟล์เสร็จ
 document.addEventListener("DOMContentLoaded", () => {
     init();
 });
