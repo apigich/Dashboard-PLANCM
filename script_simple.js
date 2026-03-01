@@ -372,14 +372,14 @@ function renderDonutOrBar(sYears) {
                 datasets: [{ 
                     data: data, 
                     backgroundColor: chartColors,
-                    offset: offsets 
+                    offset: offsets // 🌟 เด้งออกเมื่อถูกเลือก
                 }] 
             },
             options: { 
-                responsive: true, maintainAspectRatio: false, 
+                responsive: true, maintainAspectRatio: false,
+                cutout: '45%', // 🌟 ทำให้โดนัทอ้วนขึ้น กดย่ายขึ้น
                 plugins: { 
                     legend: { position: 'right', labels: {font:{family:'Sarabun', size: 10}} },
-                    // 🌟 Tooltip ของกราฟโดนัท (ชี้แล้วไม่พัง)
                     tooltip: { callbacks: { 
                         label: c => {
                             let k = fullLabels[c.dataIndex];
@@ -387,10 +387,10 @@ function renderDonutOrBar(sYears) {
                             let yearTxt = sYears.length > 0 ? sYears[0] : "รวม";
                             if(currentMode === 'count') {
                                 let jointText = st.jC > 0 ? ` (+${st.jC})` : '';
-                                return ` ปี ${yearTxt} : ${st.sC}${jointText} โครงการ`;
+                                return ` ปี ${yearTxt}: ${st.sC}${jointText} โครงการ`;
                             } else {
                                 let totalB = st.sB + st.jB;
-                                return ` ปี ${yearTxt} : ${totalB.toLocaleString()} บาท`;
+                                return ` ปี ${yearTxt}: ${totalB.toLocaleString()} บาท`;
                             }
                         }
                     }},
@@ -412,19 +412,20 @@ function renderDonutOrBar(sYears) {
                 label: `ปี ${y} (เดี่ยว)`,
                 data: sortedKeys.map(k => currentMode === 'count' ? stratStats[k].yData[y].sC : stratStats[k].yData[y].sB),
                 backgroundColor: singleColors,
-                stack: `Stack${idx}`
+                stack: `Stack${idx}`,
+                minBarLength: 4 // 🌟 บังคับให้แท่งมีความสูงเสมอ จะได้กดง่ายๆ
             });
             datasets.push({
                 label: `ปี ${y} (ร่วม)`,
                 data: sortedKeys.map(k => currentMode === 'count' ? stratStats[k].yData[y].jC : stratStats[k].yData[y].jB),
                 backgroundColor: jointColors,
-                stack: `Stack${idx}`
+                stack: `Stack${idx}`,
+                minBarLength: 4 // 🌟 บังคับให้แท่งมีความสูงเสมอ จะได้กดง่ายๆ
             });
         });
 
         const clickHandlerMulti = (e, elements) => {
             if(!elements.length) return;
-            // ดึง index ที่ถูกต้อง (แก้บั๊กกดผิดแท่ง)
             let dataIndex = elements[0].datasetIndex;
             let index = elements[0].index;
             let clickedStrat = fullLabels[index];
@@ -469,17 +470,17 @@ function renderDonutOrBar(sYears) {
             options: { 
                 indexAxis: 'y', 
                 responsive: true, maintainAspectRatio: false, 
+                interaction: { mode: 'index', intersect: false }, // 🌟 ทำให้ชี้ง่ายขึ้น (ชี้แถวๆ แท่งก็ติดเลย)
                 scales: { 
                     x: { stacked: true, beginAtZero: true }, 
                     y: { stacked: true, ticks: { font: {family:'Sarabun', size: 11} } } 
                 },
                 plugins: { 
                     legend: { position: 'bottom', labels: {font:{family:'Sarabun', size: 10}} },
-                    // 🌟 แก้บั๊ก Tooltip ชี้กราฟแท่ง
                     tooltip: { mode: 'index', intersect: false, callbacks: { 
                         title: c => fullLabels[c[0].dataIndex],
                         label: c => {
-                            let k = fullLabels[c.dataIndex]; 
+                            let k = fullLabels[c[0].dataIndex]; 
                             let labelStr = c.dataset.label;
                             let yearMatch = labelStr.match(/ปี (\d+)/);
                             if(!yearMatch) return null;
@@ -492,7 +493,7 @@ function renderDonutOrBar(sYears) {
                                 if (totalC === 0) return null;
                                 if (labelStr.includes('เดี่ยว')) {
                                     let jointText = st.jC > 0 ? ` (+${st.jC})` : '';
-                                    return ` ปี ${y} : ${st.sC}${jointText} โครงการ`;
+                                    return ` ปี ${y}: ${st.sC}${jointText} โครงการ`;
                                 } else {
                                     return null; 
                                 }
@@ -500,7 +501,7 @@ function renderDonutOrBar(sYears) {
                                 let totalB = st.sB + st.jB;
                                 if (totalB === 0) return null;
                                 if (labelStr.includes('เดี่ยว')) {
-                                    return ` ปี ${y} : ${totalB.toLocaleString()} บาท`;
+                                    return ` ปี ${y}: ${totalB.toLocaleString()} บาท`;
                                 } else {
                                     return null;
                                 }
