@@ -306,11 +306,15 @@ function renderDonutOrBar(sYears) {
             if(!stratStats[s].yData[row._y]) { stratStats[s].yData[row._y] = { sC: 0, jC: 0, sB: 0, jB: 0 }; }
             
             if (isJoint) {
-                stratStats[s].jC += 1; stratStats[s].jB += row._b;
-                stratStats[s].yData[row._y].jC += 1; stratStats[s].yData[row._y].jB += row._b;
+                stratStats[s].jC += 1;
+                stratStats[s].jB += row._b;
+                stratStats[s].yData[row._y].jC += 1;
+                stratStats[s].yData[row._y].jB += row._b;
             } else {
-                stratStats[s].sC += 1; stratStats[s].sB += row._b;
-                stratStats[s].yData[row._y].sC += 1; stratStats[s].yData[row._y].sB += row._b;
+                stratStats[s].sC += 1;
+                stratStats[s].sB += row._b;
+                stratStats[s].yData[row._y].sC += 1;
+                stratStats[s].yData[row._y].sB += row._b;
             }
         });
     });
@@ -391,10 +395,10 @@ function renderDonutOrBar(sYears) {
                             let yearTxt = sYears.length > 0 ? sYears[0] : "รวม";
                             if(currentMode === 'count') {
                                 let jointText = st.jC > 0 ? ` (+${st.jC})` : '';
-                                return ` ปี ${yearTxt}: ${st.sC}${jointText} โครงการ`;
+                                return ` ปี ${yearTxt} : ${st.sC}${jointText} โครงการ`;
                             } else {
                                 let totalB = st.sB + st.jB;
-                                return ` ปี ${yearTxt}: ${totalB.toLocaleString()} บาท`;
+                                return ` ปี ${yearTxt} : ${totalB.toLocaleString()} บาท`;
                             }
                         }
                     }},
@@ -474,17 +478,16 @@ function renderDonutOrBar(sYears) {
             options: { 
                 indexAxis: 'y', 
                 responsive: true, maintainAspectRatio: false, 
-                interaction: { mode: 'index', intersect: false }, 
+                // 🌟 ปลดล็อกการชี้กราฟแท่งให้ชี้เป็นรายอันได้
+                interaction: { mode: 'nearest', intersect: true }, 
                 scales: { 
                     x: { stacked: true, beginAtZero: true }, 
                     y: { stacked: true, ticks: { font: {family:'Sarabun', size: 11} } } 
                 },
                 plugins: { 
                     legend: { position: 'bottom', labels: {font:{family:'Sarabun', size: 10}} },
-                    // 🌟 Tooltip กราฟแท่งแก้ไขแล้ว 100%
+                    // 🌟 ดึงข้อมูล Tooltip แยกรายแท่งให้ถูกต้อง
                     tooltip: { 
-                        mode: 'index', 
-                        intersect: false, 
                         callbacks: { 
                             title: c => fullLabels[c[0].dataIndex],
                             label: c => {
@@ -493,27 +496,17 @@ function renderDonutOrBar(sYears) {
                                 if(!yearMatch) return null;
                                 let y = yearMatch[1];
                                 
-                                // 🌟 แก้บั๊ก c[0].dataIndex เป็น c.dataIndex
                                 let k = fullLabels[c.dataIndex];
                                 let st = stratStats[k]?.yData[y];
                                 if (!st) return null;
 
                                 if (currentMode === 'count') {
-                                    if (labelStr.includes('เดี่ยว')) {
-                                        let jC = st.jC || 0;
-                                        let sC = st.sC || 0;
-                                        if (sC + jC === 0) return null;
-                                        let jointText = jC > 0 ? ` (+${jC})` : '';
-                                        return ` ปี ${y}: ${sC}${jointText} โครงการ`;
-                                    }
+                                    let jTxt = st.jC > 0 ? ` (+${st.jC})` : '';
+                                    return ` ปี ${y} : ${st.sC}${jTxt} โครงการ`;
                                 } else {
-                                    if (labelStr.includes('เดี่ยว')) {
-                                        let totalB = (st.sB || 0) + (st.jB || 0);
-                                        if (totalB === 0) return null;
-                                        return ` ปี ${y}: ${totalB.toLocaleString()} บาท`;
-                                    }
+                                    let totalB = (st.sB || 0) + (st.jB || 0);
+                                    return ` ปี ${y} : ${totalB.toLocaleString()} บาท`;
                                 }
-                                return null; 
                             }
                         }
                     },
@@ -624,11 +617,11 @@ function renderMap(sDists, sYears) {
             let st = dStats[d];
             let s = st.total;
             
-            // 🌟 ปรับขนาด Popup ให้กะทัดรัด (250px) และลดขนาดฟอนต์เพื่อป้องกันการดันทะลุขอบ
-            let pop = `<div style="font-family:'Sarabun'; width: 250px; max-height:280px; overflow-y:auto; overflow-x:hidden; padding-right:5px; box-sizing: border-box;">
+            // 🌟 ปรับขนาด Popup ให้กะทัดรัด (240px) และลดขนาดฟอนต์เพื่อป้องกันการดันทะลุขอบ
+            let pop = `<div style="font-family:'Sarabun'; width: 240px; max-height:260px; overflow-y:auto; overflow-x:hidden; padding-right:5px; box-sizing: border-box;">
                 <b style="font-size:14px; color:#1e3a8a;">📍 อำเภอ${d}</b>
                 <hr style="margin:4px 0;">
-                <div style="font-size:11px; line-height: 1.4;">
+                <div style="font-size:11px; line-height: 1.3;">
                     <b style="color:#10b981;">✅ โครงการเฉพาะพื้นที่:</b><br>
                     รวม: <b>${s.cS}</b> โครงการ | <b>${s.bS.toLocaleString()}</b> บาท<br>`;
             
@@ -668,8 +661,8 @@ function renderMap(sDists, sYears) {
 
             pop += `</div></div>`;
             
-            // 🌟 บังคับ Leaflet ขยับแผนที่ (autoPan) ให้ Popup โผล่มาเต็มๆ
-            l.bindPopup(pop, { autoPan: true, autoPanPadding: [15, 15] }); 
+            // 🌟 บังคับ Leaflet ดันแผนที่หนีขอบจอให้พอดีกับ Popup เสมอ (เพิ่ม Padding)
+            l.bindPopup(pop, { autoPan: true, autoPanPadding: [20, 20] }); 
             
             l.on('mouseover', e => { e.target.setStyle({weight: 3, color: '#f59e0b'}); e.target.bringToFront(); });
             l.on('mouseout', e => geoLayer.resetStyle(e.target));
