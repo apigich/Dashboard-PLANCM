@@ -3,10 +3,11 @@ const API_URL = "https://script.google.com/macros/s/AKfycby4zmatIMhxh2K4PIiabU5q
 
 let masterData = [];   
 let filteredData = []; 
-let currentStratLevel = 0; // 0=ชาติ, 1=แม่บท, 2=แผน13, 3=ภาค, 4=จังหวัด
+
+// 🌟 ตั้ง Default ให้เปิดมาเป็น แผนพัฒนาจังหวัด (Index = 4)
+let currentStratLevel = 4; 
 let currentMode = 'count'; 
 
-// ตัวกรองย่อยจากโดนัทชาร์ต
 let activeSubStrategy = "all"; 
 
 const stratKeys = [
@@ -16,7 +17,7 @@ const stratKeys = [
     "แผนพัฒนาภาคเหนือ",
     "ประเด็นการพัฒนาจังหวัด"
 ];
-const stratNames = ["ยุทธศาสตร์ชาติ", "แผนแม่บท", "แผนพัฒนาฯ 13", "แผนภาคเหนือ", "แผนพัฒนาจังหวัด"];
+const stratNames = ["ยุทธศาสตร์ชาติ", "แผนแม่บท", "แผนพัฒนาฯ 13", "แผนภาคเหนือ", "แผนพัฒนาจังหวัด (2566-2570)"];
 
 const STRAT_MASTER_LISTS = {
     0: ["ด้าน 1 ความมั่นคง", "ด้าน 2 การสร้างความสามารถในการแข่งขัน", "ด้าน 3 การพัฒนาและเสริมสร้างศักยภาพทรัพยากรมนุษย์", "ด้าน 4 การสร้างโอกาสและความเสมอภาคทางสังคม", "ด้าน 5 การสร้างการเติบโตบนคุณภาพชีวิตที่เป็นมิตรกับสิ่งแวดล้อม", "ด้าน 6 การปรับสมดุลและพัฒนาระบบการบริหารจัดการภาครัฐ"],
@@ -34,10 +35,8 @@ $(document).ready(function() {
     $('#districtFilter').select2({ placeholder: "ค้นหาหรือเลือกอำเภอ (เลือกทั้งหมดได้)", allowClear: true, width: '100%' });
     dNames.forEach(d => { $('#districtFilter').append(new Option(d, d, false, false)); });
     
-    // เมื่อเปลี่ยนอำเภอ
     $('#districtFilter').on('change', function() { updateDashboard(); });
 
-    // สวิตช์ดูสีแผนที่
     $('#modeSwitch').on('change', function(e) {
         currentMode = e.target.checked ? 'budget' : 'count';
         document.getElementById('mapTitleContext').innerText = currentMode === 'count' ? '(สีตามจำนวนโครงการ)' : '(สีตามงบเฉพาะพื้นที่อำเภอนี้)';
@@ -80,6 +79,7 @@ async function init() {
         });
         document.getElementById('checkAllYears').checked = false;
 
+        // เรียกอัปเดตครั้งแรก (แผนจังหวัดถูกล็อกไว้แล้วที่ตัวแปร global)
         updateDashboard();
         setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 300);
 
@@ -90,7 +90,7 @@ async function init() {
 
 function setStrat(idx) {
     currentStratLevel = idx;
-    activeSubStrategy = "all"; // รีเซ็ตการกรองย่อยจากโดนัท
+    activeSubStrategy = "all"; 
     document.getElementById('btnResetDonut').style.display = 'none';
 
     document.querySelectorAll('.strat-btn').forEach((btn, i) => {
@@ -99,7 +99,6 @@ function setStrat(idx) {
     updateDashboard();
 }
 
-// ล้างเฉพาะตัวกรองที่มาจากกราฟโดนัท
 function clearSubStratFilter() {
     activeSubStrategy = "all";
     document.getElementById('btnResetDonut').style.display = 'none';
@@ -117,23 +116,30 @@ function handleYearChange() {
     updateDashboard();
 }
 
+// ล้างทั้งหมด ให้กลับไปแผนจังหวัด
 function clearAllFilters() {
-    $('#districtFilter').val(null).trigger('change'); // ล้างแผนที่และ Dropdown
+    $('#districtFilter').val(null).trigger('change'); 
     document.querySelectorAll('.y-cb').forEach(el => el.checked = false);
     if(document.querySelectorAll('.y-cb').length > 0) document.querySelectorAll('.y-cb')[0].checked = true;
     document.getElementById('checkAllYears').checked = false;
     
-    setStrat(0); // กลับไปยุทธศาสตร์ชาติ
+    setStrat(4); // กลับไปแผนพัฒนาจังหวัด
     if(map) map.closePopup();
 }
 
-// 🌟 ล้างเฉพาะแผนที่ (ไม่กระทบฟังก์ชันอื่น)
+// ล้างเฉพาะพื้นที่ แต่คงปีงบและประเด็นไว้
 function clearMapFilterOnly() {
     $('#districtFilter').val(null).trigger('change');
     if(map) map.closePopup();
 }
 
 function filterFromTable(dName) {
+    // ถ้ายอมให้กรอง Provincial ด้วย
+    if (dName === 'Provincial') {
+        $('#districtFilter').val(null).trigger('change'); // ถ้าจะดู Provincial ควรสุ่มล้างอำเภอก่อน
+        return;
+    }
+    
     let currentVals = $('#districtFilter').val() || [];
     if (!currentVals.includes(dName)) {
         currentVals.push(dName);
@@ -141,12 +147,10 @@ function filterFromTable(dName) {
     }
 }
 
-// 🌟 ซิงค์ข้อมูลทุกส่วน
 function updateDashboard() {
-    const sYears = Array.from(document.querySelectorAll('.y-cb:checked')).map(el => el.value);
+    const sYears = Array.from(document.querySelectorAll('.y-cb:checked')).map(el => el.value).sort((a,b)=>a-b); 
     const sDists = $('#districtFilter').val() || []; 
 
-    // อัปเดต Label
     if(sYears.length === 0) document.getElementById('yearStatus').innerText = '(กรุณาเลือกปี)';
     else if(sYears.length === document.querySelectorAll('.y-cb').length) document.getElementById('yearStatus').innerText = '(ทุกปี)';
     else document.getElementById('yearStatus').innerText = `(${sYears.join(',')})`;
@@ -154,7 +158,6 @@ function updateDashboard() {
     let targetKey = stratKeys[currentStratLevel];
     document.getElementById('subTitleCount').innerText = `(แผน: ${stratNames[currentStratLevel]})`;
     document.getElementById('subTitleBudget').innerText = `(แผน: ${stratNames[currentStratLevel]})`;
-    document.getElementById('donutTitle').innerText = `🍩 สัดส่วนเป้าหมาย (${stratNames[currentStratLevel]})`;
 
     filteredData = masterData.filter(r => {
         let mY = sYears.includes(r._y);
@@ -169,7 +172,6 @@ function updateDashboard() {
         let strVal = String(val || "").trim();
         let mS = (strVal !== "" && strVal !== "-" && strVal !== "undefined"); 
         
-        // 🌟 กรองจากโดนัท (ถ้ายุทธศาสตร์ย่อยถูกเลือก)
         if (activeSubStrategy !== "all") {
             mS = mS && strVal.includes(activeSubStrategy);
         }
@@ -186,21 +188,23 @@ function updateDashboard() {
     document.getElementById('sumBudget').innerText = filteredData.reduce((acc, cur) => acc + cur._b, 0).toLocaleString(undefined, {minimumFractionDigits:2});
 
     renderTrend(sYears);
-    renderDonut(); // วาดโดนัทใหม่
+    renderDonutOrBar(sYears); // 🌟 สลับโดนัท/บาร์ชาร์ต
     renderMap(sDists);
     renderTable(sYears);
 }
 
-// 🌟 กราฟโดนัท (สัดส่วนประเด็นยุทธศาสตร์)
-function renderDonut() {
+// 🌟 ระบบอัจฉริยะ: เลือก 1 ปีเป็นโดนัท / หลายปีเป็นกราฟแท่งแนวนอน
+function renderDonutOrBar(sYears) {
     const ctx = document.getElementById('donutChart');
     if(!ctx) return;
 
     let targetKey = stratKeys[currentStratLevel];
     let masterList = STRAT_MASTER_LISTS[currentStratLevel];
+    let isMultiYear = sYears.length > 1;
+
+    // คำนวณแบบแยกรายปี
     let stratStats = {};
     
-    // คำนวณจาก filteredData เพื่อให้ตรงกับอำเภอ/ปี ที่เลือกไว้
     filteredData.forEach(row => {
         let val = row[targetKey];
         if (val === undefined) {
@@ -212,13 +216,19 @@ function renderDonut() {
 
         let strVal = String(val).trim();
         if (!strVal || strVal === "" || strVal === "-" || strVal === "undefined") strVal = "ไม่ระบุ";
-        
         let strategies = strVal.split(",").map(s => s.trim()).filter(s => s !== "");
         if (strategies.length === 0) strategies = ["ไม่ระบุ"];
 
         strategies.forEach(s => {
-            if(!stratStats[s]) stratStats[s] = 0;
-            stratStats[s] += (currentMode === 'budget' ? row._b : 1);
+            if(!stratStats[s]) {
+                stratStats[s] = { total: 0, years: {} };
+                sYears.forEach(y => stratStats[s].years[y] = 0);
+            }
+            if(!stratStats[s].years[row._y]) stratStats[s].years[row._y] = 0;
+            
+            let v = currentMode === 'budget' ? row._b : 1;
+            stratStats[s].total += v;
+            stratStats[s].years[row._y] += v;
         });
     });
 
@@ -229,39 +239,73 @@ function renderDonut() {
         return idxA - idxB; 
     });
 
-    let displayLabels = sortedKeys.map(k => k.length > 35 ? k.substring(0, 35) + "..." : k);
-    let fullLabels = sortedKeys; // เก็บชื่อเต็มไว้ใช้ตอนคลิก
-    let data = sortedKeys.map(k => stratStats[k]);
-    
-    let total = data.reduce((a, b) => a + b, 0);
-    let lPct = displayLabels.map((l, i) => { return `${l} (${total>0 ? ((data[i]*100)/total).toFixed(1) : 0}%)`; });
-    const pieColors = ['#1e3a8a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b', '#0ea5e9', '#14b8a6', '#f43f5e', '#d946ef', '#a855f7'];
+    let fullLabels = sortedKeys;
+    let displayLabels = sortedKeys.map(k => k.length > 25 ? k.substring(0, 25) + "..." : k);
+    const chartColors = ['#1e3a8a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b', '#0ea5e9', '#14b8a6', '#f43f5e', '#d946ef', '#a855f7'];
 
     if(donut) donut.destroy();
-    donut = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels: lPct, datasets: [{ data: data, backgroundColor: pieColors }] },
-        options: { 
-            responsive: true, maintainAspectRatio: false, 
-            plugins: { 
-                legend: { position: 'right', labels: {font:{family:'Sarabun', size: 10}} },
-                tooltip: { callbacks: { label: c => ` ${displayLabels[c.dataIndex]}: ${c.raw.toLocaleString()} ${currentMode==='count'?'โครงการ':'บาท'}` } },
-                datalabels: { color: '#fff', font: { weight: 'bold', size: 11 }, formatter: v => total > 0 && (v*100/total) >= 5 ? (v*100/total).toFixed(1) + "%" : "" }
-            },
-            // 🌟 ทำให้คลิกเพื่อกรองได้
-            onClick: (e, elements) => {
-                if(elements.length > 0) {
-                    let idx = elements[0].index;
-                    let clickedStrat = fullLabels[idx];
-                    if (clickedStrat !== "ไม่ระบุ") {
-                        activeSubStrategy = clickedStrat;
+
+    if (!isMultiYear) {
+        // 🍩 วาดโดนัท (ถ้าเลือกแค่ 1 ปี)
+        document.getElementById('donutTitle').innerHTML = `🍩 สัดส่วนเป้าหมาย <small>(ปี ${sYears[0] || 'ไม่มี'})</small>`;
+        
+        let data = sortedKeys.map(k => stratStats[k].total);
+        let total = data.reduce((a, b) => a + b, 0);
+        let lPct = displayLabels.map((l, i) => `${l} (${total>0 ? ((data[i]*100)/total).toFixed(1) : 0}%)`);
+
+        donut = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: lPct, datasets: [{ data: data, backgroundColor: chartColors }] },
+            options: { 
+                responsive: true, maintainAspectRatio: false, 
+                plugins: { 
+                    legend: { position: 'right', labels: {font:{family:'Sarabun', size: 10}} },
+                    tooltip: { callbacks: { label: c => ` ${fullLabels[c.dataIndex]}: ${c.raw.toLocaleString()} ${currentMode==='count'?'โครงการ':'บาท'}` } },
+                    datalabels: { color: '#fff', font: { weight: 'bold', size: 11 }, formatter: v => total > 0 && (v*100/total) >= 5 ? (v*100/total).toFixed(1) + "%" : "" }
+                },
+                onClick: (e, elements) => {
+                    if(elements.length > 0) {
+                        activeSubStrategy = fullLabels[elements[0].index];
                         document.getElementById('btnResetDonut').style.display = 'inline-block';
                         updateDashboard();
                     }
                 }
             }
-        }
-    });
+        });
+    } else {
+        // 📊 วาด Bar Chart แนวนอนเปรียบเทียบ (ถ้าเลือกหลายปี)
+        document.getElementById('donutTitle').innerHTML = `📊 เปรียบเทียบเป้าหมายรายปี <small>(${sYears.join(', ')})</small>`;
+        
+        let datasets = sYears.map((y, idx) => {
+            return {
+                label: `ปี ${y}`,
+                data: sortedKeys.map(k => stratStats[k].years[y]),
+                backgroundColor: chartColors[idx % chartColors.length]
+            };
+        });
+
+        donut = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: displayLabels, datasets: datasets },
+            options: { 
+                indexAxis: 'y', // กราฟแนวนอน
+                responsive: true, maintainAspectRatio: false, 
+                scales: { x: { beginAtZero: true }, y: { ticks: { font: {family:'Sarabun', size: 10} } } },
+                plugins: { 
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { title: c => fullLabels[c[0].dataIndex], label: c => ` ปี ${c.dataset.label.replace('ปี ','')}: ${c.raw.toLocaleString()} ${currentMode==='count'?'โครงการ':'บาท'}` } },
+                    datalabels: { display: false } 
+                },
+                onClick: (e, elements) => {
+                    if(elements.length > 0) {
+                        activeSubStrategy = fullLabels[elements[0].index];
+                        document.getElementById('btnResetDonut').style.display = 'inline-block';
+                        updateDashboard();
+                    }
+                }
+            }
+        });
+    }
 }
 
 function renderTrend(sYears) {
@@ -274,16 +318,12 @@ function renderTrend(sYears) {
     actY.forEach(y => { yC[y] = 0; yB[y] = 0; });
     
     filteredData.forEach(r => { 
-        if(yC[r._y] !== undefined) { 
-            yC[r._y]++; 
-            yB[r._y] += r._b; 
-        } 
+        if(yC[r._y] !== undefined) { yC[r._y]++; yB[r._y] += r._b; } 
     });
     
     let dC = actY.map(y => yC[y]);
     let dB = actY.map(y => yB[y]);
 
-    // 🌟 แก้บั๊กเส้นกราฟจำนวนไม่ขึ้น
     if (trend) trend.destroy();
     trend = new Chart(ctx, {
         type: 'line',
@@ -295,7 +335,7 @@ function renderTrend(sYears) {
             responsive: true, maintainAspectRatio: false, 
             scales: {
                 y: { display: true, position: 'left', title: {display:true, text:'บาท', font:{family:'Sarabun'}} },
-                y1: { display: true, position: 'right', grid: {drawOnChartArea: false}, title: {display:true, text:'โครงการ', font:{family:'Sarabun'}}, min: 0 }
+                y1: { display: true, position: 'right', grid: {drawOnChartArea: false}, title: {display:true, text:'โครงการ', font:{family:'Sarabun'}} }
             },
             plugins: { datalabels: { display: false } } 
         }
@@ -346,7 +386,6 @@ function renderMap(sDists) {
             let d = f.properties.amp_th || f.properties.AMP_TH;
             let s = dStats[d];
             
-            // 🌟 ปรับคำใน Popup แผนที่ ให้เป็นภาษาคนทั่วไป
             let pop = `<div style="font-family:'Sarabun'; width: 280px;">
                 <b style="font-size:16px; color:#1e3a8a;">📍 อำเภอ${d}</b>
                 <hr style="margin:5px 0;">
@@ -370,7 +409,6 @@ function renderMap(sDists) {
     }).addTo(map);
 }
 
-// 🌟 7. ตารางสรุปแบบ Expandable (เอาทั้งจังหวัดขึ้นก่อน และปรับคำในตาราง)
 function toggleYearRow(year) {
     const detailRow = document.getElementById(`detail-${year}`);
     const mainRow = document.getElementById(`row-${year}`);
@@ -396,7 +434,7 @@ function renderTable(sYears) {
 
         let dStats = {};
         dNames.forEach(d => { dStats[d] = { cS: 0, bS: 0, cM: 0, bM: 0 }; });
-        let provStats = { cP: 0, bP: 0 }; // เก็บของทั้งจังหวัด
+        let provStats = { cP: 0, bP: 0 }; 
 
         yData.forEach(r => {
             if (r._aType === "Single" || r._aType === "Multi") {
@@ -410,7 +448,6 @@ function renderTable(sYears) {
             }
         });
 
-        // แถวหลัก (ปี)
         let mainTr = document.createElement('tr');
         mainTr.className = 'year-row';
         mainTr.id = `row-${y}`;
@@ -422,26 +459,24 @@ function renderTable(sYears) {
         `;
         tbody.appendChild(mainTr);
 
-        // แถวรายละเอียด (ปรับคำ และเอา Provincial ขึ้นก่อน)
         let detailTr = document.createElement('tr');
         detailTr.className = 'district-details';
         detailTr.id = `detail-${y}`;
         
         let distRowsHtml = '';
 
-        // 🌟 ส่วนทั้งจังหวัด (โชว์เป็นแถวแรก)
+        // 🌟 โครงการทั้งจังหวัดเอาขึ้นก่อน
         if (provStats.cP > 0) {
             distRowsHtml += `
-                <tr class="provincial-row">
+                <tr class="provincial-row" onclick="filterFromTable('Provincial')" title="คลิกเพื่อกรองดูกราฟเฉพาะโครงการภาพรวมจังหวัด">
                     <td>🌐 โครงการครอบคลุมทั้งจังหวัด</td>
                     <td style="text-align:center;">${provStats.cP} โครงการ</td>
-                    <td style="text-align:right;">-</td>
+                    <td style="text-align:right; color:gray;">(งบภาพรวม)</td>
                     <td style="text-align:right;">${provStats.bP.toLocaleString()}</td>
                 </tr>
             `;
         }
 
-        // ไล่อำเภอ
         dNames.forEach(d => {
             let s = dStats[d];
             if(s.cS > 0 || s.cM > 0) {
@@ -458,7 +493,6 @@ function renderTable(sYears) {
 
         if(distRowsHtml === '') distRowsHtml = '<tr><td colspan="4" style="text-align:center; color:gray;">ไม่มีข้อมูลลงพื้นที่ในปีนี้</td></tr>';
 
-        // ปรับหัวตารางให้เป็นภาษาที่เข้าใจง่าย
         detailTr.innerHTML = `
             <td colspan="3" style="padding:0; background: #f8fafc;">
                 <div style="max-height: 250px; overflow-y: auto; padding: 5px;">
