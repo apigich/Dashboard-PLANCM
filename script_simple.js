@@ -15,28 +15,24 @@ const stratKeys = [
 ];
 const stratNames = ["ยุทธศาสตร์ชาติ", "แผนแม่บท", "แผน 13", "แผนภาค", "แผนจังหวัด"];
 
+// ดึงลิสต์เพื่อทำสีโดนัท
+const STRAT_MASTER_LISTS = {
+    0: ["ด้าน 1 ความมั่นคง", "ด้าน 2 การสร้างความสามารถในการแข่งขัน", "ด้าน 3 การพัฒนาและเสริมสร้างศักยภาพทรัพยากรมนุษย์", "ด้าน 4 การสร้างโอกาสและความเสมอภาคทางสังคม", "ด้าน 5 การสร้างการเติบโตบนคุณภาพชีวิตที่เป็นมิตรกับสิ่งแวดล้อม", "ด้าน 6 การปรับสมดุลและพัฒนาระบบการบริหารจัดการภาครัฐ"],
+    1: ["ประเด็นที่ 1 ความมั่นคง", "ประเด็นที่ 2 การต่างประเทศ", "ประเด็นที่ 3 การเกษตร", "ประเด็นที่ 4 อุตสาหกรรมและบริการแห่งอนาคต", "ประเด็นที่ 5 การท่องเที่ยว", "ประเด็นที่ 6 พื้นที่และเมืองน่าอยู่อัจฉริยะ", "ประเด็นที่ 7 โครงสร้างพื้นฐาน ระบบโลจิสติกส์ และดิจิทัล", "ประเด็นที่ 8 ผู้ประกอบการและวิสาหกิจขนาดกลางและขนาดย่อมยุคใหม่", "ประเด็นที่ 9 เขตเศรษฐกิจพิเศษ", "ประเด็นที่ 10 การปรับเปลี่ยนค่านิยมและวัฒนธรรม", "ประเด็นที่ 11 ศักยภาพคนตลอดช่วงชีวิต", "ประเด็นที่ 12 การพัฒนาการเรียนรู้", "ประเด็นที่ 13 การเสริมสร้างให้คนไทยมีสุขภาวะที่ดี", "ประเด็นที่ 14 ศักยภาพการกีฬา", "ประเด็นที่ 15 พลังทางสังคม", "ประเด็นที่ 16 เศรษฐกิจฐานราก", "ประเด็นที่ 17 ความเสมอภาคและหลักประกันทางสังคม", "ประเด็นที่ 18 การเติบโตอย่างยั่งยืน", "ประเด็นที่ 19 การบริหารจัดการน้ำทั้งระบบ", "ประเด็นที่ 20 การบริการประชาชนและประสิทธิภาพภาครัฐ", "ประเด็นที่ 21 การต่อต้านการทุจริตและประพฤติมิชอบ", "ประเด็นที่ 22 กฎหมายและกระบวนการยุติธรรม", "ประเด็นที่ 23 การวิจัยและพัฒนานวัตกรรม"],
+    2: ["หมุดหมายที่ 1 ไทยเป็นประเทศชั้นนำด้านสินค้าเกษตรและเกษตรแปรรูปมูลค่าสูง", "หมุดหมายที่ 2 ไทยเป็นจุดหมายของการท่องเที่ยวที่เน้นคุณภาพและความยั่งยืน", "หมุดหมายที่ 3 ไทยเป็นฐานการผลิตยานยนต์ไฟฟ้าที่สำคัญของโลก", "หมุดหมายที่ 4 ไทยเป็นศูนย์กลางทางการแพทย์และสุขภาพมูลค่าสูง", "หมุดหมายที่ 5 ไทยเป็นประตูการค้าการลงทุนและยุทธศาสตร์ทางโลจิสติกส์ที่สำคัญของภูมิภาค", "หมุดหมายที่ 6 ไทยเป็นศูนย์กลางอุตสาหกรรมอิเล็กทรอนิกส์อัจฉริยะและอุตสาหกรรมดิจิทัลของอาเซียน", "หมุดหมายที่ 7 ไทยมีวิสาหกิจขนาดกลางและขนาดย่อมที่เข้มแข็ง มีศักยภาพสูง และสามารถแข่งขันได้", "หมุดหมายที่ 8 ไทยมีพื้นที่และเมืองอัจฉริยะที่น่าอยู่ ปลอดภัย เติบโตได้อย่างยั่งยืน", "หมุดหมายที่ 9 ไทยมีความยากจนข้ามรุ่นลดลง และมีความคุ้มครองทางสังคมที่เพียงพอ เหมาะสม", "หมุดหมายที่ 10 ไทยมีเศรษฐกิจหมุนเวียนและสังคมคาร์บอนต่ำ", "หมุดหมายที่ 11 ไทยสามารถลดความเสี่ยงและผลกระทบจากภัยธรรมชาติและการเปลี่ยนแปลงสภาพภูมิอากาศ", "หมุดหมายที่ 12 ไทยมีกำลังคนสมรรถนะสูง มุ่งเรียนรู้อย่างต่อเนื่อง ตอบโจทย์การพัฒนาแห่งอนาคต", "หมุดหมายที่ 13 ไทยมีภาครัฐที่ทันสมัย มีประสิทธิภาพ และตอบโจทย์ประชาชน"],
+    3: ["ประเด็นการพัฒนาที่ 1 การพัฒนาเศรษฐกิจท่องเที่ยวและการค้าในพื้นที่", "ประเด็นการพัฒนาที่ 2 การพัฒนาเศรษฐกิจมูลค่าสูงด้วยการส่งออกสินค้าและบริการนอกพื้นที่", "ประเด็นการพัฒนาที่ 3 การพัฒนาเศรษฐกิจเกษตรสร้างสรรค์", "ประเด็นการพัฒนาที่ 4 การพัฒนาเศรษฐกิจสิ่งแวดล้อมเพื่อลดฝุ่นควัน"],
+    4: ["ประเด็นการพัฒนาที่ 1 การส่งเสริมอุตสาหกรรมท่องเที่ยวเน้นคุณค่า สร้างสรรค์บนอัตลักษณ์ล้านนา และอุตสาหกรรมไมซ์", "ประเด็นการพัฒนาที่ 2 การขับเคลื่อนเกษตรเพิ่มมูลค่า และเกษตรแปรรูปมูลค่าสูง", "ประเด็นการพัฒนาที่ 3 การยกระดับการค้าการลงทุนบนฐานเศรษฐกิจสร้างสรรค์ (Creative Economy) นวัตกรรม (Innovation) และการพัฒนาอย่างยั่งยืน (SDGs)", "ประเด็นการพัฒนาที่ 4 การจัดการเชิงรุกในปัญหาฝุ่นควัน (PM 2.5) และการรักษาทรัพยากรธรรมชาติและสิ่งแวดล้อมแบบมีส่วนร่วม", "ประเด็นการพัฒนาที่ 5 การเสริมสร้างสังคมแห่งโอกาสและเป็นธรรม เมืองน่าอยู่ มีความปลอดภัย เพื่อคุณภาพชีวิตที่ดีของประชาชน"]
+};
+
 const dNames = ["กัลยาณิวัฒนา", "จอมทอง", "เชียงดาว", "ไชยปราการ", "ดอยเต่า", "ดอยสะเก็ด", "ดอยหล่อ", "ฝาง", "พร้าว", "เมืองเชียงใหม่", "แม่แจ่ม", "แม่แตง", "แม่ริม", "แม่วาง", "แม่ออน", "แม่อาย", "เวียงแหง", "สะเมิง", "สันกำแพง", "สันทราย", "สันป่าตอง", "สารภี", "หางดง", "อมก๋อย", "ฮอด"];
 
 let map, geoLayer, donut, trend, districtGeo;
 
 $(document).ready(function() {
-    // 🌟 Initialize Select2 (Dropdown อำเภอ)
-    $('#districtFilter').select2({
-        placeholder: "ค้นหาหรือเลือกอำเภอ (เลือกทั้งหมดได้)",
-        allowClear: true,
-        width: '100%'
-    });
-
-    // ใส่ Option 25 อำเภอ
-    dNames.forEach(d => {
-        let option = new Option(d, d, false, false);
-        $('#districtFilter').append(option);
-    });
-
-    // เมื่อ Dropdown เปลี่ยน ให้ Update
+    $('#districtFilter').select2({ placeholder: "ค้นหาหรือเลือกอำเภอ (เลือกทั้งหมดได้)", allowClear: true, width: '100%' });
+    dNames.forEach(d => { $('#districtFilter').append(new Option(d, d, false, false)); });
     $('#districtFilter').on('change', function() { updateDashboard(); });
 
-    // สวิตช์แผนที่
     $('#modeSwitch').on('change', function(e) {
         currentMode = e.target.checked ? 'budget' : 'count';
         updateDashboard();
@@ -113,31 +109,35 @@ function clearAllFilters() {
     setStrat(0);
 }
 
-// 🌟 ฟังก์ชันใช้คลิกจากตาราง เพื่อกรองอำเภอ
 function filterFromTable(dName) {
     let currentVals = $('#districtFilter').val() || [];
     if (!currentVals.includes(dName)) {
         currentVals.push(dName);
-        $('#districtFilter').val(currentVals).trigger('change'); // Trigger ให้ updateDashboard ทำงานอัตโนมัติ
+        $('#districtFilter').val(currentVals).trigger('change'); 
     }
 }
 
-// 🌟 ซิงค์ข้อมูลทุกส่วน
+function resetMapView() {
+    $('#districtFilter').val(null).trigger('change');
+    if(map) {
+        map.setView([18.7883, 98.9853], 8);
+        map.closePopup();
+    }
+}
+
 function updateDashboard() {
     const sYears = Array.from(document.querySelectorAll('.y-cb:checked')).map(el => el.value);
-    const sDists = $('#districtFilter').val() || []; // อาร์เรย์ของอำเภอที่เลือก
+    const sDists = $('#districtFilter').val() || []; 
 
     if(sYears.length === 0) document.getElementById('yearStatus').innerText = '(กรุณาเลือกปี)';
     else if(sYears.length === document.querySelectorAll('.y-cb').length) document.getElementById('yearStatus').innerText = '(ทุกปี)';
     else document.getElementById('yearStatus').innerText = `(${sYears.join(',')})`;
 
-    // ดึง Key ยุทธศาสตร์ที่เลือก
     let targetKey = stratKeys[currentStratLevel];
 
     filteredData = masterData.filter(r => {
         let mY = sYears.includes(r._y);
         
-        // เช็คว่ามีข้อมูลในคอลัมน์ยุทธศาสตร์นั้นหรือไม่
         let val = r[targetKey];
         if (val === undefined) {
             let searchKey = targetKey.split(" ")[0]; 
@@ -145,9 +145,8 @@ function updateDashboard() {
             let foundKey = Object.keys(r).find(k => k.includes(searchKey));
             if (foundKey) val = r[foundKey];
         }
-        let mS = (val && String(val).trim() !== "" && String(val) !== "-"); // ถ้ามีข้อมูลถือว่าสอดคล้องระดับนั้น
+        let mS = (val && String(val).trim() !== "" && String(val) !== "-"); 
         
-        // เช็คอำเภอแบบ Multi-select
         let mD = true;
         if (sDists.length > 0) {
             mD = sDists.some(d => r._a.includes(d)) || r._aType === "Provincial";
@@ -195,34 +194,64 @@ function renderTrend(sYears) {
     });
 }
 
+// 🌟 ปรับโดนัท: ให้โชว์สัดส่วนเป้าหมายในประเด็นยุทธศาสตร์
 function renderDonut() {
     const ctx = document.getElementById('donutChart');
     if(!ctx) return;
 
-    let cSingle = 0, cMulti = 0, cProv = 0;
-    filteredData.forEach(r => {
-        let v = currentMode === 'budget' ? r._b : 1;
-        if(r._aType === 'Single') cSingle += v;
-        else if(r._aType === 'Multi') cMulti += v;
-        else if(r._aType === 'Provincial') cProv += v;
+    let targetKey = stratKeys[currentStratLevel];
+    let masterList = STRAT_MASTER_LISTS[currentStratLevel];
+    let stratStats = {};
+    
+    filteredData.forEach(row => {
+        let val = row[targetKey];
+        if (val === undefined) {
+            let searchKey = targetKey.split(" ")[0]; 
+            if(targetKey.includes("ฉบับที่ 13")) searchKey = "ฉบับที่ 13";
+            let foundKey = Object.keys(row).find(k => k.includes(searchKey));
+            if (foundKey) val = row[foundKey];
+        }
+
+        let strVal = String(val).trim();
+        if (!val || strVal === "" || strVal === "NaN" || strVal === "undefined" || strVal === "-") strVal = "ไม่ระบุ";
+        
+        let strategies = strVal.split(",").map(s => s.trim()).filter(s => s !== "");
+        if (strategies.length === 0) strategies = ["ไม่ระบุ"];
+
+        strategies.forEach(s => {
+            if(!stratStats[s]) stratStats[s] = 0;
+            stratStats[s] += (currentMode === 'budget' ? row._b : 1);
+        });
     });
 
-    let total = cSingle + cMulti + cProv;
-    let data = [cSingle, cMulti, cProv];
-    let labels = ['เฉพาะพื้นที่ (Single)', 'เชื่อมโยงข้ามอำเภอ (Multi)', 'ภาพรวมทั้งจังหวัด'];
+    let sortedKeys = Object.keys(stratStats).sort((a,b) => {
+        if(a === 'ไม่ระบุ') return 1;
+        if(b === 'ไม่ระบุ') return -1;
+        let idxA = masterList.indexOf(a); let idxB = masterList.indexOf(b);
+        if(idxA === -1) idxA = 999; if(idxB === -1) idxB = 999;
+        return idxA - idxB; 
+    });
+
+    let displayLabels = sortedKeys.map(k => k.length > 35 ? k.substring(0, 35) + "..." : k);
+    let data = sortedKeys.map(k => stratStats[k]);
     
-    let lPct = labels.map((l, i) => { return `${l} (${total>0 ? ((data[i]*100)/total).toFixed(1) : 0}%)`; });
+    let total = data.reduce((a, b) => a + b, 0);
+    let lPct = displayLabels.map((l, i) => { return `${l} (${total>0 ? ((data[i]*100)/total).toFixed(1) : 0}%)`; });
+    const pieColors = ['#1e3a8a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b', '#0ea5e9', '#14b8a6', '#f43f5e', '#d946ef', '#a855f7'];
+
+    // เปลี่ยน Title โดนัทให้รู้ว่ากำลังดูสัดส่วนของแผนไหน
+    document.querySelector('.donut-card .chart-title').innerHTML = `🍩 สัดส่วนเป้าหมาย (${stratNames[currentStratLevel]})`;
 
     if(donut) donut.destroy();
     donut = new Chart(ctx, {
         type: 'doughnut',
-        data: { labels: lPct, datasets: [{ data: data, backgroundColor: ['#10b981', '#f59e0b', '#ef4444'] }] },
+        data: { labels: lPct, datasets: [{ data: data, backgroundColor: pieColors }] },
         options: { 
             responsive: true, maintainAspectRatio: false, 
             plugins: { 
-                legend: { position: 'right', labels: {font:{family:'Sarabun', size: 11}} },
-                tooltip: { callbacks: { label: c => ` ${labels[c.dataIndex]}: ${c.raw.toLocaleString()} ${currentMode==='count'?'โครงการ':'บาท'}` } },
-                datalabels: { color: '#fff', font: { weight: 'bold', size: 12 }, formatter: v => total > 0 && (v*100/total) >= 5 ? (v*100/total).toFixed(0) + "%" : "" }
+                legend: { position: 'right', labels: {font:{family:'Sarabun', size: 10}} },
+                tooltip: { callbacks: { label: c => ` ${displayLabels[c.dataIndex]}: ${c.raw.toLocaleString()} ${currentMode==='count'?'โครงการ':'บาท'}` } },
+                datalabels: { color: '#fff', font: { weight: 'bold', size: 11 }, formatter: v => total > 0 && (v*100/total) >= 5 ? (v*100/total).toFixed(1) + "%" : "" }
             } 
         }
     });
@@ -235,7 +264,7 @@ function renderMap(sDists) {
     }
 
     let dStats = {};
-    dNames.forEach(d => { dStats[d] = { cS: 0, bS: 0, cM: 0, bM: 0, cP: 0 }; });
+    dNames.forEach(d => { dStats[d] = { cS: 0, bS: 0, cM: 0, bM: 0, cP: 0, bP: 0 }; });
 
     filteredData.forEach(r => {
         if (r._aType === "Single" || r._aType === "Multi") {
@@ -244,7 +273,7 @@ function renderMap(sDists) {
                 if (r._aType === "Multi") { dStats[d].cM++; dStats[d].bM += r._b; }
             });
         } else if (r._aType === "Provincial") {
-            dNames.forEach(d => { dStats[d].cP++; });
+            dNames.forEach(d => { dStats[d].cP++; dStats[d].bP += r._b; });
         }
     });
 
@@ -254,7 +283,7 @@ function renderMap(sDists) {
     geoLayer = L.geoJSON(districtGeo, {
         style: (f) => {
             let d = f.properties.amp_th || f.properties.AMP_TH;
-            let s = dStats[d];
+            let s = dStats[d] || {cS:0, bS:0, cM:0};
             let color = '#f1f5f9';
             
             if (currentMode === 'budget') {
@@ -265,7 +294,6 @@ function renderMap(sDists) {
                 color = v > 10 ? '#1e3a8a' : v > 5 ? '#2563eb' : v > 2 ? '#60a5fa' : v > 0 ? '#93c5fd' : '#f1f5f9';
             }
             
-            // ดรอปสีถ้าไม่ได้เลือกใน Dropdown
             if (sDists.length > 0 && !sDists.includes(d)) return { fillColor: '#e2e8f0', weight: 1, opacity: 0.5, color: '#fff', fillOpacity: 0.3 };
             return { fillColor: color, weight: 1, opacity: 1, color: '#fff', fillOpacity: 0.8 };
         },
@@ -273,13 +301,21 @@ function renderMap(sDists) {
             let d = f.properties.amp_th || f.properties.AMP_TH;
             let s = dStats[d];
             
-            let pop = `<div style="font-family:'Sarabun'; width: 220px;">
-                <b style="font-size:15px; color:#1e3a8a;">📍 อ.${d}</b>
+            // 🌟 ปรับ Popup แผนที่ ให้ใช้คำอธิบายแบบ Advanced
+            let pop = `<div style="font-family:'Sarabun'; width: 280px;">
+                <b style="font-size:16px; color:#1e3a8a;">📍 อ.${d}</b>
                 <hr style="margin:5px 0;">
-                <div style="font-size:12px; line-height: 1.5;">
-                    <b style="color:#10b981;">✅ พื้นที่เดี่ยว (Single):</b><br>${s.cS} โครงการ | ${s.bS.toLocaleString()} บาท<br>
-                    <b style="color:#f59e0b;">📦 พื้นที่ร่วม (Multi):</b><br>${s.cM} โครงการ <small>(กรอบงบ ${s.bM.toLocaleString()} บ.)</small><br>
-                    <b style="color:#ef4444;">🌐 ภาพรวมจังหวัด:</b><br>${s.cP} โครงการ
+                <div style="font-size:13px; line-height: 1.5;">
+                    <b style="color:#10b981;">🎯 ดำเนินการเฉพาะอำเภอนี้ (Single)</b><br>
+                    รวมทั้งหมด: <b>${s.cS}</b> โครงการ | <b>${s.bS.toLocaleString()}</b> บาท<br>
+                    <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
+                    <b style="color:#f59e0b;">📦 ดำเนินการร่วมอำเภออื่น (Multi)</b><br>
+                    รวมที่เกี่ยวข้อง: <b>${s.cM}</b> โครงการ<br>ยอดรวมกรอบงบ: <b>${s.bM.toLocaleString()}</b> บาท<br>
+                    <span style="color:#ef4444; font-size:11px;">(งบส่วนนี้เป็นยอดรวม ไม่ถูกนำมาหารและระบายสีในแผนที่)</span><br>
+                    <hr style="border:0; border-top:1px dashed #ccc; margin:5px 0;">
+                    <b style="color:#ef4444;">🌐 ครอบคลุมทั้งจังหวัด (Provincial)</b><br>
+                    รวมที่ครอบคลุมถึง: <b>${s.cP}</b> โครงการ<br>
+                    <span style="color:#ef4444; font-size:11px;">(ไม่นำมาคำนวณความเข้มข้นในแผนที่)</span>
                 </div>
             </div>`;
             l.bindPopup(pop);
@@ -289,7 +325,7 @@ function renderMap(sDists) {
     }).addTo(map);
 }
 
-// 🌟 7. ตารางสรุป (คลิกที่ปี เพื่อ Expand อำเภอ)
+// 🌟 7. ตารางสรุปแบบ Expandable (ออกแบบใหม่กันงบบวม)
 function toggleYearRow(year) {
     const detailRow = document.getElementById(`detail-${year}`);
     const mainRow = document.getElementById(`row-${year}`);
@@ -313,7 +349,6 @@ function renderTable(sYears) {
         let yCount = yData.length;
         let yBudget = yData.reduce((s, r) => s + r._b, 0);
 
-        // หาผลรวมแต่ละอำเภอในปีนี้
         let dStats = {};
         dNames.forEach(d => { dStats[d] = { cS: 0, bS: 0, cM: 0, bM: 0, cP: 0 }; });
 
@@ -340,7 +375,7 @@ function renderTable(sYears) {
         `;
         tbody.appendChild(mainTr);
 
-        // แถวรายละเอียด (อำเภอ)
+        // แถวรายละเอียด (แยกคอลัมน์ชัดเจน กันคนบวกเลขผิด)
         let detailTr = document.createElement('tr');
         detailTr.className = 'district-details';
         detailTr.id = `detail-${y}`;
@@ -349,28 +384,29 @@ function renderTable(sYears) {
         dNames.forEach(d => {
             let s = dStats[d];
             if(s.cS > 0 || s.cM > 0 || s.cP > 0) {
-                // คลิกที่อำเภอ -> ไปกรองที่ Dropdown
                 distRowsHtml += `
                     <tr onclick="filterFromTable('${d}')">
                         <td>📍 อ.${d}</td>
-                        <td style="text-align:center;">${s.cS} <span style="color:#f59e0b; font-size:10px;">(+${s.cM} Multi)</span></td>
-                        <td style="text-align:right;">${s.bS.toLocaleString()}</td>
+                        <td style="text-align:center;">${s.cS} <span style="color:#64748b; font-size:10px;">(+${s.cM} Multi)</span></td>
+                        <td style="text-align:right; color:#10b981;"><b>${s.bS.toLocaleString()}</b></td>
+                        <td style="text-align:right; color:#64748b; font-size:11px;">${s.bM.toLocaleString()}</td>
                     </tr>
                 `;
             }
         });
 
-        if(distRowsHtml === '') distRowsHtml = '<tr><td colspan="3" style="text-align:center; color:gray;">ไม่มีข้อมูลลงพื้นที่</td></tr>';
+        if(distRowsHtml === '') distRowsHtml = '<tr><td colspan="4" style="text-align:center; color:gray;">ไม่มีข้อมูลลงพื้นที่ในปีนี้</td></tr>';
 
         detailTr.innerHTML = `
-            <td colspan="3" style="padding:0;">
-                <div style="max-height: 180px; overflow-y: auto;">
+            <td colspan="3" style="padding:0; background: #f8fafc;">
+                <div style="max-height: 200px; overflow-y: auto; padding: 5px;">
                     <table class="district-table">
                         <thead style="background:#e2e8f0; position:sticky; top:0;">
                             <tr>
-                                <th>อำเภอ (คลิกเพื่อกรอง)</th>
-                                <th>โครงการ (เดี่ยว+ร่วม)</th>
-                                <th>งบลงพื้นที่โดยตรง (บาท)</th>
+                                <th style="width:25%;">อำเภอ (คลิกเพื่อกรอง)</th>
+                                <th style="text-align:center; width:25%;">โครงการ<br><small>(เดี่ยว + ร่วม)</small></th>
+                                <th style="text-align:right; width:25%;">งบลงพื้นที่โดยตรง<br><small style="color:#10b981;">(Single)</small></th>
+                                <th style="text-align:right; width:25%;">กรอบงบกลุ่มพื้นที่<br><small style="color:#f59e0b;">(Multi)</small></th>
                             </tr>
                         </thead>
                         <tbody>${distRowsHtml}</tbody>
