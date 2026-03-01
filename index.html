@@ -16,44 +16,25 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <style>
-        /* === 1. One-Page 100vh/100vw === */
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: 'Sarabun', sans-serif; 
-            background-color: #f1f5f9; 
-            width: 100vw; 
-            height: 100vh; 
-            overflow: hidden; 
-            display: flex; 
-            flex-direction: column;
-        }
-
-        /* 🌟 ส่วนบนสุด */
+        body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; width: 100vw; height: 100vh; overflow: hidden; display: flex; flex-direction: column;}
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); z-index: 10; }
         .top-bar h1 { font-size: 18px; color: #1e3a8a; margin: 0; }
         .btn-advanced { background: #1e293b; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; transition: 0.2s; }
         .btn-advanced:hover { background: #334155; }
-
         .main-workspace { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; }
 
-        /* === ด้านซ้าย (Sidebar) === */
+        /* Sidebar ซ้าย */
         .left-panel { display: flex; flex-direction: column; width: 350px; gap: 15px; flex-shrink: 0; }
-        
         .filter-box { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
         .filter-title { font-size: 13px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px; }
-        
         .select2-container .select2-selection--multiple { min-height: 38px; border: 1px solid #cbd5e1; border-radius: 4px; }
         .select2-container--default .select2-selection--multiple .select2-selection__choice { background-color: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; font-size: 12px; font-family: 'Sarabun'; }
-        
         .year-list { list-style: none; display: flex; flex-direction: column; gap: 5px; font-size: 13px; max-height: 120px; overflow-y: auto; }
         .year-list label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
-
-        /* แผนที่ */
         .map-box { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
         .map-header { padding: 10px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; color: #1e3a8a; background: #f8fafc; border-radius: 8px 8px 0 0; flex-wrap: wrap; gap: 5px;}
         #map { flex: 1; border-radius: 0 0 8px 8px; min-height: 0; z-index: 1;}
-
-        /* สวิตช์ดูสีแผนที่ */
         .switch-box { display: flex; align-items: center; gap: 5px; font-size: 11px; }
         .switch { position: relative; display: inline-block; width: 30px; height: 16px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -62,23 +43,20 @@
         input:checked + .slider { background-color: #3b82f6; }
         input:checked + .slider:before { transform: translateX(14px); }
 
-        /* === ด้านขวา (Main) === */
+        /* พื้นที่ขวา */
         .right-panel { display: flex; flex-direction: column; flex: 1; gap: 15px; min-width: 0; overflow: hidden; }
         
-        /* 🌟 ปุ่ม 5 ยุทธศาสตร์ */
         .strat-tabs { display: flex; gap: 8px; height: 50px; flex-shrink: 0; }
         .strat-btn { flex: 1; background: white; border: 2px solid #cbd5e1; border-radius: 8px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 12px; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.2; padding: 4px; }
         .strat-btn:hover { border-color: #3b82f6; }
         .strat-btn.active { background: #1e3a8a; color: white; border-color: #1e3a8a; box-shadow: inset 0 3px 5px rgba(0,0,0,0.3); transform: translateY(2px); }
 
-        /* 🌟 การ์ดสรุปผล */
         .summary-row { display: flex; gap: 15px; height: 80px; flex-shrink: 0; }
         .summary-card { flex: 1; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border-radius: 8px; padding: 10px 15px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .summary-card.green { background: linear-gradient(135deg, #059669, #10b981); }
         .summary-title { font-size: 12px; opacity: 0.9; }
         .summary-value { font-size: 24px; font-weight: bold; }
 
-        /* 🌟 กริดของกราฟและตาราง */
         .content-grid { display: flex; gap: 15px; flex: 1; min-height: 0; }
         .chart-col { display: flex; flex-direction: column; gap: 15px; flex: 1; min-width: 0; }
         .table-col { flex: 1; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; min-width: 0; }
@@ -87,7 +65,6 @@
         .chart-title { font-size: 13px; font-weight: bold; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;}
         .chart-wrapper { flex: 1; position: relative; min-height: 0; }
 
-        /* 🌟 ตารางสรุปแบบ Expandable */
         .table-header { padding: 10px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 14px; font-weight: bold; color: #1e3a8a; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; }
         .table-container { flex: 1; overflow-y: auto; padding: 10px; }
         .summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -105,13 +82,11 @@
         .district-table th, .district-table td { padding: 4px 8px; border-bottom: 1px dotted #e2e8f0; }
         .district-table tr:hover { background: #f1f5f9; cursor: pointer; }
         
-        /* แถวสรุปของจังหวัด (สีพิเศษ) */
-        .provincial-row { background-color: #e0f2fe; font-weight: bold; color: #0369a1; }
+        .provincial-row { background-color: #e0f2fe; font-weight: bold; color: #0369a1; cursor: pointer;}
         .provincial-row:hover { background-color: #bae6fd !important; }
 
         .btn-clear-small { background: #fca5a5; color: #7f1d1d; border: 1px solid #f87171; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; transition: 0.2s;}
         .btn-clear-small:hover { background: #ef4444; color: white; }
-
         .btn-reset-map-small { background: #fff; color: #1e3a8a; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; transition: 0.2s;}
         .btn-reset-map-small:hover { background: #eff6ff; border-color: #3b82f6; }
 
@@ -121,7 +96,7 @@
 
 <div id="loadingOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; transition: opacity 0.3s;">
     <div style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #1e3a8a; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-    <h3 style="color:#1e3a8a; font-family:'Sarabun'; margin-top:20px;">กำลังเตรียมข้อมูล...</h3>
+    <h3 style="color:#1e3a8a; font-family:'Sarabun'; margin-top:20px;">กำลังเตรียมข้อมูล One-Page...</h3>
 </div>
 
 <div class="top-bar">
@@ -166,11 +141,11 @@
     <div class="right-panel">
         
         <div class="strat-tabs">
-            <button class="strat-btn active" onclick="setStrat(0)">🎯<br>ยุทธศาสตร์ชาติ</button>
+            <button class="strat-btn" onclick="setStrat(0)">🎯<br>ยุทธศาสตร์ชาติ</button>
             <button class="strat-btn" onclick="setStrat(1)">📖<br>แผนแม่บทฯ</button>
             <button class="strat-btn" onclick="setStrat(2)">📈<br>แผนพัฒนาฯ 13</button>
             <button class="strat-btn" onclick="setStrat(3)">🧭<br>แผนภาคเหนือ</button>
-            <button class="strat-btn" onclick="setStrat(4)">📌<br>แผนพัฒนาจังหวัด</button>
+            <button class="strat-btn active" id="btnDefaultStrat" onclick="setStrat(4)">📌<br>แผนพัฒนาจังหวัด<br><small>(2566-2570)</small></button>
         </div>
 
         <div class="summary-row">
@@ -188,8 +163,8 @@
             <div class="chart-col">
                 <div class="chart-box">
                     <div class="chart-title">
-                        <span id="donutTitle">🍩 สัดส่วนตามเป้าหมาย (คลิกที่กราฟเพื่อกรอง)</span>
-                        <button type="button" class="btn-clear-small" onclick="clearSubStratFilter()" id="btnResetDonut" style="display:none;">🔄 ล้างการกรองประเด็น</button>
+                        <span id="donutTitle">📊 สัดส่วนตามเป้าหมาย (คลิกกราฟเพื่อกรอง)</span>
+                        <button type="button" class="btn-clear-small" onclick="clearSubStratFilter()" id="btnResetDonut" style="display:none;">🔄 ล้างกรองประเด็น</button>
                     </div>
                     <div class="chart-wrapper"><canvas id="donutChart"></canvas></div>
                 </div>
