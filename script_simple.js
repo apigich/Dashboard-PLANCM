@@ -105,7 +105,6 @@ async function init() {
 
         const yBox = document.getElementById('yearCheckboxes');
         [...years].sort((a,b)=>b-a).forEach((yr, i) => {
-            // 🌟 ตั้งค่าเริ่มต้นให้ "ติ๊กถูกทุกปี" ตั้งแต่เปิดเว็บ
             yBox.innerHTML += `<li><label><input type="checkbox" class="y-cb" value="${yr}" checked onchange="handleYearChange()"> ปีงบประมาณ ${yr}</label></li>`;
         });
         document.getElementById('checkAllYears').checked = true;
@@ -147,7 +146,6 @@ function clearAllFilters() {
     document.querySelectorAll('.dist-cb').forEach(el => el.checked = false);
     document.querySelector('.dropdown-btn').innerHTML = '📍 ทุกอำเภอ (ค่าเริ่มต้น) <span>▼</span>';
     
-    // 🌟 ล้างตัวกรองกลับไปที่เลือกทุกปี
     document.querySelectorAll('.y-cb').forEach(el => el.checked = true);
     document.getElementById('checkAllYears').checked = true;
     
@@ -238,7 +236,6 @@ function updateDashboard() {
     renderTable(sYears);
 }
 
-// เปิด Modal แจกแจงยิบย่อย
 function openStratModal(stratName, sC, jC, sB, jB, totalVal) {
     document.getElementById('modalStratName').innerText = stratName;
     let totalCount = sC + jC;
@@ -265,7 +262,6 @@ function openStratModal(stratName, sC, jC, sB, jB, totalVal) {
 
 function closeStratModal() { document.getElementById('stratModal').style.display = 'none'; }
 
-// 🌟 กราฟเป้าหมาย (มีระบบเด้งบุ๋ม และกดซ้ำเพื่อล้าง)
 function renderDonutOrBar(sYears) {
     const ctx = document.getElementById('donutChart');
     if(!ctx) return;
@@ -276,7 +272,7 @@ function renderDonutOrBar(sYears) {
 
     let stratStats = {};
     
-    // ดึงข้อมูลภาพรวมโดย 'ยังไม่กรองเป้าหมาย' เพื่อวาดโครงกราฟทั้งหมด
+    // ดึงข้อมูลก่อนกรอง activeSubStrategy เพื่อวาดโครงกราฟทั้งหมด
     let baseDataForChart = masterData.filter(r => {
         let mY = sYears.includes(r._y);
         let val = r[targetKey] || r[Object.keys(r).find(k => k.includes(targetKey.split(" ")[0]))];
@@ -333,14 +329,15 @@ function renderDonutOrBar(sYears) {
 
     if(donut) donut.destroy();
 
-    // 🌟 ระบบคลิก: ถ้าคลิกซ้ำให้ล้างกรอง ถ้าคลิกใหม่เปิด Modal
     const clickHandler = (e, elements) => {
         if(!elements.length) return;
         let idx = elements[0].index;
-        let clickedStrat = fullLabels[idx];
+        // ถ้าระบบส่ง index ของ dataset มาผิด (กรณี Stacked Bar) ให้ดึงจาก element
+        let dataIndex = elements[0].datasetIndex !== undefined && elements[0].index !== undefined ? elements[0].index : idx;
+        let clickedStrat = fullLabels[dataIndex];
         if (clickedStrat === "ไม่ระบุ") return;
 
-        // ถ้ากดเป้าหมายที่กรองอยู่แล้ว = กดซ้ำเพื่อล้าง
+        // กดซ้ำเพื่อล้างกรอง
         if (activeSubStrategy === clickedStrat) {
             clearSubStratFilter();
             return;
@@ -353,25 +350,22 @@ function renderDonutOrBar(sYears) {
 
         if (isTouch) {
             let currentTime = new Date().getTime();
-            if (currentTime - lastClickTime < 500 && lastClickedIndex === idx) {
+            if (currentTime - lastClickTime < 500 && lastClickedIndex === dataIndex) {
                 openStratModal(clickedStrat, st.sC, st.jC, st.sB, st.jB, overallTotal);
             }
             lastClickTime = currentTime;
-            lastClickedIndex = idx;
+            lastClickedIndex = dataIndex;
         } else {
             openStratModal(clickedStrat, st.sC, st.jC, st.sB, st.jB, overallTotal);
         }
     };
 
     if (!isMultiYear) {
-        document.getElementById('donutTitle').innerHTML = `📊 สัดส่วนเป้าหมาย <small>(คลิกเมาส์/แตะเบิ้ลดูรายละเอียด)</small>`;
+        document.getElementById('donutTitle').innerHTML = `📊 สัดส่วนเป้าหมาย <small>(คลิกเพื่อกรองและดูรายละเอียด)</small>`;
         let data = sortedKeys.map(k => currentMode === 'count' ? (stratStats[k].sC + stratStats[k].jC) : (stratStats[k].sB + stratStats[k].jB));
         let lPct = displayLabels.map((l, i) => `${l} (${overallTotal>0 ? ((data[i]*100)/overallTotal).toFixed(1) : 0}%)`);
 
-        // 🌟 ทำให้ชิ้นส่วนเด้งออกมา (Explode Effect) เมื่อถูกเลือก
-        let offsets = sortedKeys.map(k => (k === activeSubStrategy) ? 25 : 0);
-        let borderColors = sortedKeys.map(k => (k === activeSubStrategy) ? '#1e3a8a' : '#fff');
-        let borderWidths = sortedKeys.map(k => (k === activeSubStrategy) ? 3 : 1);
+        let offsets = sortedKeys.map(k => (k === activeSubStrategy) ? 20 : 0);
 
         donut = new Chart(ctx, {
             type: 'doughnut',
@@ -380,9 +374,7 @@ function renderDonutOrBar(sYears) {
                 datasets: [{ 
                     data: data, 
                     backgroundColor: chartColors,
-                    offset: offsets, 
-                    borderColor: borderColors,
-                    borderWidth: borderWidths
+                    offset: offsets // Explode effect
                 }] 
             },
             options: { 
@@ -393,8 +385,9 @@ function renderDonutOrBar(sYears) {
                         label: c => {
                             let k = fullLabels[c.dataIndex];
                             let st = stratStats[k];
-                            let v = currentMode === 'count' ? (st.sC+st.jC).toLocaleString() + ' โครงการ' : (st.sB+st.jB).toLocaleString() + ' บาท';
-                            return ` รวม: ${v}`;
+                            let total = currentMode === 'count' ? (st.sC + st.jC) : (st.sB + st.jB);
+                            let unit = currentMode === 'count' ? 'โครงการ' : 'บาท';
+                            return ` รวม: ${total.toLocaleString()} ${unit}`; // ชี้แล้วโชว์แค่ยอดรวม
                         }
                     }},
                     datalabels: { color: '#fff', font: { weight: 'bold', size: 11 }, formatter: v => overallTotal > 0 && (v*100/overallTotal) >= 5 ? (v*100/overallTotal).toFixed(1) + "%" : "" }
@@ -403,14 +396,16 @@ function renderDonutOrBar(sYears) {
             }
         });
     } else {
-        document.getElementById('donutTitle').innerHTML = `📊 เปรียบเทียบเป้าหมายรายปี <small>(คลิกที่แท่งดูรายละเอียด)</small>`;
+        document.getElementById('donutTitle').innerHTML = `📊 เปรียบเทียบเป้าหมายรายปี <small>(คลิกแท่งเพื่อกรองและดูรายละเอียด)</small>`;
         
         let datasets = [];
+        // สร้าง Dataset แยก Single กับ Joint 
         sYears.forEach((y, idx) => {
-            let color = chartColors[idx % chartColors.length];
-            // 🌟 ให้กราฟสีจางลงถ้ายุทธศาสตร์นั้นไม่ได้ถูกเลือก (ให้ตัวที่เลือกเด่นขึ้นมา)
-            let singleColors = sortedKeys.map(k => (activeSubStrategy !== "all" && k !== activeSubStrategy) ? '#e2e8f0' : color);
-            let jointColors = sortedKeys.map(k => (activeSubStrategy !== "all" && k !== activeSubStrategy) ? '#f1f5f9' : color + '90');
+            let baseColor = chartColors[idx % chartColors.length];
+            
+            // ทำให้แท่งที่ไม่ได้เลือกสีจางลง (ถ้ามีการกรอง)
+            let singleColors = sortedKeys.map(k => (activeSubStrategy !== "all" && k !== activeSubStrategy) ? '#e2e8f0' : baseColor);
+            let jointColors = sortedKeys.map(k => (activeSubStrategy !== "all" && k !== activeSubStrategy) ? '#f1f5f9' : baseColor + '90'); // 90 คือความโปร่งใสให้แยกกับ Single ออก
 
             datasets.push({
                 label: `ปี ${y} (เดี่ยว)`,
@@ -419,7 +414,7 @@ function renderDonutOrBar(sYears) {
                 stack: `Stack${idx}`
             });
             datasets.push({
-                label: `ปี ${y} (บูรณาการร่วม)`,
+                label: `ปี ${y} (ร่วม)`, // ชื่อ Label เปลี่ยนไป
                 data: sortedKeys.map(k => currentMode === 'count' ? stratStats[k].yData[y].jC : stratStats[k].yData[y].jB),
                 backgroundColor: jointColors,
                 stack: `Stack${idx}`
@@ -441,10 +436,30 @@ function renderDonutOrBar(sYears) {
                     tooltip: { mode: 'index', intersect: false, callbacks: { 
                         title: c => fullLabels[c[0].dataIndex],
                         label: c => {
-                            let val = c.raw;
-                            if (val === 0) return null; 
-                            let unit = currentMode === 'count' ? 'โครงการ' : 'บาท';
-                            return ` ${c.dataset.label}: ${val.toLocaleString()} ${unit}`;
+                            let k = fullLabels[c[0].dataIndex]; // ดึงชื่อเป้าหมาย
+                            let y = c.dataset.label.replace(' (เดี่ยว)','').replace(' (ร่วม)',''); // ดึงปีออกมา
+                            let st = stratStats[k].yData[y.replace('ปี ', '')];
+                            
+                            // โชว์เฉพาะปีที่มีข้อมูล และโชว์แบบสั้นตามที่คุณสั่ง
+                            if(currentMode === 'count') {
+                                let totalC = st.sC + st.jC;
+                                if (totalC === 0) return null;
+                                // จะแสดงแค่บรรทัดแรกที่รวมเดี่ยว+ร่วม (ซ่อนอันอื่นของปีเดียวกัน)
+                                if (c.dataset.label.includes('เดี่ยว')) {
+                                    let jointText = st.jC > 0 ? ` (+${st.jC})` : '';
+                                    return ` ${y}: ${st.sC}${jointText} โครงการ`;
+                                } else {
+                                    return null; // ซ่อน Tooltip ของแท่ง Joint ไปเลย จะได้ไม่รก
+                                }
+                            } else {
+                                let totalB = st.sB + st.jB;
+                                if (totalB === 0) return null;
+                                if (c.dataset.label.includes('เดี่ยว')) {
+                                    return ` ${y}: ${totalB.toLocaleString()} บาท`;
+                                } else {
+                                    return null;
+                                }
+                            }
                         }
                     }},
                     datalabels: { display: false } 
