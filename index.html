@@ -13,61 +13,54 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
     <style>
-        /* === ล็อก One-Page 100vh / 100vw === */
+        /* === ล็อก One-Page === */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; width: 100vw; height: 100vh; overflow: hidden; display: flex; flex-direction: column;}
         
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); z-index: 10; }
         .top-bar h1 { font-size: 18px; color: #1e3a8a; margin: 0; }
-        .btn-advanced { background: #1e293b; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-advanced { background: #1e293b; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; transition: 0.2s; }
         .btn-advanced:hover { background: #334155; transform: translateY(-1px); }
         
         .main-workspace { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; }
 
-        /* ซ้าย (ตัวกรอง & แผนที่) */
+        /* === ซ้าย (ตัวกรอง & แผนที่) === */
         .left-panel { display: flex; flex-direction: column; width: 330px; gap: 15px; flex-shrink: 0; }
-        .filter-box { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; }
+        .filter-box { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
         .filter-title { font-size: 13px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px; }
         
-        /* 🌟 กล่อง Checkbox อำเภอแบบมี Scrollbar */
-        .checkbox-container { background: #fff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px; max-height: 160px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
-        .checkbox-container label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #475569; }
-        .checkbox-container label:hover { background: #f8fafc; }
+        /* 🌟 Custom Dropdown (ภาพหลอกตา) */
+        .custom-dropdown { position: relative; width: 100%; font-size: 13px; }
+        .dropdown-btn { background: #fff; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: #1e3a8a; font-weight: bold; }
+        .dropdown-btn:hover { background: #f8fafc; }
+        .dropdown-content { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 6px 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto; z-index: 1000; padding: 5px; }
+        .dropdown-content.show { display: flex; flex-direction: column; gap: 5px; }
+        .dropdown-content label { display: flex; align-items: center; gap: 8px; padding: 5px 8px; cursor: pointer; border-radius: 4px; color: #475569; }
+        .dropdown-content label:hover { background: #eff6ff; color: #1e3a8a; }
 
         .year-list { list-style: none; display: flex; flex-direction: column; gap: 5px; font-size: 13px; max-height: 100px; overflow-y: auto; }
         .year-list label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
         
         .map-box { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
-        .map-header { padding: 10px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; color: #1e3a8a; background: #f8fafc; border-radius: 8px 8px 0 0; flex-wrap: wrap; gap: 5px;}
+        .map-header { padding: 10px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; color: #1e3a8a; background: #f8fafc; border-radius: 8px 8px 0 0; }
         #map { flex: 1; border-radius: 0 0 8px 8px; min-height: 0; z-index: 1;}
-        
-        .switch-box { display: flex; align-items: center; gap: 5px; font-size: 11px; }
-        .switch { position: relative; display: inline-block; width: 30px; height: 16px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 16px; }
-        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #3b82f6; }
-        input:checked + .slider:before { transform: translateX(14px); }
 
-        /* ขวา (กราฟ & ตาราง) */
+        /* === ขวา (กราฟ & ตาราง) === */
         .right-panel { display: flex; flex-direction: column; flex: 1; gap: 15px; min-width: 0; overflow: hidden; }
         
-        /* 🌟 ปุ่ม 5 ยุทธศาสตร์ (แก้ให้จัดกลางแบบคอลัมน์ ไม่ให้ล้นขอบ) */
         .strat-tabs { display: flex; gap: 8px; min-height: 55px; flex-shrink: 0; }
         .strat-btn { flex: 1; background: white; border: 2px solid #cbd5e1; border-radius: 8px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 12px; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; line-height: 1.3; padding: 4px; }
         .strat-btn:hover { border-color: #3b82f6; }
         .strat-btn.active { background: #1e3a8a; color: white; border-color: #1e3a8a; box-shadow: inset 0 3px 5px rgba(0,0,0,0.4); transform: translateY(2px); }
 
-        /* 🌟 การ์ดสรุป (ป้องกันงบประมาณทะลุขอบ) */
         .summary-row { display: flex; gap: 15px; min-height: 85px; flex-shrink: 0; }
-        .summary-card { flex: 1; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border-radius: 8px; padding: 10px 15px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; overflow: hidden;}
+        .summary-card { flex: 1; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border-radius: 8px; padding: 10px 15px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative;}
         .summary-card.green { background: linear-gradient(135deg, #059669, #10b981); }
-        .summary-title { font-size: 13px; font-weight: bold; opacity: 0.9; }
-        /* ใช้ break-word และลดฟอนต์ลงนิดหน่อยเพื่อเซฟ */
-        .summary-value { font-size: 22px; font-weight: bold; margin-top: 2px; word-break: break-word; line-height: 1.1;}
-        .summary-note { font-size: 11px; font-weight: normal; color: #bae6fd; margin-top: 4px; line-height: 1.2;}
+        .summary-title { font-size: 13px; font-weight: bold; opacity: 0.9; display: flex; justify-content: space-between; align-items: baseline;}
+        .summary-value { font-size: 24px; font-weight: bold; margin-top: 2px; }
+        .summary-note { font-size: 11px; font-weight: normal; color: #bae6fd; margin-top: 2px; }
         .summary-card.green .summary-note { color: #a7f3d0; }
-        .year-badge { color: #fde047; font-size: 12px; font-weight: bold; margin-top: 2px; display: block;}
+        .year-badge { color: #fde047; font-size: 12px; font-weight: bold; }
 
         .content-grid { display: flex; gap: 15px; flex: 1; min-height: 0; }
         .chart-col { display: flex; flex-direction: column; gap: 15px; flex: 1; min-width: 0; }
@@ -77,10 +70,15 @@
         .chart-title { font-size: 13px; font-weight: bold; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;}
         .chart-wrapper { flex: 1; position: relative; min-height: 0; }
 
-        /* สวิตช์กราฟโดนัท */
+        /* 🌟 สวิตช์ในกราฟ */
         .chart-switch-box { display: flex; align-items: center; gap: 8px; font-size: 12px; background: #f8fafc; padding: 4px 8px; border-radius: 20px; border: 1px solid #e2e8f0;}
+        .switch { position: relative; display: inline-block; width: 34px; height: 18px; margin-top: 2px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 18px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #059669; }
+        input:checked + .slider:before { transform: translateX(16px); }
 
-        /* ตาราง Expandable */
         .table-header { padding: 10px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 14px; font-weight: bold; color: #1e3a8a; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; }
         .table-container { flex: 1; overflow-y: auto; padding: 10px; }
         .summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -101,14 +99,14 @@
         .provincial-row { background-color: #e0f2fe; font-weight: bold; color: #0369a1; cursor: pointer;}
         .provincial-row:hover { background-color: #bae6fd !important; }
 
-        .btn-clear-small { background: #fca5a5; color: #7f1d1d; border: 1px solid #f87171; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; transition: 0.2s;}
+        .btn-clear-small { background: #fca5a5; color: #7f1d1d; border: 1px solid #f87171; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; transition: 0.2s;}
         .btn-clear-small:hover { background: #ef4444; color: white; }
-        .btn-reset-map-small { background: #fff; color: #1e3a8a; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; transition: 0.2s;}
+        .btn-reset-map-small { background: #fff; color: #1e3a8a; border: 1px solid #cbd5e1; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; transition: 0.2s;}
         .btn-reset-map-small:hover { background: #eff6ff; border-color: #3b82f6; }
 
-        /* Popup Goal Modal */
+        /* Modal Popup */
         .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px); }
-        .modal-content { background-color: #fff; margin: 10vh auto; padding: 25px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; font-family: 'Sarabun'; }
+        .modal-content { background-color: #fff; margin: 10vh auto; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; font-family: 'Sarabun'; }
         .close-modal-btn { position: absolute; right: 20px; top: 15px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; transition: 0.2s; }
         .close-modal-btn:hover { color: #ef4444; }
     </style>
@@ -131,14 +129,17 @@
         <div class="filter-box">
             <div class="filter-title">🔍 ตัวกรองพื้นที่และปีงบประมาณ</div>
             
-            <div style="font-size: 12px; font-weight: bold; color: #475569;">📍 เลือกพื้นที่ (ติ๊กเลือกได้หลายพื้นที่)</div>
-            <div class="checkbox-container" id="districtCheckboxes">
-                <label style="font-weight: bold; color: #1e3a8a; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 2px;">
-                    <input type="checkbox" id="checkAllDistricts" checked onchange="toggleAllDistricts(this)"> ☑️ เลือกทุกพื้นที่
-                </label>
-                </div>
+            <div style="font-size: 12px; font-weight: bold; color: #475569; margin-bottom: 2px;">📍 เลือกพื้นที่</div>
+            <div class="custom-dropdown" id="distDropdown">
+                <div class="dropdown-btn" onclick="toggleDropdown()">📍 ทุกอำเภอ (ค่าเริ่มต้น) <span>▼</span></div>
+                <div class="dropdown-content" id="distList">
+                    <label style="border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; font-weight: bold; color: #1e3a8a;">
+                        <input type="checkbox" id="checkAllDistricts" onchange="toggleAllDistricts(this)"> ☑️ เลือกทุกพื้นที่
+                    </label>
+                    </div>
+            </div>
 
-            <div style="font-size: 12px; font-weight: bold; color: #475569; margin-top: 5px;">📅 เลือกปีงบประมาณ</div>
+            <div style="font-size: 12px; font-weight: bold; color: #475569; margin-top: 10px;">📅 เลือกปีงบประมาณ</div>
             <ul class="year-list" id="yearCheckboxes">
                 <li><label><input type="checkbox" id="checkAllYears" checked onchange="toggleAllYears(this)" /> <strong>ทุกปีงบประมาณที่มีข้อมูล</strong></label></li>
             </ul>
@@ -149,9 +150,10 @@
         <div class="map-box">
             <div class="map-header">
                 <div>
-                    🗺️ แผนที่ <span style="font-size: 11px; color: #f59e0b; font-weight:normal;">(เน้นความหนาแน่น)</span>
-                    <button class="btn-reset-map-small" onclick="clearMapFilterOnly()" style="margin-left: 5px;" title="ล้างการเลือกพื้นที่บนแผนที่">ล้างหมุด</button>
+                    🗺️ แผนที่แสดงพื้นที่ 
+                    <span style="font-size: 11px; color: #f59e0b; font-weight:normal;">(ความหนาแน่น)</span>
                 </div>
+                <button class="btn-reset-map-small" onclick="clearMapFilterOnly()" title="ล้างการเลือกพื้นที่">ล้างพื้นที่</button>
             </div>
             <div id="map"></div>
         </div>
@@ -174,15 +176,15 @@
                     <span class="year-badge" id="badgeYearCount"></span>
                 </div>
                 <div class="summary-value" id="sumProjects">0</div>
-                <div class="summary-note">(นับรวมโครงการทุกประเภทโดยไม่นับซ้ำ)</div>
+                <div class="summary-note">(นับรวมทุกประเภท ไม่มีการนับซ้ำ)</div>
             </div>
             <div class="summary-card green">
                 <div class="summary-title">
-                    <span>💰 งบประมาณรวม</span>
+                    <span>💰 งบประมาณรวม (บาท)</span>
                     <span class="year-badge" id="badgeYearBudget"></span>
                 </div>
                 <div class="summary-value" id="sumBudget">0.00</div>
-                <div class="summary-note">(รวมงบเฉพาะพื้นที่ + งบกลุ่ม + ทั้งจังหวัด โดยไม่นับซ้ำ)</div>
+                <div class="summary-note">(งบเฉพาะพื้นที่ + งบกลุ่ม + จังหวัด ไม่นับซ้ำ)</div>
             </div>
         </div>
 
@@ -233,13 +235,32 @@
 <div id="stratModal" class="modal">
     <div class="modal-content">
         <span class="close-modal-btn" onclick="closeStratModal()">&times;</span>
-        <h3 id="modalStratName" style="color: #1e3a8a; margin-top: 0; line-height: 1.4; font-size: 18px;">ชื่อเป้าหมาย</h3>
+        <h3 id="modalStratName" style="color: #1e3a8a; margin-top: 0; line-height: 1.4; font-size: 17px;">ชื่อเป้าหมาย</h3>
         <hr style="border: 0; border-top: 1px solid #cbd5e1; margin: 12px 0;">
-        <div style="font-size: 15px; line-height: 1.8;">
-            <p>📊 <strong>คิดเป็นสัดส่วน:</strong> <span id="modalStratPct" style="color: #f59e0b; font-weight: bold; font-size: 20px;">0%</span></p>
-            <p>📌 <strong>จำนวนที่สอดคล้อง:</strong> <span id="modalStratCount" style="font-weight: bold;">0</span> โครงการ</p>
-            <p>💰 <strong>งบประมาณรวม:</strong> <span id="modalStratBudget" style="color: #10b981; font-weight: bold;">0</span> บาท</p>
+        
+        <div style="font-size: 14.5px; line-height: 1.6;">
+            <div style="margin-bottom: 15px; background: #fffbeb; padding: 10px; border-left: 4px solid #f59e0b; border-radius: 4px;">
+                📊 <strong>คิดเป็นสัดส่วนในกราฟ:</strong> <span id="modalStratPct" style="color: #d97706; font-weight: bold; font-size: 18px;">0%</span>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                📌 <strong>จำนวนที่สอดคล้องรวม:</strong> <span id="modalTotalCount" style="font-weight: bold; font-size: 16px;">0</span> โครงการ
+                <ul style="margin: 2px 0 0 0; padding-left: 20px; color: #475569; font-size: 13px;">
+                    <li>ตอบสนองเป้าหมายนี้โดยตรง (Single): <b id="modalSingleCount" style="color:#10b981;">0</b></li>
+                    <li>บูรณาการร่วมเป้าหมายอื่น (Joint): <b id="modalJointCount" style="color:#f59e0b;">0</b></li>
+                </ul>
+            </div>
+
+            <div>
+                💰 <strong>งบประมาณรวมที่เกี่ยวข้อง:</strong> <span id="modalTotalBudget" style="font-weight: bold; font-size: 16px; color:#1e3a8a;">0</span> บาท
+                <ul style="margin: 2px 0 0 0; padding-left: 20px; color: #475569; font-size: 13px;">
+                    <li>งบตรงเป้าหมายเดียว: <b id="modalSingleBudget" style="color:#10b981;">0</b> บาท</li>
+                    <li>งบโครงการบูรณาการ: <b id="modalJointBudget" style="color:#f59e0b;">0</b> บาท</li>
+                </ul>
+                <div style="font-size: 11px; color: #ef4444; margin-top: 5px;">* หมายเหตุ: งบโครงการบูรณาการคืองบรวมของโครงการที่ตอบสนองหลายเป้าหมาย ไม่นำมาหารแบ่ง</div>
+            </div>
         </div>
+
         <button id="btnModalFilter" style="margin-top: 20px; width: 100%; padding: 12px; background: #1e3a8a; color: white; border: none; border-radius: 8px; font-family: 'Sarabun'; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             🔍 กรองภาพรวมตามเป้าหมายนี้
         </button>
