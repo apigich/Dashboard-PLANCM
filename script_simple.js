@@ -236,7 +236,6 @@ function updateDashboard() {
     renderTable(sYears);
 }
 
-// 🌟 อัปเดต Modal ให้รองรับการแสดง "ปีงบประมาณ"
 function openStratModal(stratName, sC, jC, sB, jB, totalVal, yearLabel) {
     document.getElementById('modalStratName').innerHTML = `${stratName} <br><span style="font-size:13px; color:#f59e0b;">(ข้อมูลเฉพาะ ${yearLabel})</span>`;
     let totalCount = sC + jC;
@@ -380,16 +379,18 @@ function renderDonutOrBar(sYears) {
                 responsive: true, maintainAspectRatio: false, 
                 plugins: { 
                     legend: { position: 'right', labels: {font:{family:'Sarabun', size: 10}} },
+                    // 🌟 Tooltip ของกราฟโดนัท (ชี้แล้วไม่พัง)
                     tooltip: { callbacks: { 
                         label: c => {
                             let k = fullLabels[c.dataIndex];
                             let st = stratStats[k];
-                            // 🌟 Tooltip กราฟโดนัท (ปีเดียว)
+                            let yearTxt = sYears.length > 0 ? sYears[0] : "รวม";
                             if(currentMode === 'count') {
                                 let jointText = st.jC > 0 ? ` (+${st.jC})` : '';
-                                return ` ปี ${sYears[0]}: ${st.sC}${jointText} โครงการ`;
+                                return ` ปี ${yearTxt} : ${st.sC}${jointText} โครงการ`;
                             } else {
-                                return ` ปี ${sYears[0]}: ${(st.sB + st.jB).toLocaleString()} บาท`;
+                                let totalB = st.sB + st.jB;
+                                return ` ปี ${yearTxt} : ${totalB.toLocaleString()} บาท`;
                             }
                         }
                     }},
@@ -423,9 +424,10 @@ function renderDonutOrBar(sYears) {
 
         const clickHandlerMulti = (e, elements) => {
             if(!elements.length) return;
-            let idx = elements[0].index;
+            // ดึง index ที่ถูกต้อง (แก้บั๊กกดผิดแท่ง)
             let dataIndex = elements[0].datasetIndex;
-            let clickedStrat = fullLabels[idx];
+            let index = elements[0].index;
+            let clickedStrat = fullLabels[index];
             if (clickedStrat === "ไม่ระบุ") return;
 
             if (activeSubStrategy === clickedStrat) {
@@ -433,7 +435,6 @@ function renderDonutOrBar(sYears) {
                 return;
             }
 
-            // หาว่าคลิกที่ปีไหน จาก label ของ dataset
             let dsLabel = donut.data.datasets[dataIndex].label;
             let yearMatch = dsLabel.match(/ปี (\d+)/);
             if (!yearMatch) return;
@@ -452,11 +453,11 @@ function renderDonutOrBar(sYears) {
 
             if (isTouch) {
                 let currentTime = new Date().getTime();
-                if (currentTime - lastClickTime < 500 && lastClickedIndex === idx) {
+                if (currentTime - lastClickTime < 500 && lastClickedIndex === index) {
                     openStratModal(clickedStrat, st.sC, st.jC, st.sB, st.jB, overallTotalYear, yearLabel);
                 }
                 lastClickTime = currentTime;
-                lastClickedIndex = idx;
+                lastClickedIndex = index;
             } else {
                 openStratModal(clickedStrat, st.sC, st.jC, st.sB, st.jB, overallTotalYear, yearLabel);
             }
@@ -474,28 +475,32 @@ function renderDonutOrBar(sYears) {
                 },
                 plugins: { 
                     legend: { position: 'bottom', labels: {font:{family:'Sarabun', size: 10}} },
+                    // 🌟 แก้บั๊ก Tooltip ชี้กราฟแท่ง
                     tooltip: { mode: 'index', intersect: false, callbacks: { 
                         title: c => fullLabels[c[0].dataIndex],
-                        // 🌟 Tooltip กราฟแท่ง
                         label: c => {
-                            let k = fullLabels[c[0].dataIndex]; 
-                            let y = c.dataset.label.replace(' (เดี่ยว)','').replace(' (ร่วม)',''); 
-                            let st = stratStats[k].yData[y.replace('ปี ', '')];
+                            let k = fullLabels[c.dataIndex]; 
+                            let labelStr = c.dataset.label;
+                            let yearMatch = labelStr.match(/ปี (\d+)/);
+                            if(!yearMatch) return null;
+                            
+                            let y = yearMatch[1];
+                            let st = stratStats[k].yData[y];
                             
                             if(currentMode === 'count') {
                                 let totalC = st.sC + st.jC;
                                 if (totalC === 0) return null;
-                                if (c.dataset.label.includes('เดี่ยว')) {
+                                if (labelStr.includes('เดี่ยว')) {
                                     let jointText = st.jC > 0 ? ` (+${st.jC})` : '';
-                                    return ` ${y}: ${st.sC}${jointText} โครงการ`;
+                                    return ` ปี ${y} : ${st.sC}${jointText} โครงการ`;
                                 } else {
                                     return null; 
                                 }
                             } else {
                                 let totalB = st.sB + st.jB;
                                 if (totalB === 0) return null;
-                                if (c.dataset.label.includes('เดี่ยว')) {
-                                    return ` ${y}: ${totalB.toLocaleString()} บาท`;
+                                if (labelStr.includes('เดี่ยว')) {
+                                    return ` ปี ${y} : ${totalB.toLocaleString()} บาท`;
                                 } else {
                                     return null;
                                 }
