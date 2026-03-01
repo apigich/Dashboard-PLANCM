@@ -26,12 +26,10 @@ let lastClickTime = 0; let lastClickedIndex = -1;
 
 function toggleDropdown() { document.getElementById('distList').classList.toggle('show'); }
 
+// 🌟 แก้บั๊กคลิกแล้วปิดเอง (ให้ปิดเฉพาะตอนที่ไม่ได้กดข้างในกล่อง dropdown จริงๆ)
 window.onclick = function(event) {
-    if (!event.target.matches('.dropdown-btn') && !event.target.closest('.dropdown-btn')) {
-        let dropdowns = document.getElementsByClassName("dropdown-content");
-        for (let i = 0; i < dropdowns.length; i++) {
-            if (dropdowns[i].classList.contains('show')) dropdowns[i].classList.remove('show');
-        }
+    if (!event.target.closest('.custom-dropdown')) {
+        document.querySelectorAll('.dropdown-content').forEach(el => el.classList.remove('show'));
     }
 }
 
@@ -262,6 +260,7 @@ function openStratModal(stratName, sC, jC, sB, jB, totalVal, yearLabel) {
 
 function closeStratModal() { document.getElementById('stratModal').style.display = 'none'; }
 
+// 🌟 กราฟที่แก้บั๊ก Tooltip เรียบร้อยแล้ว
 function renderDonutOrBar(sYears) {
     const ctx = document.getElementById('donutChart');
     if(!ctx) return;
@@ -372,12 +371,12 @@ function renderDonutOrBar(sYears) {
                 datasets: [{ 
                     data: data, 
                     backgroundColor: chartColors,
-                    offset: offsets // 🌟 เด้งออกเมื่อถูกเลือก
+                    offset: offsets 
                 }] 
             },
             options: { 
                 responsive: true, maintainAspectRatio: false,
-                cutout: '45%', // 🌟 ทำให้โดนัทอ้วนขึ้น กดย่ายขึ้น
+                cutout: '45%', 
                 plugins: { 
                     legend: { position: 'right', labels: {font:{family:'Sarabun', size: 10}} },
                     tooltip: { callbacks: { 
@@ -413,14 +412,14 @@ function renderDonutOrBar(sYears) {
                 data: sortedKeys.map(k => currentMode === 'count' ? stratStats[k].yData[y].sC : stratStats[k].yData[y].sB),
                 backgroundColor: singleColors,
                 stack: `Stack${idx}`,
-                minBarLength: 4 // 🌟 บังคับให้แท่งมีความสูงเสมอ จะได้กดง่ายๆ
+                minBarLength: 4 
             });
             datasets.push({
                 label: `ปี ${y} (ร่วม)`,
                 data: sortedKeys.map(k => currentMode === 'count' ? stratStats[k].yData[y].jC : stratStats[k].yData[y].jB),
                 backgroundColor: jointColors,
                 stack: `Stack${idx}`,
-                minBarLength: 4 // 🌟 บังคับให้แท่งมีความสูงเสมอ จะได้กดง่ายๆ
+                minBarLength: 4 
             });
         });
 
@@ -470,13 +469,14 @@ function renderDonutOrBar(sYears) {
             options: { 
                 indexAxis: 'y', 
                 responsive: true, maintainAspectRatio: false, 
-                interaction: { mode: 'index', intersect: false }, // 🌟 ทำให้ชี้ง่ายขึ้น (ชี้แถวๆ แท่งก็ติดเลย)
+                interaction: { mode: 'index', intersect: false }, 
                 scales: { 
                     x: { stacked: true, beginAtZero: true }, 
                     y: { stacked: true, ticks: { font: {family:'Sarabun', size: 11} } } 
                 },
                 plugins: { 
                     legend: { position: 'bottom', labels: {font:{family:'Sarabun', size: 10}} },
+                    // 🌟 Tooltip ชี้กราฟแท่ง (ใช้รูปแบบ ปี XXXX: 7 (+1) โครงการ)
                     tooltip: { mode: 'index', intersect: false, callbacks: { 
                         title: c => fullLabels[c[0].dataIndex],
                         label: c => {
@@ -495,7 +495,7 @@ function renderDonutOrBar(sYears) {
                                     let jointText = st.jC > 0 ? ` (+${st.jC})` : '';
                                     return ` ปี ${y}: ${st.sC}${jointText} โครงการ`;
                                 } else {
-                                    return null; 
+                                    return null; // ซ่อน Tooltip อันที่สองไม่ให้รก
                                 }
                             } else {
                                 let totalB = st.sB + st.jB;
