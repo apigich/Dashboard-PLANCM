@@ -85,7 +85,7 @@
         
         .chart-wrapper { flex: 1; position: relative; min-height: 0; }
         .bottom-chart-wrapper { flex: 1; position: relative; min-height: 0; overflow-x: auto; overflow-y: hidden; }
-        .bottom-canvas-container { position: relative; height: 100%; width: 100%; min-width: 100%; transition: width 0.3s;}
+        .bottom-canvas-container { position: relative; height: 100%; width: 100%; transition: width 0.3s;}
 
         .table-col { flex: 1.5; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; min-height: 160px; }
         .table-header { padding: 0; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 13px; font-weight: bold; color: #1e3a8a; border-radius: 8px 8px 0 0; display: flex; flex-shrink: 0;}
@@ -123,7 +123,6 @@
         .close-modal-btn { position: absolute; right: 15px; top: 10px; color: #aaa; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; transition: 0.2s; }
         .close-modal-btn:hover { color: #ef4444; }
 
-        /* 🌟 CSS สำหรับ Dropdown รายปีใน Modal */
         details.dist-yr-details { margin-top: 4px; padding: 4px; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0; }
         details.dist-yr-details summary { font-size: 11px; font-weight: bold; color: #64748b; cursor: pointer; outline: none; }
         details.dist-yr-details summary:hover { color: #1e3a8a; }
@@ -231,7 +230,7 @@
             <div class="map-header">
                 <div class="map-header-left">
                     <span>🗺️ แผนที่ความหนาแน่นการพัฒนา</span>
-                    <span style="font-size: 11px; color: #f59e0b; font-weight:normal;" id="mapModeHint">(อิงตามจำนวนโครงการ)</span>
+                    <span style="font-size: 11px; color: #f59e0b; font-weight:normal;" id="mapModeHint">(สัดส่วนจำนวนโครงการ: ทอง=สูงสุด, เข้ม=มาก, อ่อน=น้อย)</span>
                 </div>
                 <button class="btn-reset-map-small" onclick="clearMapFilterOnly()" title="ล้างหมุดแผนที่">ล้างพื้นที่</button>
             </div>
@@ -276,8 +275,7 @@
                 <button class="tbl-tab-btn active" id="tabYear" onclick="setTableTab('year')">📅 สรุปรายปี</button>
                 <button class="tbl-tab-btn" id="tabDistrict" onclick="setTableTab('district')">📍 เจาะลึกพื้นที่</button>
             </div>
-            <div class="table-container" id="tableContainer">
-                </div>
+            <div class="table-container" id="tableContainer"></div>
         </div>
     </div>
 
