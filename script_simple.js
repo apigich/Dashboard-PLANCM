@@ -3,12 +3,12 @@ const API_URL = "https://script.google.com/macros/s/AKfycby4zmatIMhxh2K4PIiabU5q
 
 let masterData = [];   
 let filteredData = []; 
-let currentStratLevel = 4; 
-let currentMode = 'count'; 
+let currentStratLevel = 4; // เริ่มที่แผนพัฒนาจังหวัด
+let currentMode = 'count'; // โหมดหลัก ควบคุมผ่านการ์ด
 let activeSubStrategy = "all"; 
 let isProvincialOnly = false; 
-let currentTableTab = 'year'; 
-let bottomChartMode = 'trend'; 
+let currentTableTab = 'year'; // ควบคุม Tab ของตาราง
+let bottomChartMode = 'trend'; // ควบคุมกราฟล่าง (trend หรือ district)
 
 const stratKeys = ["ยุทธศาสตร์ชาติ 20 ปี", "แผนแม่บทภายใต้ยุทธศาสตร์ชาติ", "แผนพัฒนาฯ ฉบับที่ 13", "แผนพัฒนาภาคเหนือ", "ประเด็นการพัฒนาจังหวัด"];
 const stratNames = ["ยุทธศาสตร์ชาติ", "แผนแม่บท", "แผนพัฒนาฯ 13", "แผนภาคเหนือ", "แผนพัฒนาจังหวัด (2566-2570)"];
@@ -24,7 +24,6 @@ const STRAT_MASTER_LISTS = {
 const dNames = ["กัลยาณิวัฒนา", "จอมทอง", "เชียงดาว", "ไชยปราการ", "ดอยเต่า", "ดอยสะเก็ด", "ดอยหล่อ", "ฝาง", "พร้าว", "เมืองเชียงใหม่", "แม่แจ่ม", "แม่แตง", "แม่ริม", "แม่วาง", "แม่ออน", "แม่อาย", "เวียงแหง", "สะเมิง", "สันกำแพง", "สันทราย", "สันป่าตอง", "สารภี", "หางดง", "อมก๋อย", "ฮอด"];
 
 let map, geoLayer, donut, trendChartInstance, districtGeo;
-let lastClickTime = 0; let lastClickedIndex = -1;
 
 function toggleDropdown() { document.getElementById('distList').classList.toggle('show'); }
 
@@ -283,9 +282,6 @@ function updateDashboard() {
 
     document.getElementById('sumProjects').innerText = filteredData.length.toLocaleString();
     document.getElementById('sumBudget').innerText = filteredData.reduce((acc, cur) => acc + cur._b, 0).toLocaleString(undefined, {minimumFractionDigits:2});
-
-    // 🌟 เปลี่ยนคำใบ้สีแผนที่ให้ตรงโหมด
-    document.getElementById('mapModeHint').innerText = currentMode === 'count' ? '(สีน้ำเงินเข้ม = โครงการมาก, สีเทา = 0)' : '(สีเขียวมรกต/ทอง = งบประมาณสูง, สีเทา = 0)';
 
     renderDonutOrBar(sYears); 
     renderBottomChart(sYears); 
@@ -631,7 +627,7 @@ function renderDonutOrBar(sYears) {
     }
 }
 
-// 🌟 กราฟล่าง (เรียงตามผลรวมแท่ง + คลิกเดียวเด้ง Modal)
+// 🌟 กราฟล่าง (แก้ให้เรียงตามความสูง + ปลดล็อก Scroll + กดคลิกเดียวโชว์ Modal)
 function renderBottomChart(sYears) {
     const ctx = document.getElementById('trendChart');
     if(!ctx) return;
@@ -685,6 +681,7 @@ function renderBottomChart(sYears) {
             let amount = currentMode === 'count' ? 1 : r._b;
             
             dNames.filter(d => r._a.includes(d)).forEach(d => {
+                distStats[d].total += amount;
                 strategies.forEach(s => {
                     distStats[d].strats[s] = (distStats[d].strats[s] || 0) + amount;
                 });
@@ -692,7 +689,7 @@ function renderBottomChart(sYears) {
         });
         
         // 🌟 เรียงลำดับจากมากสุดไปน้อยสุด โดยดูจากผลรวมความสูงแท่งทั้งหมด
-        let sortedDists = dNames.filter(d => Object.keys(distStats[d].strats).length > 0).sort((a,b) => {
+        let sortedDists = dNames.filter(d => distStats[d].total > 0).sort((a,b) => {
             let sumA = Object.values(distStats[a].strats).reduce((acc, v) => acc + v, 0);
             let sumB = Object.values(distStats[b].strats).reduce((acc, v) => acc + v, 0);
             return sumB - sumA;
@@ -767,7 +764,7 @@ function renderBottomChart(sYears) {
                     },
                     datalabels: { display: false }
                 },
-                onClick: clickHandlerDistrict // 🌟 ผูกฟังก์ชันคลิก
+                onClick: clickHandlerDistrict 
             }
         });
     }
@@ -780,6 +777,7 @@ function renderMap(sDists, sYears) {
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
     }
 
+    let isMultiYear = sYears.length > 1;
     let dStats = {};
     dNames.forEach(d => { 
         dStats[d] = { total: {cS: 0, bS: 0, cM: 0, bM: 0, cP: 0, bP: 0} }; 
