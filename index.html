@@ -47,21 +47,18 @@
         /* === 2. โซนหลัก (กลาง + ขวา รวมกัน) === */
         .col-main { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
         
-        /* 🌟 ย้ายปุ่มยุทธศาสตร์มาด้านบนสุด และใช้ชื่อเต็ม */
         .strat-tabs { display: flex; flex-direction: row; gap: 8px; flex-shrink: 0; flex-wrap: wrap;}
         .strat-btn { flex: 1; background: white; border: 2px solid #cbd5e1; border-radius: 6px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 12px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px; min-height: 42px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
         .strat-btn:hover { border-color: #3b82f6; color: #1e3a8a;}
         .strat-btn.active { background: #1e3a8a; color: white; border-color: #1e3a8a; box-shadow: inset 0 3px 5px rgba(0,0,0,0.4); transform: translateY(1px); }
 
-        /* แถวบรรจุเนื้อหา (Center + Right) */
         .content-row { display: flex; flex-direction: row; flex: 1; gap: 12px; min-height: 0; }
 
-        /* === 2.1 กลาง (การ์ด + แผนที่) ลดความกว้างลงให้ขวากว้างขึ้น === */
+        /* === 2.1 กลาง (การ์ด + แผนที่) === */
         .col-center { flex: 0.9; display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
         
         .summary-row { display: flex; gap: 12px; min-height: 75px; flex-shrink: 0; }
         
-        /* การ์ดกดได้ จัดป้ายสถานะไว้ล่างสุด ไม่บัง */
         .summary-card { flex: 1; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border-radius: 8px; padding: 10px 15px 15px 15px; display: flex; flex-direction: column; justify-content: center; position: relative; cursor: pointer; transition: all 0.2s ease-in-out; opacity: 0.55; filter: grayscale(40%); box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 2px solid transparent; overflow: hidden;}
         .summary-card.green { background: linear-gradient(135deg, #059669, #10b981); }
         .summary-card:hover { opacity: 0.85; filter: grayscale(15%); transform: translateY(-1px);}
@@ -77,17 +74,15 @@
         .year-badge { font-size: 11px; font-weight: bold; color: #fff;}
 
         .map-box { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
-        /* เอาคำอธิบายแผนที่ออกตามสั่ง */
         .map-header { padding: 8px 15px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: bold; color: #1e3a8a; background: #f8fafc; border-radius: 8px 8px 0 0; flex-shrink: 0;}
         #map { flex: 1; border-radius: 0 0 8px 8px; z-index: 1; min-height: 0;}
 
-        /* === 2.2 ขวา (กราฟ + ตาราง) ให้ใหญ่ขึ้น === */
+        /* === 2.2 ขวา (กราฟ + ตาราง) === */
         .col-right { flex: 1.3; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; min-height: 0; }
         
         .chart-box { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding: 8px; flex-shrink: 0;}
-        /* 🌟 ให้ความสำคัญกับ Donut Chart มากที่สุด เพื่อไม่ให้สัดส่วนย่อยๆ เบียดกัน */
         .chart-box.top-chart { flex: 1.6; min-height: 200px; }
-        .chart-box.bottom-chart { flex: 1; min-height: 130px; }
+        .chart-box.bottom-chart { flex: 1.1; min-height: 140px; }
         
         .chart-title { font-size: 13px; font-weight: bold; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; flex-shrink: 0;}
         
@@ -103,7 +98,7 @@
 
         .table-container { flex: 1; overflow-y: auto; padding: 0; min-height: 0; background: #fff; border-radius: 0 0 8px 8px;}
         .summary-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .summary-table th, .summary-table td { padding: 6px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        .summary-table th, .summary-table td { padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; }
         .summary-table th { background: #f1f5f9; position: sticky; top: 0; z-index: 2; }
         
         .year-row { cursor: pointer; transition: 0.2s; font-weight: bold; }
