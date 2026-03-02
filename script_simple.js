@@ -3,12 +3,12 @@ const API_URL = "https://script.google.com/macros/s/AKfycby4zmatIMhxh2K4PIiabU5q
 
 let masterData = [];   
 let filteredData = []; 
-let currentStratLevel = 4; 
-let currentMode = 'count'; 
+let currentStratLevel = 4; // เริ่มที่แผนพัฒนาจังหวัด
+let currentMode = 'count'; // โหมดหลัก ควบคุมผ่านการ์ด
 let activeSubStrategy = "all"; 
 let isProvincialOnly = false; 
-let currentTableTab = 'year'; 
-let bottomChartMode = 'trend'; 
+let currentTableTab = 'year'; // ควบคุม Tab ของตาราง
+let bottomChartMode = 'trend'; // ควบคุมกราฟล่าง (trend หรือ district)
 
 const stratKeys = ["ยุทธศาสตร์ชาติ 20 ปี", "แผนแม่บทภายใต้ยุทธศาสตร์ชาติ", "แผนพัฒนาฯ ฉบับที่ 13", "แผนพัฒนาภาคเหนือ", "ประเด็นการพัฒนาจังหวัด"];
 const stratNames = ["ยุทธศาสตร์ชาติ", "แผนแม่บท", "แผนพัฒนาฯ 13", "แผนภาคเหนือ", "แผนพัฒนาจังหวัด (2566-2570)"];
@@ -28,13 +28,20 @@ let lastClickTime = 0; let lastClickedIndex = -1;
 
 function toggleDropdown() { document.getElementById('distList').classList.toggle('show'); }
 
-window.onclick = function(event) {
-    if (!event.target.closest('.custom-dropdown')) {
+document.addEventListener('click', function(event) {
+    const checkList = document.getElementById('distDropdown');
+    if (checkList && !checkList.contains(event.target)) {
         document.querySelectorAll('.dropdown-content').forEach(el => el.classList.remove('show'));
     }
-}
+    
+    // ปิด Modal ถ้าคลิกขอบดำๆ นอกกล่อง
+    const m1 = document.getElementById('stratModal');
+    const m2 = document.getElementById('districtModal');
+    if (event.target === m1) closeStratModal();
+    if (event.target === m2) closeDistrictModal();
+});
 
-// 🌟 ฟังก์ชันสลับโหมดการ์ด
+// 🌟 ฟังก์ชันสลับโหมดการ์ด (บุ๋ม)
 function setAppMode(mode) {
     if (currentMode === mode) return; 
     currentMode = mode;
@@ -71,6 +78,7 @@ function setBottomChartMode(mode) {
     renderBottomChart(sYears);
 }
 
+// 🌟 ฟังก์ชันสลับ Tab ตาราง
 function setTableTab(tabId) {
     currentTableTab = tabId;
     document.getElementById('tabYear').classList.remove('active');
@@ -311,69 +319,66 @@ function openStratModal(stratName, sC, jC, sB, jB, totalVal, yearLabel) {
 
 function closeStratModal() { document.getElementById('stratModal').style.display = 'none'; }
 
-// 🌟 Modal สำหรับอำเภอ
+// 🌟 ฟังก์ชันเปิด Modal แจกแจงยุทธศาสตร์แบบดับเบิ้ลคลิก
 function openDistrictModal(dName, sYears) {
-    let dt = { cS: 0, bS: 0, cM: 0, bM: 0, cP: 0, bP: 0, yData: {} };
-    sYears.forEach(y => dt.yData[y] = { cS: 0, bS: 0, cM: 0, bM: 0, cP: 0, bP: 0 });
+    let targetKey = stratKeys[currentStratLevel];
+    let distStrats = {};
+    let totalC = 0;
+    let totalB = 0;
 
     filteredData.forEach(r => {
         let yr = r._y;
-        if (r._aType === "Single" && r._a.includes(dName)) {
-            dt.cS++; dt.bS += r._b;
-            if(dt.yData[yr]) { dt.yData[yr].cS++; dt.yData[yr].bS += r._b; }
-        }
-        else if (r._aType === "Multi" && r._a.includes(dName)) {
-            dt.cM++; dt.bM += r._b;
-            if(dt.yData[yr]) { dt.yData[yr].cM++; dt.yData[yr].bM += r._b; }
-        }
-        else if (r._aType === "Provincial") {
-            dt.cP++; dt.bP += r._b;
-            if(dt.yData[yr]) { dt.yData[yr].cP++; dt.yData[yr].bP += r._b; }
+        if (sYears.includes(yr) && (r._aType === "Single" || r._aType === "Multi") && r._a.includes(dName)) {
+            let val = r[targetKey] || r[Object.keys(r).find(k => k.includes(targetKey.split(" ")[0]))];
+            let strats = String(val || "ไม่ระบุ").split(',').map(s=>s.trim()).filter(s=>s!=="");
+            if(strats.length === 0) strats = ["ไม่ระบุ"];
+            
+            totalC++;
+            totalB += r._b;
+
+            strats.forEach(s => {
+                if(!distStrats[s]) distStrats[s] = { count: 0, budget: 0 };
+                distStrats[s].count += 1;
+                distStrats[s].budget += r._b; 
+            });
         }
     });
 
     document.getElementById('distModalName').innerText = `📍 ข้อมูลเจาะลึกอำเภอ${dName}`;
     
-    let pop = `<div style="font-size:13px; line-height: 1.5;">`;
+    let pop = `<div style="font-size:14px; line-height: 1.5;">`;
     if(sYears.length > 1) pop += `<div style="color:#f59e0b; font-weight:bold; margin-bottom:10px;">(สรุปรวมปีงบประมาณ ${sYears.join(', ')})</div>`;
     
-    pop += `<b style="color:#10b981; font-size:14px;">✅ โครงการเฉพาะพื้นที่:</b><br>
-            รวม: <b>${dt.cS}</b> โครงการ | <b>${dt.bS.toLocaleString()}</b> บาท<br>`;
+    pop += `<div style="margin-bottom:15px; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0;">
+            <b style="color:#1e3a8a;">ยอดรวมพื้นที่นี้:</b> ${totalC.toLocaleString()} โครงการ | <span style="color:#059669; font-weight:bold;">${totalB.toLocaleString()} บาท</span>
+            </div>`;
+            
+    pop += `<b style="color:#1e3a8a;">🧬 แจกแจงตามประเด็นยุทธศาสตร์:</b><br>
+            <table style="width:100%; border-collapse:collapse; margin-top:8px; font-size:12px;">
+                <thead>
+                    <tr style="background:#e2e8f0; color:#1e3a8a;">
+                        <th style="padding:6px; text-align:left; border-bottom:1px solid #cbd5e1;">ประเด็นยุทธศาสตร์</th>
+                        <th style="padding:6px; text-align:center; border-bottom:1px solid #cbd5e1; width:20%;">โครงการ</th>
+                        <th style="padding:6px; text-align:right; border-bottom:1px solid #cbd5e1; width:30%;">งบประมาณ</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+                
+    let sortedStrats = Object.keys(distStrats).sort((a,b) => distStrats[b].count - distStrats[a].count);
     
-    if(sYears.length > 1) {
-        pop += `<ul style="padding-left:20px; margin:4px 0; color:#475569; font-size:12px;">`;
-        sYears.forEach(y => {
-            if (dt.yData[y].cS > 0) pop += `<li>ปี ${y}: ${dt.yData[y].cS} โครงการ (${dt.yData[y].bS.toLocaleString()} บ.)</li>`;
+    if (sortedStrats.length === 0) {
+        pop += `<tr><td colspan="3" style="text-align:center; padding:10px; color:gray;">ไม่มีข้อมูล</td></tr>`;
+    } else {
+        sortedStrats.forEach(s => {
+            pop += `<tr style="border-bottom:1px dashed #e2e8f0;">
+                        <td style="padding:6px;">${s}</td>
+                        <td style="padding:6px; text-align:center;"><b>${distStrats[s].count}</b></td>
+                        <td style="padding:6px; text-align:right; color:#059669;">${distStrats[s].budget.toLocaleString()}</td>
+                    </tr>`;
         });
-        pop += `</ul>`;
     }
-
-    pop += `<hr style="border:0; border-top:1px dashed #ccc; margin:8px 0;">
-            <b style="color:#f59e0b; font-size:14px;">📦 โครงการร่วมพื้นที่อื่น:</b><br>
-            รวม: <b>${dt.cM}</b> โครงการ<br>
-            งบที่ครอบคลุม: <b>${dt.bM.toLocaleString()}</b> บาท<br>`;
     
-    if(sYears.length > 1) {
-        pop += `<ul style="padding-left:20px; margin:4px 0; color:#475569; font-size:12px;">`;
-        sYears.forEach(y => {
-            if (dt.yData[y].cM > 0) pop += `<li>ปี ${y}: ${dt.yData[y].cM} โครงการ (${dt.yData[y].bM.toLocaleString()} บ.)</li>`;
-        });
-        pop += `</ul>`;
-    }
-
-    pop += `<hr style="border:0; border-top:1px dashed #ccc; margin:8px 0;">
-            <b style="color:#ef4444; font-size:14px;">🌐 โครงการทั้งจังหวัด:</b><br>
-            ครอบคลุมถึง: <b>${dt.cP}</b> โครงการ<br>
-            งบระดับจังหวัด: <b>${dt.bP.toLocaleString()}</b> บาท`;
-    
-    if(sYears.length > 1) {
-        pop += `<ul style="padding-left:20px; margin:4px 0; color:#475569; font-size:12px;">`;
-        sYears.forEach(y => {
-            if (dt.yData[y].cP > 0) pop += `<li>ปี ${y}: ${dt.yData[y].cP} โครงการ (${dt.yData[y].bP.toLocaleString()} บ.)</li>`;
-        });
-        pop += `</ul>`;
-    }
-    pop += `</div>`;
+    pop += `</tbody></table></div>`;
 
     document.getElementById('distModalContent').innerHTML = pop;
     
@@ -631,14 +636,13 @@ function renderDonutOrBar(sYears) {
     }
 }
 
-// 🌟 กราฟล่าง (แนวโน้มรายปี vs รายอำเภอปลดล็อก 25 อำเภอ + Double Click)
+// 🌟 กราฟล่าง (ปลดล็อก 25 อำเภอ + เลื่อนได้ + Double Click)
 function renderBottomChart(sYears) {
     const ctx = document.getElementById('trendChart');
     if(!ctx) return;
     
     if (trendChartInstance) trendChartInstance.destroy();
 
-    // คืนค่าความกว้างให้พอดีกล่อง ถ้าเป็นหน้า Trend
     let canvasContainer = document.getElementById('bottomCanvasContainer');
     
     if (bottomChartMode === 'trend') {
@@ -693,7 +697,7 @@ function renderBottomChart(sYears) {
             });
         });
         
-        // 🌟 เอา .slice(0,15) ออก โชว์ทุกอำเภอที่มากกว่า 0
+        // 🌟 เอา Slice ออก โชว์หมดทุกอำเภอที่มากกว่า 0
         let sortedDists = dNames.filter(d => distStats[d].total > 0).sort((a,b) => distStats[b].total - distStats[a].total);
         
         if (sortedDists.length === 0) {
@@ -702,8 +706,8 @@ function renderBottomChart(sYears) {
              return;
         }
 
-        // 🌟 ขยายความกว้างกล่องให้เลื่อน (Scroll) ไปทางขวาได้
-        if (sortedDists.length > 10) {
+        // 🌟 ถ้ายาวเกิน ขยายความกว้างให้ Swipe Scroll ได้
+        if (sortedDists.length > 8) {
             canvasContainer.style.width = (sortedDists.length * 45) + 'px'; 
         } else {
             canvasContainer.style.width = '100%';
@@ -733,7 +737,7 @@ function renderBottomChart(sYears) {
             };
         });
 
-        // 🌟 ระบบ Double Click ที่กราฟ
+        // 🌟 ดับเบิ้ลคลิก เพื่อแสดง Modal แจกแจงประเด็นยุทธศาสตร์รายอำเภอ
         const clickHandlerDistrict = (e, elements) => {
             if(!elements.length) return;
             let dataIndex = elements[0].index;
@@ -746,12 +750,11 @@ function renderBottomChart(sYears) {
             if (isTouch) {
                 let currentTime = new Date().getTime();
                 if (currentTime - lastClickTime < 500 && lastClickedIndex === dataIndex) {
-                    openDistrictModal(dName, sYears); // เปิด Modal
+                    openDistrictModal(dName, sYears); 
                 }
                 lastClickTime = currentTime;
                 lastClickedIndex = dataIndex;
             } else {
-                // สำหรับ PC คลิกเดียวอาจจะไม่ต้องดับเบิ้ล หรือดับเบิ้ลก็ได้
                 let currentTime = new Date().getTime();
                 if (currentTime - lastClickTime < 400 && lastClickedIndex === dataIndex) {
                     openDistrictModal(dName, sYears);
@@ -786,19 +789,20 @@ function renderBottomChart(sYears) {
                     },
                     datalabels: { display: false }
                 },
-                onClick: clickHandlerDistrict // ฝังระบบคลิก
+                onClick: clickHandlerDistrict 
             }
         });
     }
 }
 
-// 🌟 กฎใหม่ Heat Map: งบดิบๆ สีเขียวมรกต
+// 🌟 กฎใหม่ Heat Map: งบดิบๆ แยกเกณฑ์ ปีเดียว vs หลายปี
 function renderMap(sDists, sYears) {
     if (!map) {
         map = L.map('map', {scrollWheelZoom: false, preferCanvas: true}).setView([18.7883, 98.9853], 8);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
     }
 
+    let isMultiYear = sYears.length > 1;
     let dStats = {};
     dNames.forEach(d => { 
         dStats[d] = { total: {cS: 0, bS: 0, cM: 0, bM: 0, cP: 0, bP: 0}, years: {} }; 
@@ -839,25 +843,46 @@ function renderMap(sDists, sYears) {
         style: (f) => {
             let d = f.properties.amp_th || f.properties.AMP_TH;
             let s = dStats[d].total;
-            let color = '#f1f5f9'; 
+            let color = '#f8fafc'; 
             
             if (isProvincialOnly) {
                 color = currentMode === 'budget' ? '#059669' : '#3b82f6'; 
             } else {
                 if (currentMode === 'budget') {
-                    // 🌟 โทนสีเขียวมรกต-ทอง สำหรับงบประมาณ (ไม่หาร)
+                    // 🌟 โทนสีเขียวมรกต-ทอง สำหรับงบประมาณ (แยกเกณฑ์ตามปี)
                     let totalRawBudget = s.bS + s.bM + s.bP; 
-                    color = totalRawBudget >= 1000000000 ? '#064e3b' : // เขียวเข้มจัด (1B+)
-                            totalRawBudget >= 300000000 ? '#047857' :  // เขียวเข้ม (300M+)
-                            totalRawBudget >= 50000000 ? '#059669' :   // เขียวสว่าง (50M+)
-                            totalRawBudget >= 5000000 ? '#10b981' :    // เขียวอ่อน (5M+)
-                            totalRawBudget > 0 ? '#6ee7b7' : '#f8fafc';// เขียวพาสเทล (>0)
+                    if (isMultiYear) {
+                        color = totalRawBudget >= 1000000000 ? '#064e3b' : // พันล้าน
+                                totalRawBudget >= 500000000 ? '#047857' :  // 500 ล้าน
+                                totalRawBudget >= 200000000 ? '#059669' :   // 200 ล้าน
+                                totalRawBudget >= 50000000 ? '#10b981' :    // 50 ล้าน
+                                totalRawBudget >= 10000000 ? '#34d399' :    // 10 ล้าน
+                                totalRawBudget > 0 ? '#6ee7b7' : '#f8fafc';
+                    } else {
+                        color = totalRawBudget >= 300000000 ? '#064e3b' : // 300 ล้าน
+                                totalRawBudget >= 100000000 ? '#047857' :  // 100 ล้าน
+                                totalRawBudget >= 50000000 ? '#059669' :   // 50 ล้าน
+                                totalRawBudget >= 10000000 ? '#10b981' :    // 10 ล้าน
+                                totalRawBudget >= 1000000 ? '#34d399' :     // 1 ล้าน
+                                totalRawBudget > 0 ? '#6ee7b7' : '#f8fafc';
+                    }
                 } else {
                     let v = s.cS + s.cM; 
-                    color = v >= 15 ? '#1e3a8a' : // น้ำเงินเข้ม
-                            v >= 8 ? '#2563eb' :  // น้ำเงิน
-                            v >= 3 ? '#60a5fa' :  // ฟ้า
-                            v > 0 ? '#bfdbfe' : '#f8fafc'; 
+                    if (isMultiYear) {
+                        color = v >= 20 ? '#1e3a8a' : 
+                                v >= 12 ? '#1d4ed8' :  
+                                v >= 7 ? '#2563eb' :  
+                                v >= 4 ? '#3b82f6' :
+                                v >= 2 ? '#60a5fa' :
+                                v > 0 ? '#93c5fd' : '#f8fafc'; 
+                    } else {
+                        color = v >= 10 ? '#1e3a8a' : 
+                                v >= 7 ? '#1d4ed8' :  
+                                v >= 4 ? '#2563eb' :  
+                                v >= 2 ? '#3b82f6' :
+                                v >= 1 ? '#60a5fa' :
+                                v > 0 ? '#93c5fd' : '#f8fafc';
+                    }
                 }
             }
             
@@ -923,6 +948,22 @@ function renderMap(sDists, sYears) {
     }).addTo(map);
 }
 
+// 🌟 ซ่อมบั๊กตารางรายปีให้กดได้ปกติ
+function toggleYearRow(rowId) {
+    const detailRow = document.getElementById(`detail-${rowId}`);
+    const mainRow = document.getElementById(`row-${rowId}`);
+    
+    if(detailRow) {
+        if(detailRow.classList.contains('open')) {
+            detailRow.classList.remove('open');
+            if(mainRow) mainRow.classList.remove('open');
+        } else {
+            detailRow.classList.add('open');
+            if(mainRow) mainRow.classList.add('open');
+        }
+    }
+}
+
 // 🌟 ควบคุมการแสดงผลตารางตาม Tab
 function renderTable(sYears) {
     let container = document.getElementById('tableContainer');
@@ -965,7 +1006,7 @@ function renderTable(sYears) {
             });
 
             tableHtml += `
-                <tr class="year-row" onclick="toggleYearRow('${y}')">
+                <tr class="year-row" id="row-${y}" onclick="toggleYearRow('${y}')">
                     <td><span class="toggle-icon">▶</span> ปีงบประมาณ ${y}</td>
                     <td style="text-align:center;">${yCount}</td>
                     <td style="text-align:right; color:#059669;">${yBudget.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
@@ -1058,7 +1099,7 @@ function renderTable(sYears) {
             `).join('');
 
             tableHtml += `
-                <tr class="year-row provincial-row" onclick="toggleYearRow('Provincial')">
+                <tr class="year-row provincial-row" id="row-Provincial" onclick="toggleYearRow('Provincial')">
                     <td><span class="toggle-icon">▶</span> 🌐 ครอบคลุมทั้งจังหวัด</td>
                     <td style="text-align:right;">${provAgg.totalVal.toLocaleString()}</td>
                 </tr>
@@ -1076,7 +1117,7 @@ function renderTable(sYears) {
             `).join('');
 
             tableHtml += `
-                <tr class="year-row" onclick="toggleYearRow('${d}')">
+                <tr class="year-row" id="row-${d}" onclick="toggleYearRow('${d}')">
                     <td><span class="toggle-icon">▶</span> 📍 อำเภอ${d}</td>
                     <td style="text-align:right;">${distAgg[d].totalVal.toLocaleString()}</td>
                 </tr>
