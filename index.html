@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
     <style>
-        /* === ล็อก One-Page 100vh แท้ === */
+        /* === ล็อก One-Page 100vh สำหรับจอคอมพิวเตอร์ === */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Sarabun', sans-serif; background-color: #e2e8f0; width: 100vw; height: 100vh; overflow: hidden; display: flex; flex-direction: column;}
         
@@ -22,70 +22,70 @@
         .btn-advanced { background: #1e293b; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .btn-advanced:hover { background: #334155; transform: translateY(-1px); }
         
-        /* 🌟 ระบบ 3 คอลัมน์ ล็อกความสูงพอดีจอ */
-        .main-workspace { display: flex; flex: 1; padding: 15px; gap: 15px; min-height: 0; overflow: hidden; }
+        /* โครงสร้าง 3 คอลัมน์ */
+        .main-workspace { display: flex; flex-direction: row; flex: 1; padding: 12px; gap: 12px; min-height: 0; overflow: hidden; }
 
         /* === 1. คอลัมน์ซ้าย (ตัวกรอง) === */
-        .col-left { width: 260px; display: flex; flex-direction: column; flex-shrink: 0; gap: 15px; }
-        .filter-box { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto;}
-        .filter-title { font-size: 14px; font-weight: bold; color: #1e3a8a; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 5px; }
+        .col-left { width: 230px; display: flex; flex-direction: column; flex-shrink: 0; min-height: 0; }
+        .filter-box { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; }
+        .filter-title { font-size: 14px; font-weight: bold; color: #1e3a8a; border-bottom: 2px solid #cbd5e1; padding-bottom: 5px; margin-bottom: 5px; flex-shrink: 0;}
         
-        .provincial-toggle-btn { background: #fff; border: 2px solid #cbd5e1; border-radius: 6px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 12px; padding: 8px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; margin-bottom: 5px;}
+        .provincial-toggle-btn { background: #fff; border: 2px solid #cbd5e1; border-radius: 6px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 12px; padding: 6px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; margin-bottom: 5px; flex-shrink: 0;}
         .provincial-toggle-btn:hover { border-color: #3b82f6; color: #1e3a8a; }
         .provincial-toggle-btn.active { background: #0ea5e9; color: white; border-color: #0284c7; box-shadow: inset 0 3px 5px rgba(0,0,0,0.3); transform: translateY(1px); }
 
-        .custom-dropdown { position: relative; width: 100%; font-size: 13px; }
-        .dropdown-btn { background: #fff; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: #1e3a8a; font-weight: bold; }
+        .custom-dropdown { position: relative; width: 100%; font-size: 13px; flex-shrink: 0;}
+        .dropdown-btn { background: #fff; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: #1e3a8a; font-weight: bold; }
         .dropdown-btn:hover { background: #f8fafc; }
         .dropdown-content { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 6px 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto; z-index: 1000; padding: 5px; }
         .dropdown-content.show { display: flex; flex-direction: column; gap: 5px; }
-        .dropdown-content label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; border-radius: 4px; color: #475569; }
+        .dropdown-content label { display: flex; align-items: center; gap: 6px; padding: 5px 8px; cursor: pointer; border-radius: 4px; color: #475569; }
         .dropdown-content label:hover { background: #eff6ff; color: #1e3a8a; }
 
-        .year-list { list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+        .year-list { list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; overflow-y: auto; flex: 1; margin-bottom: 10px;}
         .year-list label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #334155;}
         
-        /* === 2. คอลัมน์กลาง (แผนที่ใหญ่เด่น) === */
-        .col-center { flex: 2; display: flex; flex-direction: column; gap: 15px; min-width: 0; }
+        /* === 2. คอลัมน์กลาง (แผนที่) === */
+        .col-center { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
         
-        .summary-row { display: flex; gap: 15px; height: 85px; flex-shrink: 0; }
-        .summary-card { flex: 1; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border-radius: 10px; padding: 12px 20px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .summary-row { display: flex; gap: 12px; height: 80px; flex-shrink: 0; }
+        .summary-card { flex: 1; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border-radius: 8px; padding: 10px 15px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .summary-card.green { background: linear-gradient(135deg, #059669, #10b981); }
         .summary-title { font-size: 13px; font-weight: bold; opacity: 0.9; display: flex; justify-content: space-between; align-items: baseline;}
-        .summary-value { font-size: 26px; font-weight: bold; margin-top: 2px; }
-        .summary-note { font-size: 11px; font-weight: normal; color: #bae6fd; margin-top: 2px; }
+        .summary-value { font-size: 24px; font-weight: bold; margin-top: 2px; line-height: 1;}
+        .summary-note { font-size: 11px; font-weight: normal; color: #bae6fd; margin-top: 4px; }
         .summary-card.green .summary-note { color: #a7f3d0; }
         .year-badge { color: #fde047; font-size: 12px; font-weight: bold; }
 
-        .map-box { background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
-        .map-header { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: bold; color: #1e3a8a; background: #f8fafc; border-radius: 10px 10px 0 0; }
-        #map { flex: 1; border-radius: 0 0 10px 10px; z-index: 1;}
+        .map-box { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
+        .map-header { padding: 10px 15px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: bold; color: #1e3a8a; background: #f8fafc; border-radius: 8px 8px 0 0; flex-shrink: 0;}
+        #map { flex: 1; border-radius: 0 0 8px 8px; z-index: 1; min-height: 0;}
 
         /* === 3. คอลัมน์ขวา (กราฟ & ตาราง) === */
-        .col-right { width: 450px; display: flex; flex-direction: column; gap: 15px; flex-shrink: 0; }
+        .col-right { width: 400px; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; min-height: 0; }
         
-        .strat-tabs { display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
-        .strat-btn { flex: 1 1 30%; background: white; border: 2px solid #cbd5e1; border-radius: 8px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 12px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; line-height: 1.2; padding: 6px 4px; min-height: 50px;}
+        .strat-tabs { display: flex; flex-wrap: wrap; gap: 4px; flex-shrink: 0; }
+        .strat-btn { flex: 1 1 30%; background: white; border: 2px solid #cbd5e1; border-radius: 6px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; line-height: 1.2; padding: 4px; height: 45px;}
         .strat-btn:hover { border-color: #3b82f6; }
-        .strat-btn.active { background: #1e3a8a; color: white; border-color: #1e3a8a; box-shadow: inset 0 3px 5px rgba(0,0,0,0.4); transform: translateY(2px); }
+        .strat-btn.active { background: #1e3a8a; color: white; border-color: #1e3a8a; box-shadow: inset 0 3px 5px rgba(0,0,0,0.4); transform: translateY(1px); }
 
-        .chart-box { background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 300px; display: flex; flex-direction: column; padding: 12px; flex-shrink: 0;}
-        .chart-title { font-size: 13px; font-weight: bold; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;}
+        .chart-box { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding: 10px; height: 35vh; min-height: 220px; flex-shrink: 0;}
+        .chart-title { font-size: 13px; font-weight: bold; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;}
         .chart-wrapper { flex: 1; position: relative; min-height: 0; }
 
-        .chart-switch-box { display: flex; align-items: center; gap: 8px; font-size: 12px; background: #f8fafc; padding: 4px 8px; border-radius: 20px; border: 1px solid #e2e8f0;}
-        .switch { position: relative; display: inline-block; width: 34px; height: 18px; margin-top: 2px; }
+        .chart-switch-box { display: flex; align-items: center; gap: 8px; font-size: 11px; background: #f8fafc; padding: 2px 6px; border-radius: 20px; border: 1px solid #e2e8f0;}
+        .switch { position: relative; display: inline-block; width: 30px; height: 16px; margin-top: 2px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 18px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 16px; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #059669; }
-        input:checked + .slider:before { transform: translateX(16px); }
+        input:checked + .slider:before { transform: translateX(14px); }
 
-        .table-col { flex: 1; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-direction: column; min-height: 0; }
-        .table-header { padding: 12px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 14px; font-weight: bold; color: #1e3a8a; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;}
-        .table-container { flex: 1; overflow-y: auto; padding: 10px; }
-        .summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .summary-table th, .summary-table td { padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        .table-col { flex: 1; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; min-height: 0; }
+        .table-header { padding: 10px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 13px; font-weight: bold; color: #1e3a8a; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;}
+        .table-container { flex: 1; overflow-y: auto; padding: 5px 10px; min-height: 0;}
+        .summary-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .summary-table th, .summary-table td { padding: 6px; border-bottom: 1px solid #e2e8f0; text-align: left; }
         .summary-table th { background: #f1f5f9; position: sticky; top: 0; z-index: 2; }
         
         .year-row { cursor: pointer; transition: 0.2s; font-weight: bold; }
@@ -95,43 +95,70 @@
         
         .district-details { display: none; background: #fafafa; }
         .district-details.open { display: table-row; }
-        .district-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 5px 0; border: 1px dashed #cbd5e1; }
-        .district-table th, .district-table td { padding: 5px 8px; border-bottom: 1px dotted #e2e8f0; }
+        .district-table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 5px 0; border: 1px dashed #cbd5e1; }
+        .district-table th, .district-table td { padding: 4px 6px; border-bottom: 1px dotted #e2e8f0; }
         .district-table tr:hover { background: #f1f5f9; cursor: pointer; }
         
         .provincial-row { background-color: #e0f2fe; font-weight: bold; color: #0369a1; cursor: pointer;}
         .provincial-row:hover { background-color: #bae6fd !important; }
 
-        .btn-clear-small { background: #fca5a5; color: #7f1d1d; border: 1px solid #f87171; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; transition: 0.2s;}
+        .btn-clear-small { background: #fca5a5; color: #7f1d1d; border: 1px solid #f87171; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 10px; transition: 0.2s;}
         .btn-clear-small:hover { background: #ef4444; color: white; }
         .btn-reset-map-small { background: #fff; color: #1e3a8a; border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; transition: 0.2s;}
         .btn-reset-map-small:hover { background: #eff6ff; border-color: #3b82f6; }
 
         /* Modal */
-        .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px); overflow-y: auto;}
-        .modal-content { background-color: #fff; margin: 10vh auto; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; font-family: 'Sarabun'; }
-        .close-modal-btn { position: absolute; right: 20px; top: 15px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; transition: 0.2s; }
+        .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px);}
+        .modal-content { background-color: #fff; margin: 10vh auto; padding: 20px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; font-family: 'Sarabun'; }
+        .close-modal-btn { position: absolute; right: 15px; top: 10px; color: #aaa; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; transition: 0.2s; }
         .close-modal-btn:hover { color: #ef4444; }
 
         /* =========================================
-           🌟 CSS สำหรับหน้าจอมือถือ/แนวตั้ง (Responsive)
+           🌟 CSS สำหรับหน้าจอ iPad และ มือถือ (Responsive Design)
            ========================================= */
-        @media screen and (max-width: 1024px) {
+        
+        /* สำหรับ iPad แนวนอน / จอขนาดกลาง (กว้างไม่เกิน 1200px) */
+        @media screen and (max-width: 1200px) {
+            /* ปลดล็อกความสูง 100vh ให้เลื่อนหน้าเว็บได้ตามปกติ */
             body { height: auto; overflow-y: auto; overflow-x: hidden; }
-            .top-bar { padding: 10px; flex-wrap: wrap; gap: 5px; }
-            .top-bar h1 { font-size: 16px; width: 100%; text-align: center; }
-            .btn-advanced { width: 100%; text-align: center; padding: 8px; }
-            .main-workspace { flex-direction: column; height: auto; overflow: visible; padding: 10px; gap: 10px;}
-            .col-left, .col-center, .col-right { width: 100%; flex: none; height: auto; min-height: 0; gap: 10px; }
-            .filter-box { padding: 10px; overflow: visible; }
-            .map-box { height: 350px; flex: none; }
-            .strat-tabs { flex-wrap: wrap; height: auto; }
-            .strat-btn { flex: 1 1 calc(45% - 4px); font-size: 11px; padding: 6px 2px; min-height: 45px;}
+            
+            /* ให้คอลัมน์ขวา (กราฟและตาราง) ปัดตกลงมาข้างล่าง */
+            .main-workspace { flex-wrap: wrap; height: auto; overflow: visible; align-items: stretch; padding: 15px;}
+            
+            .col-left { width: 250px; flex: none; height: auto; }
+            .filter-box { overflow-y: visible; height: auto; }
+            .year-list { max-height: none; overflow-y: visible; margin-bottom: 15px;} 
+            
+            .col-center { flex: 1; min-width: 450px; height: auto; }
+            .map-box { height: 450px; flex: none; } /* บังคับความสูงแผนที่ */
+            
+            /* คอลัมน์ขวาจัดเรียงใหม่: กราฟ คู่ ตาราง */
+            .col-right { width: 100%; flex: none; flex-direction: row; flex-wrap: wrap; height: auto; }
+            .col-right .strat-tabs { width: 100%; flex-wrap: wrap; }
+            .col-right .chart-box { flex: 1; min-width: 350px; height: 400px; }
+            .col-right .table-col { flex: 1; min-width: 350px; height: 400px; }
+        }
+
+        /* สำหรับ iPad แนวตั้ง และ มือถือ (กว้างไม่เกิน 820px) */
+        @media screen and (max-width: 820px) {
+            .top-bar { padding: 12px; flex-wrap: wrap; gap: 8px; justify-content: center;}
+            .top-bar h1 { font-size: 17px; width: 100%; text-align: center;}
+            .btn-advanced { width: 100%; text-align: center; }
+
+            .main-workspace { flex-direction: column; padding: 12px; gap: 15px;}
+            .col-left, .col-center, .col-right { width: 100%; min-width: 0; flex: none;}
+            
+            /* ให้กราฟและตารางเรียงซ้อนกันบนมือถือ */
+            .col-right { flex-direction: column; }
+            .col-right .chart-box, .col-right .table-col { width: 100%; min-width: 0; height: 380px; }
+            
+            .summary-row { flex-direction: column; height: auto; gap: 10px; }
+            .summary-card { padding: 15px; }
+            
+            .map-box { height: 400px; }
+            
+            .strat-btn { flex: 1 1 calc(48% - 4px); font-size: 12px; padding: 8px 4px; min-height: 45px;}
             .strat-tabs button:last-child { flex: 1 1 100%; } 
-            .summary-row { flex-direction: column; height: auto; gap: 8px; }
-            .chart-box { height: 300px; padding: 8px; flex: none;}
-            .table-col { height: 400px; flex: none; }
-            .table-container { padding: 5px; }
         }
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -174,7 +201,7 @@
                 <li><label><input type="checkbox" id="checkAllYears" checked onchange="toggleAllYears(this)" /> <strong style="color:#1e3a8a;">☑️ เลือกทุกปีที่มีข้อมูล</strong></label></li>
                 </ul>
 
-            <button type="button" onclick="clearAllFilters()" style="margin-top: auto; width: 100%; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 6px; font-family: 'Sarabun'; font-size: 14px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);">🔄 ล้างตัวกรองทั้งหมด</button>
+            <button type="button" onclick="clearAllFilters()" style="margin-top: auto; flex-shrink: 0; width: 100%; padding: 8px; background: #ef4444; color: white; border: none; border-radius: 6px; font-family: 'Sarabun'; font-size: 13px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);">🔄 ล้างตัวกรองทั้งหมด</button>
         </div>
     </div>
 
@@ -194,7 +221,7 @@
                     <span class="year-badge" id="badgeYearBudget"></span>
                 </div>
                 <div class="summary-value" id="sumBudget">0.00</div>
-                <div class="summary-note">(งบเฉพาะพื้นที่ + งบหลายพื้นที่ + ทั้งจังหวัด ไม่นับซ้ำ)</div>
+                <div class="summary-note">(งบเฉพาะพื้นที่ + งบกลุ่ม + จังหวัด ไม่นับซ้ำ)</div>
             </div>
         </div>
 
@@ -225,7 +252,7 @@
                         <label class="switch"><input type="checkbox" id="modeSwitch"><span class="slider"></span></label>
                         <span style="color:#059669;">งบประมาณ</span>
                     </div>
-                    <button type="button" class="btn-clear-small" onclick="clearSubStratFilter()" id="btnResetDonut" style="display:none;">🔄 ล้างกรอง</button>
+                    <button type="button" class="btn-clear-small" onclick="clearSubStratFilter()" id="btnResetDonut" style="display:none;">🔄 ล้าง</button>
                 </div>
             </div>
             <div class="chart-wrapper"><canvas id="donutChart"></canvas></div>
@@ -234,14 +261,14 @@
         <div class="table-col">
             <div class="table-header">
                 <span>📋 สรุปข้อมูลรายปี</span>
-                <span style="font-size: 11px; font-weight: normal; color:#64748b;">*คลิกปีเพื่อคลี่ดูรายพื้นที่*</span>
+                <span style="font-size: 11px; font-weight: normal; color:#64748b;">*คลิกปีเพื่อคลี่ดู*</span>
             </div>
             <div class="table-container">
                 <table class="summary-table">
                     <thead>
                         <tr>
-                            <th style="width: 40%;">ปีงบประมาณ</th>
-                            <th style="text-align: center; width: 20%;">จำนวน</th>
+                            <th style="width: 35%;">ปีงบประมาณ</th>
+                            <th style="text-align: center; width: 25%;">จำนวน</th>
                             <th style="text-align: right; width: 40%;">งบประมาณรวม</th>
                         </tr>
                     </thead>
@@ -256,33 +283,33 @@
 <div id="stratModal" class="modal">
     <div class="modal-content">
         <span class="close-modal-btn" onclick="closeStratModal()">&times;</span>
-        <h3 id="modalStratName" style="color: #1e3a8a; margin-top: 0; line-height: 1.4; font-size: 17px;">ชื่อเป้าหมาย</h3>
+        <h3 id="modalStratName" style="color: #1e3a8a; margin-top: 0; line-height: 1.4; font-size: 16px;">ชื่อเป้าหมาย</h3>
         <hr style="border: 0; border-top: 1px solid #cbd5e1; margin: 12px 0;">
         
-        <div style="font-size: 14.5px; line-height: 1.6;">
+        <div style="font-size: 14px; line-height: 1.6;">
             <div style="margin-bottom: 15px; background: #fffbeb; padding: 10px; border-left: 4px solid #f59e0b; border-radius: 4px;">
-                📊 <strong>คิดเป็นสัดส่วนในกราฟ:</strong> <span id="modalStratPct" style="color: #d97706; font-weight: bold; font-size: 18px;">0%</span>
+                📊 <strong>คิดเป็นสัดส่วนในกราฟ:</strong> <span id="modalStratPct" style="color: #d97706; font-weight: bold; font-size: 16px;">0%</span>
             </div>
 
             <div style="margin-bottom: 10px;">
-                📌 <strong>จำนวนที่สอดคล้องรวม:</strong> <span id="modalTotalCount" style="font-weight: bold; font-size: 16px;">0</span> โครงการ
-                <ul style="margin: 2px 0 0 0; padding-left: 20px; color: #475569; font-size: 13px;">
+                📌 <strong>จำนวนที่สอดคล้องรวม:</strong> <span id="modalTotalCount" style="font-weight: bold; font-size: 15px;">0</span> โครงการ
+                <ul style="margin: 2px 0 0 0; padding-left: 20px; color: #475569; font-size: 12px;">
                     <li>ตอบสนองเป้าหมายนี้โดยตรง (Single): <b id="modalSingleCount" style="color:#10b981;">0</b></li>
                     <li>บูรณาการร่วมเป้าหมายอื่น (Joint): <b id="modalJointCount" style="color:#f59e0b;">0</b></li>
                 </ul>
             </div>
 
             <div>
-                💰 <strong>งบประมาณรวมที่เกี่ยวข้อง:</strong> <span id="modalTotalBudget" style="font-weight: bold; font-size: 16px; color:#1e3a8a;">0</span> บาท
-                <ul style="margin: 2px 0 0 0; padding-left: 20px; color: #475569; font-size: 13px;">
+                💰 <strong>งบประมาณรวมที่เกี่ยวข้อง:</strong> <span id="modalTotalBudget" style="font-weight: bold; font-size: 15px; color:#1e3a8a;">0</span> บาท
+                <ul style="margin: 2px 0 0 0; padding-left: 20px; color: #475569; font-size: 12px;">
                     <li>งบตรงเป้าหมายเดียว: <b id="modalSingleBudget" style="color:#10b981;">0</b> บาท</li>
                     <li>งบโครงการบูรณาการ: <b id="modalJointBudget" style="color:#f59e0b;">0</b> บาท</li>
                 </ul>
-                <div style="font-size: 11px; color: #ef4444; margin-top: 5px;">* หมายเหตุ: งบโครงการบูรณาการคืองบรวมของโครงการที่ตอบสนองหลายเป้าหมาย ไม่นำมาหารแบ่ง</div>
+                <div style="font-size: 10px; color: #ef4444; margin-top: 5px;">* หมายเหตุ: งบโครงการบูรณาการคืองบรวมของโครงการที่ตอบสนองหลายเป้าหมาย ไม่นำมาหารแบ่ง</div>
             </div>
         </div>
 
-        <button id="btnModalFilter" style="margin-top: 20px; width: 100%; padding: 12px; background: #1e3a8a; color: white; border: none; border-radius: 8px; font-family: 'Sarabun'; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <button id="btnModalFilter" style="margin-top: 20px; width: 100%; padding: 10px; background: #1e3a8a; color: white; border: none; border-radius: 8px; font-family: 'Sarabun'; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s;">
             🔍 กรองภาพรวมตามเป้าหมายนี้
         </button>
     </div>
