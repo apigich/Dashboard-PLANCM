@@ -24,7 +24,7 @@
         
         .main-workspace { display: flex; flex-direction: row; flex: 1; padding: 12px; gap: 12px; min-height: 0; overflow: hidden; }
 
-        /* === 1. ซ้าย (ตัวกรอง) === */
+        /* === ซ้าย (ตัวกรอง) === */
         .col-left { width: 230px; display: flex; flex-direction: column; flex-shrink: 0; min-height: 0; }
         .filter-box { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; }
         .filter-title { font-size: 14px; font-weight: bold; color: #1e3a8a; border-bottom: 2px solid #cbd5e1; padding-bottom: 5px; margin-bottom: 5px; flex-shrink: 0;}
@@ -44,7 +44,7 @@
         .year-list { list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; overflow-y: auto; flex: 1; margin-bottom: 10px;}
         .year-list label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #334155;}
         
-        /* === 2. กลาง (การ์ดบุ๋ม + แผนที่) === */
+        /* === กลาง (การ์ดบุ๋ม + แผนที่) === */
         .col-center { flex: 1.1; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
         
         .summary-row { display: flex; gap: 12px; min-height: 75px; flex-shrink: 0; }
@@ -66,10 +66,9 @@
         .map-box { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; overflow: hidden;}
         .map-header { padding: 8px 15px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: bold; color: #1e3a8a; background: #f8fafc; flex-shrink: 0;}
         #map { flex: 1; z-index: 1; min-height: 0;}
-        /* 🌟 แถบคำอธิบายภาพรวมจังหวัด (ใส่ไว้ใต้แผนที่) */
         .map-provincial-summary { background: #f0fdf4; border-top: 2px solid #bbf7d0; padding: 6px 15px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #166534; font-weight: bold; flex-shrink: 0; z-index: 2;}
 
-        /* === 3. ขวา (ปุ่มยุทธศาสตร์ + กราฟ + ตาราง) === */
+        /* === ขวา (ปุ่มยุทธศาสตร์ + กราฟ + ตาราง) === */
         .col-right { width: 420px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; min-height: 0; }
         
         .strat-tabs { display: flex; flex-wrap: wrap; gap: 4px; flex-shrink: 0; }
@@ -83,8 +82,6 @@
         .chart-box.bottom-chart { flex: 1.1; min-height: 140px; }
         
         .chart-title { font-size: 13px; font-weight: bold; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; flex-shrink: 0;}
-        
-        /* 🌟 ปุ่มขยายกราฟ */
         .btn-expand { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 4px; transition: 0.2s; }
         .btn-expand:hover { background: #e2e8f0; color: #1e3a8a; }
 
@@ -126,7 +123,6 @@
         .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px);}
         .modal-content { background-color: #fff; margin: 5vh auto; padding: 20px; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; font-family: 'Sarabun'; }
         
-        /* 🌟 Modal สำหรับขยายกราฟ (Enlarge Chart) */
         .modal-content.large-chart { max-width: 900px; height: 80vh; display: flex; flex-direction: column; margin: 5vh auto;}
         .large-chart-wrapper { flex: 1; position: relative; min-height: 0; margin-top: 10px; overflow-x: auto; overflow-y: hidden;}
         .large-chart-canvas-container { position: relative; height: 100%; width: 100%; min-width: 100%; }
@@ -140,7 +136,7 @@
         .dist-yr-item { font-size: 11px; padding-left: 15px; border-bottom: 1px dotted #e2e8f0; padding-bottom: 2px; margin-bottom: 2px; }
         .dist-yr-item:last-child { border-bottom: none; margin-bottom: 0; }
 
-        /* Responsive iPad Landscape / Tablet */
+        /* Responsive */
         @media screen and (max-width: 1200px) {
             body { height: auto; overflow-y: auto; overflow-x: hidden; }
             .main-workspace { flex-wrap: wrap; height: auto; overflow: visible; align-items: stretch; padding: 15px;}
@@ -152,12 +148,9 @@
             .map-box { height: 450px; flex: none; } 
             
             .col-right { width: 100%; flex: none; flex-direction: row; flex-wrap: wrap; height: auto; }
-            .col-right .strat-tabs { width: 100%; flex-wrap: wrap; }
             .col-right .chart-box { flex: 1; min-width: 300px; height: 350px; }
             .col-right .table-col { flex: 1; min-width: 300px; height: 350px; }
         }
-        
-        /* Mobile / iPad Portrait */
         @media screen and (max-width: 820px) {
             .top-bar { padding: 12px; flex-wrap: wrap; gap: 8px; justify-content: center;}
             .top-bar h1 { font-size: 17px; width: 100%; text-align: center;}
@@ -165,10 +158,6 @@
             .main-workspace { flex-direction: column; padding: 12px; gap: 15px;}
             .col-left, .col-center, .col-right { width: 100%; min-width: 0; flex: none; display: flex; flex-direction: column;}
             
-            .strat-tabs { flex-wrap: wrap; }
-            .strat-btn { flex: 1 1 calc(45% - 4px); }
-            
-            .col-right .chart-box, .col-right .table-col { width: 100%; min-width: 0; height: 400px; }
             .summary-row { flex-direction: column; height: auto; gap: 10px; }
             .summary-card { padding: 15px 15px 20px 15px; }
             .map-box { height: 400px; }
@@ -186,6 +175,17 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } 
     @-webkit-keyframes spin { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
 </style>
+
+<div id="welcomeModal" class="modal" style="display:none; align-items:center; justify-content:center; z-index:10000; background-color: rgba(0,0,0,0.7);">
+    <div class="modal-content" style="max-width:550px; text-align:center; padding:30px;">
+        <h2 style="color:#1e3a8a; margin-top:0; font-size:22px;">ℹ️ คำแนะนำการใช้งาน</h2>
+        <div style="font-size:15.5px; line-height:1.6; color:#475569; text-align:left; background:#f8fafc; padding:15px; border-left:4px solid #3b82f6; border-radius:6px; margin: 20px 0;">
+            ข้อมูลชุดนี้นำข้อมูลมาจากแผนปฏิบัติราชการของจังหวัดเชียงใหม่ตั้งแต่ปีงบประมาณ 2566 - 2568 ซึ่งเป็นเพียงการตั้งเป้าหมายการใช้งบประมาณสำหรับ <b style="color:#dc2626;">"งบจังหวัดเท่านั้น"</b><br><br>
+            ในการพัฒนาจังหวัดยังมีงบประมาณจากอีกหลายส่วน เช่น งบ Function และงบ อปท. ซึ่งไม่ได้อยู่ในการประมวลผลครั้งนี้
+        </div>
+        <button onclick="document.getElementById('welcomeModal').style.display='none'" style="margin-top:10px; padding:10px 40px; background:#10b981; color:white; border:none; border-radius:6px; font-family:'Sarabun'; font-size:16px; font-weight:bold; cursor:pointer; transition:0.2s; box-shadow:0 2px 4px rgba(0,0,0,0.1);">ตกลง</button>
+    </div>
+</div>
 
 <div class="top-bar">
     <h1>📊 สรุปภาพรวมแผนพัฒนาจังหวัดเชียงใหม่</h1>
@@ -257,11 +257,11 @@
 
     <div class="col-right">
         <div class="strat-tabs">
-            <button class="strat-btn" onclick="setStrat(0)"><span>🎯 ยุทธศาสตร์ชาติ 20 ปี</span></button>
-            <button class="strat-btn" onclick="setStrat(1)"><span>📖 แผนแม่บทภายใต้ยุทธศาสตร์ชาติ</span></button>
-            <button class="strat-btn" onclick="setStrat(2)"><span>📈 แผนพัฒนาเศรษฐกิจและสังคมแห่งชาติ ฉบับที่ 13</span></button>
-            <button class="strat-btn" onclick="setStrat(3)"><span>🧭 แผนพัฒนาภาคเหนือ</span></button>
-            <button class="strat-btn active" id="btnDefaultStrat" onclick="setStrat(4)"><span>📌 ประเด็นการพัฒนาจังหวัดเชียงใหม่ (พ.ศ. 2566-2570)</span></button>
+            <button class="strat-btn" onclick="setStrat(0)"><span>🎯 ยุทธศาสตร์ชาติ</span></button>
+            <button class="strat-btn" onclick="setStrat(1)"><span>📖 แผนแม่บทฯ</span></button>
+            <button class="strat-btn" onclick="setStrat(2)"><span>📈 แผนพัฒนาฯ 13</span></button>
+            <button class="strat-btn" onclick="setStrat(3)"><span>🧭 แผนภาคเหนือ</span></button>
+            <button class="strat-btn active" id="btnDefaultStrat" onclick="setStrat(4)"><span>📌 แผนพัฒนาจังหวัด</span></button>
         </div>
 
         <div class="chart-box top-chart">
@@ -269,7 +269,8 @@
                 <span id="donutTitle">📊 สัดส่วนเป้าหมาย <small style="font-weight:normal; color:#64748b;">(กดเพื่อกรอง)</small></span>
                 <div style="display:flex; gap:5px; align-items:center;">
                     <button type="button" class="btn-clear-small" onclick="clearSubStratFilter()" id="btnResetDonut" style="display:none;">🔄 ล้างกรอง</button>
-                    <button type="button" class="btn-expand" onclick="openEnlargeModal('donut')" title="ขยายกราฟ">⛶</button> </div>
+                    <button type="button" class="btn-expand" onclick="openEnlargeModal('donut')" title="ขยายกราฟ">⛶</button>
+                </div>
             </div>
             <div class="chart-wrapper"><canvas id="donutChart"></canvas></div>
         </div>
@@ -280,7 +281,8 @@
                     <button type="button" id="btnBottomTrend" onclick="setBottomChartMode('trend')" style="border:none; background:#fff; color:#1e3a8a; padding:4px 8px; border-radius:4px; font-size:11px; font-family:'Sarabun'; font-weight:bold; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.1); transition:0.2s;">📉 รายปี</button>
                     <button type="button" id="btnBottomDist" onclick="setBottomChartMode('district')" style="border:none; background:transparent; color:#64748b; padding:4px 8px; border-radius:4px; font-size:11px; font-family:'Sarabun'; font-weight:bold; cursor:pointer; transition:0.2s;">📊 รายอำเภอ</button>
                 </div>
-                <button type="button" class="btn-expand" onclick="openEnlargeModal('bottom')" title="ขยายกราฟ">⛶</button> </div>
+                <button type="button" class="btn-expand" onclick="openEnlargeModal('bottom')" title="ขยายกราฟ">⛶</button>
+            </div>
             <div class="bottom-chart-wrapper" id="bottomChartWrapper">
                 <div class="bottom-canvas-container" id="bottomCanvasContainer">
                     <canvas id="trendChart"></canvas>
