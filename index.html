@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
     <style>
-        /* === ล็อก One-Page 100vh แท้สำหรับ Desktop === */
+        /* === ล็อก One-Page 100vh === */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Sarabun', sans-serif; background-color: #e2e8f0; width: 100vw; height: 100vh; overflow: hidden; display: flex; flex-direction: column;}
         
@@ -22,6 +22,7 @@
         .btn-advanced { background: #1e293b; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .btn-advanced:hover { background: #334155; transform: translateY(-1px); }
         
+        /* 🌟 คืนร่าง Layout เดิม: ซ้าย กลาง ขวา */
         .main-workspace { display: flex; flex-direction: row; flex: 1; padding: 12px; gap: 12px; min-height: 0; overflow: hidden; }
 
         /* === 1. ซ้าย (ตัวกรอง) === */
@@ -44,23 +45,11 @@
         .year-list { list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; overflow-y: auto; flex: 1; margin-bottom: 10px;}
         .year-list label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #334155;}
         
-        /* === 2. โซนหลัก (กลาง + ขวา รวมกัน) === */
-        .col-main { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
-        
-        /* 🌟 ปุ่มยุทธศาสตร์แนวยาว ชื่อเต็ม */
-        .strat-tabs { display: flex; flex-direction: row; gap: 8px; flex-shrink: 0; flex-wrap: wrap;}
-        .strat-btn { flex: 1; background: white; border: 2px solid #cbd5e1; border-radius: 6px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 12px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px; min-height: 42px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
-        .strat-btn:hover { border-color: #3b82f6; color: #1e3a8a;}
-        .strat-btn.active { background: #1e3a8a; color: white; border-color: #1e3a8a; box-shadow: inset 0 3px 5px rgba(0,0,0,0.4); transform: translateY(1px); }
-
-        .content-row { display: flex; flex-direction: row; flex: 1; gap: 12px; min-height: 0; }
-
-        /* === 2.1 กลาง (การ์ด + แผนที่) ลดความกว้างลงเหลือ 0.8 ให้ขวากว้างขึ้น === */
-        .col-center { flex: 0.8; display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
+        /* === 2. กลาง (การ์ดบุ๋ม + แผนที่) === */
+        .col-center { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
         
         .summary-row { display: flex; gap: 12px; min-height: 75px; flex-shrink: 0; }
         
-        /* การ์ดกดได้ ป้ายสถานะแถบคาดล่าง */
         .summary-card { flex: 1; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border-radius: 8px; padding: 10px 15px 15px 15px; display: flex; flex-direction: column; justify-content: center; position: relative; cursor: pointer; transition: all 0.2s ease-in-out; opacity: 0.55; filter: grayscale(40%); box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 2px solid transparent; overflow: hidden;}
         .summary-card.green { background: linear-gradient(135deg, #059669, #10b981); }
         .summary-card:hover { opacity: 0.85; filter: grayscale(15%); transform: translateY(-1px);}
@@ -76,17 +65,21 @@
         .year-badge { font-size: 11px; font-weight: bold; color: #fff;}
 
         .map-box { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
-        /* 🌟 เอาข้อความอธิบายยืดยาวออกไปแล้ว */
-        .map-header { padding: 10px 15px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: bold; color: #1e3a8a; background: #f8fafc; border-radius: 8px 8px 0 0; flex-shrink: 0;}
+        .map-header { padding: 8px 15px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: bold; color: #1e3a8a; background: #f8fafc; border-radius: 8px 8px 0 0; flex-shrink: 0;}
         #map { flex: 1; border-radius: 0 0 8px 8px; z-index: 1; min-height: 0;}
 
-        /* === 2.2 ขวา (กราฟ + ตาราง) ขยายกว้างขึ้นให้ Donut สวย === */
-        .col-right { flex: 1.5; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; min-height: 0; }
+        /* === 3. ขวา (ปุ่มแผน + กราฟ + ตาราง) === */
+        .col-right { width: 420px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; min-height: 0; }
         
-        .chart-box { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding: 10px; flex-shrink: 0;}
-        /* 🌟 ให้พื้นที่ Donut Chart มากที่สุด */
-        .chart-box.top-chart { flex: 1.6; min-height: 250px; }
-        .chart-box.bottom-chart { flex: 1; min-height: 160px; }
+        .strat-tabs { display: flex; flex-wrap: wrap; gap: 4px; flex-shrink: 0; }
+        .strat-btn { flex: 1 1 48%; background: white; border: 2px solid #cbd5e1; border-radius: 6px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; line-height: 1.2; padding: 4px; min-height: 38px;}
+        .strat-btn:last-child { flex: 1 1 100%; } /* ให้ปุ่มสุดท้ายเต็มบรรทัด */
+        .strat-btn:hover { border-color: #3b82f6; }
+        .strat-btn.active { background: #1e3a8a; color: white; border-color: #1e3a8a; box-shadow: inset 0 3px 5px rgba(0,0,0,0.4); transform: translateY(1px); }
+
+        .chart-box { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding: 8px; flex-shrink: 0;}
+        .chart-box.top-chart { flex: 1.2; min-height: 160px; }
+        .chart-box.bottom-chart { flex: 1; min-height: 140px; }
         
         .chart-title { font-size: 13px; font-weight: bold; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; flex-shrink: 0;}
         
@@ -94,7 +87,7 @@
         .bottom-chart-wrapper { flex: 1; position: relative; min-height: 0; overflow-x: auto; overflow-y: hidden; }
         .bottom-canvas-container { position: relative; height: 100%; width: 100%; transition: width 0.3s;}
 
-        .table-col { flex: 1.1; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; min-height: 150px; }
+        .table-col { flex: 1.4; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; min-height: 150px; }
         .table-header { padding: 0; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 13px; font-weight: bold; color: #1e3a8a; border-radius: 8px 8px 0 0; display: flex; flex-shrink: 0;}
         .tbl-tab-btn { flex: 1; padding: 8px; text-align: center; background: transparent; border: none; font-family: 'Sarabun'; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s;}
         .tbl-tab-btn:hover { color: #1e3a8a; background: #f1f5f9; }
@@ -102,7 +95,7 @@
 
         .table-container { flex: 1; overflow-y: auto; padding: 0; min-height: 0; background: #fff; border-radius: 0 0 8px 8px;}
         .summary-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .summary-table th, .summary-table td { padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        .summary-table th, .summary-table td { padding: 6px 8px; border-bottom: 1px solid #e2e8f0; text-align: left; }
         .summary-table th { background: #f1f5f9; position: sticky; top: 0; z-index: 2; }
         
         .year-row { cursor: pointer; transition: 0.2s; font-weight: bold; }
@@ -126,7 +119,7 @@
 
         /* Modal ทั่วไป */
         .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(3px);}
-        .modal-content { background-color: #fff; margin: 5vh auto; padding: 20px; border-radius: 12px; width: 90%; max-width: 550px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; font-family: 'Sarabun'; }
+        .modal-content { background-color: #fff; margin: 5vh auto; padding: 20px; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; font-family: 'Sarabun'; }
         .close-modal-btn { position: absolute; right: 15px; top: 10px; color: #aaa; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; transition: 0.2s; }
         .close-modal-btn:hover { color: #ef4444; }
 
@@ -137,10 +130,10 @@
         .dist-yr-item { font-size: 11px; padding-left: 15px; border-bottom: 1px dotted #e2e8f0; padding-bottom: 2px; margin-bottom: 2px; }
         .dist-yr-item:last-child { border-bottom: none; margin-bottom: 0; }
 
-        /* Responsive iPad Landscape / Tablet */
+        /* Responsive */
         @media screen and (max-width: 1200px) {
             body { height: auto; overflow-y: auto; overflow-x: hidden; }
-            .content-row { flex-wrap: wrap; height: auto; overflow: visible; align-items: stretch;}
+            .main-workspace { flex-wrap: wrap; height: auto; overflow: visible; align-items: stretch; padding: 15px;}
             .col-left { width: 250px; flex: none; height: auto; }
             .filter-box { overflow-y: visible; height: auto; }
             .year-list { max-height: none; overflow-y: visible; margin-bottom: 15px;} 
@@ -149,18 +142,16 @@
             .map-box { height: 450px; flex: none; } 
             
             .col-right { width: 100%; flex: none; flex-direction: row; flex-wrap: wrap; height: auto; }
+            .col-right .strat-tabs { width: 100%; flex-wrap: wrap; }
             .col-right .chart-box { flex: 1; min-width: 300px; height: 350px; }
             .col-right .table-col { flex: 1; min-width: 300px; height: 350px; }
-            .strat-btn { font-size: 11px; padding: 4px; min-height: 35px; }
         }
-        
-        /* Mobile / iPad Portrait */
         @media screen and (max-width: 820px) {
             .top-bar { padding: 12px; flex-wrap: wrap; gap: 8px; justify-content: center;}
             .top-bar h1 { font-size: 17px; width: 100%; text-align: center;}
             .btn-advanced { width: 100%; text-align: center; }
             .main-workspace { flex-direction: column; padding: 12px; gap: 15px;}
-            .col-left, .col-main, .content-row, .col-center, .col-right { width: 100%; min-width: 0; flex: none; display: flex; flex-direction: column;}
+            .col-left, .col-center, .col-right { width: 100%; min-width: 0; flex: none; display: flex; flex-direction: column;}
             
             .strat-tabs { flex-wrap: wrap; }
             .strat-btn { flex: 1 1 calc(45% - 4px); }
@@ -170,8 +161,6 @@
             .summary-card { padding: 15px 15px 20px 15px; }
             .map-box { height: 400px; }
         }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -214,7 +203,39 @@
         </div>
     </div>
 
-    <div class="col-main">
+    <div class="col-center">
+        <div class="summary-row">
+            <div class="summary-card active" id="cardCountToggle" onclick="setAppMode('count')" title="คลิกเพื่อดูกราฟและแผนที่ในโหมด 'จำนวนโครงการ'">
+                <div class="summary-title">
+                    <span>📌 จำนวนโครงการรวม</span>
+                    <span class="year-badge" id="badgeYearCount"></span>
+                </div>
+                <div class="summary-value" id="sumProjects">0</div>
+                <div class="summary-note">(นับรวมทุกประเภท ไม่มีการนับซ้ำ)</div>
+                <div class="active-badge">✓ โหมดที่กำลังแสดงผล</div>
+            </div>
+            
+            <div class="summary-card green" id="cardBudgetToggle" onclick="setAppMode('budget')" title="คลิกเพื่อดูกราฟและแผนที่ในโหมด 'งบประมาณ'">
+                <div class="summary-title">
+                    <span>💰 งบประมาณรวม (บาท)</span>
+                    <span class="year-badge" id="badgeYearBudget"></span>
+                </div>
+                <div class="summary-value" id="sumBudget">0.00</div>
+                <div class="summary-note">(งบเฉพาะพื้นที่ + งบกลุ่ม + จังหวัด)</div>
+                <div class="active-badge">✓ โหมดที่กำลังแสดงผล</div>
+            </div>
+        </div>
+
+        <div class="map-box">
+            <div class="map-header">
+                <span>🗺️ แผนที่ความหนาแน่นการพัฒนา</span>
+                <button class="btn-reset-map-small" onclick="clearMapFilterOnly()" title="ล้างหมุดแผนที่">ล้างพื้นที่</button>
+            </div>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <div class="col-right">
         <div class="strat-tabs">
             <button class="strat-btn" onclick="setStrat(0)"><span>🎯 ยุทธศาสตร์ชาติ 20 ปี</span></button>
             <button class="strat-btn" onclick="setStrat(1)"><span>📖 แผนแม่บทภายใต้ยุทธศาสตร์ชาติ</span></button>
@@ -223,73 +244,38 @@
             <button class="strat-btn active" id="btnDefaultStrat" onclick="setStrat(4)"><span>📌 ประเด็นการพัฒนาจังหวัดเชียงใหม่ (พ.ศ. 2566-2570)</span></button>
         </div>
 
-        <div class="content-row">
-            <div class="col-center">
-                <div class="summary-row">
-                    <div class="summary-card active" id="cardCountToggle" onclick="setAppMode('count')" title="คลิกเพื่อดูกราฟและแผนที่ในโหมด 'จำนวนโครงการ'">
-                        <div class="summary-title">
-                            <span>📌 จำนวนโครงการรวม</span>
-                            <span class="year-badge" id="badgeYearCount"></span>
-                        </div>
-                        <div class="summary-value" id="sumProjects">0</div>
-                        <div class="summary-note">(นับรวมทุกประเภท ไม่มีการนับซ้ำ)</div>
-                        <div class="active-badge">✓ โหมดที่กำลังแสดงผล</div>
-                    </div>
-                    
-                    <div class="summary-card green" id="cardBudgetToggle" onclick="setAppMode('budget')" title="คลิกเพื่อดูกราฟและแผนที่ในโหมด 'งบประมาณ'">
-                        <div class="summary-title">
-                            <span>💰 งบประมาณรวม (บาท)</span>
-                            <span class="year-badge" id="badgeYearBudget"></span>
-                        </div>
-                        <div class="summary-value" id="sumBudget">0.00</div>
-                        <div class="summary-note">(งบเฉพาะพื้นที่ + งบกลุ่ม + จังหวัด)</div>
-                        <div class="active-badge">✓ โหมดที่กำลังแสดงผล</div>
-                    </div>
-                </div>
+        <div class="chart-box top-chart">
+            <div class="chart-title">
+                <span id="donutTitle">📊 สัดส่วนเป้าหมาย</span>
+                <button type="button" class="btn-clear-small" onclick="clearSubStratFilter()" id="btnResetDonut" style="display:none;">🔄 ล้างกรอง</button>
+            </div>
+            <div class="chart-wrapper"><canvas id="donutChart"></canvas></div>
+        </div>
 
-                <div class="map-box">
-                    <div class="map-header">
-                        <span>🗺️ แผนที่ความหนาแน่นการพัฒนา</span>
-                        <button class="btn-reset-map-small" onclick="clearMapFilterOnly()" title="ล้างหมุดแผนที่">ล้างพื้นที่</button>
-                    </div>
-                    <div id="map"></div>
+        <div class="chart-box bottom-chart">
+            <div class="chart-title" style="margin-bottom: 2px;">
+                <span id="bottomChartTitle" style="padding-top: 2px;">📉 แนวโน้มรายปี</span>
+                <div style="display:flex; background:#e2e8f0; border-radius:6px; padding:2px;">
+                    <button type="button" id="btnBottomTrend" onclick="setBottomChartMode('trend')" style="border:none; background:#fff; color:#1e3a8a; padding:4px 8px; border-radius:4px; font-size:11px; font-family:'Sarabun'; font-weight:bold; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.1); transition:0.2s;">รายปี</button>
+                    <button type="button" id="btnBottomDist" onclick="setBottomChartMode('district')" style="border:none; background:transparent; color:#64748b; padding:4px 8px; border-radius:4px; font-size:11px; font-family:'Sarabun'; font-weight:bold; cursor:pointer; transition:0.2s;">รายอำเภอ</button>
                 </div>
             </div>
-
-            <div class="col-right">
-                <div class="chart-box top-chart">
-                    <div class="chart-title">
-                        <span id="donutTitle">📊 สัดส่วนเป้าหมาย</span>
-                        <button type="button" class="btn-clear-small" onclick="clearSubStratFilter()" id="btnResetDonut" style="display:none;">🔄 ล้างกรอง</button>
-                    </div>
-                    <div class="chart-wrapper"><canvas id="donutChart"></canvas></div>
-                </div>
-
-                <div class="chart-box bottom-chart">
-                    <div class="chart-title" style="margin-bottom: 2px;">
-                        <span id="bottomChartTitle" style="padding-top: 2px;">📉 แนวโน้มรายปี</span>
-                        <div style="display:flex; background:#e2e8f0; border-radius:6px; padding:2px;">
-                            <button type="button" id="btnBottomTrend" onclick="setBottomChartMode('trend')" style="border:none; background:#fff; color:#1e3a8a; padding:4px 8px; border-radius:4px; font-size:11px; font-family:'Sarabun'; font-weight:bold; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.1); transition:0.2s;">รายปี</button>
-                            <button type="button" id="btnBottomDist" onclick="setBottomChartMode('district')" style="border:none; background:transparent; color:#64748b; padding:4px 8px; border-radius:4px; font-size:11px; font-family:'Sarabun'; font-weight:bold; cursor:pointer; transition:0.2s;">รายอำเภอ</button>
-                        </div>
-                    </div>
-                    <div class="bottom-chart-wrapper" id="bottomChartWrapper">
-                        <div class="bottom-canvas-container" id="bottomCanvasContainer">
-                            <canvas id="trendChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="table-col">
-                    <div class="table-header">
-                        <button class="tbl-tab-btn active" id="tabYear" onclick="setTableTab('year')">📅 สรุปรายปี</button>
-                        <button class="tbl-tab-btn" id="tabDistrict" onclick="setTableTab('district')">📍 เจาะลึกพื้นที่</button>
-                    </div>
-                    <div class="table-container" id="tableContainer"></div>
+            <div class="bottom-chart-wrapper" id="bottomChartWrapper">
+                <div class="bottom-canvas-container" id="bottomCanvasContainer">
+                    <canvas id="trendChart"></canvas>
                 </div>
             </div>
         </div>
+        
+        <div class="table-col">
+            <div class="table-header">
+                <button class="tbl-tab-btn active" id="tabYear" onclick="setTableTab('year')">📅 สรุปรายปี</button>
+                <button class="tbl-tab-btn" id="tabDistrict" onclick="setTableTab('district')">📍 เจาะลึกพื้นที่</button>
+            </div>
+            <div class="table-container" id="tableContainer"></div>
+        </div>
     </div>
+
 </div>
 
 <div id="stratModal" class="modal">
