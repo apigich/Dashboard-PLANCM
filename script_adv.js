@@ -4,7 +4,7 @@
 const safeSetText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
 const safeSetHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
 
-// 🌟 เพิ่มฟังก์ชันคำนวณ Percentile สำหรับ Heat Map
+// 🌟 เพิ่มฟังก์ชันคำนวณ Percentile สำหรับ Heat Map (อิงกลุ่ม)
 function getPercentile(arr, p) {
     if (arr.length === 0) return 0;
     if (p <= 0) return arr[0];
@@ -62,6 +62,8 @@ const stratMapping = {
     'filterNorth': { key: 'แผนพัฒนาภาคเหนือ', name: 'แผนพัฒนาภาคเหนือ' },
     'filterProv': { key: 'ประเด็นการพัฒนาจังหวัด (2566-2570)', name: 'แผนพัฒนาจังหวัดเชียงใหม่ (พ.ศ. 2566-2570)' }
 };
+
+const dNames = ["กัลยาณิวัฒนา", "จอมทอง", "เชียงดาว", "ไชยปราการ", "ดอยเต่า", "ดอยสะเก็ด", "ดอยหล่อ", "ฝาง", "พร้าว", "เมืองเชียงใหม่", "แม่แจ่ม", "แม่แตง", "แม่ริม", "แม่วาง", "แม่ออน", "แม่อาย", "เวียงแหง", "สะเมิง", "สันกำแพง", "สันทราย", "สันป่าตอง", "สารภี", "หางดง", "อมก๋อย", "ฮอด"];
 
 // ==========================================
 // 🛡️ จัดระเบียบ Event การคลิก ไม่ให้บั๊กทับซ้อนกัน
@@ -730,6 +732,8 @@ function renderCharts(isMultiYear, selectedYears) {
 
     let labels = sortedKeys;
     let displayLabels = labels;
+    
+    const pieColors = ['#1e3a8a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b', '#0ea5e9', '#14b8a6', '#f43f5e', '#d946ef', '#a855f7', '#6366f1', '#84cc16', '#eab308', '#f97316', '#06b6d4', '#059669', '#dc2626', '#7c3aed', '#475569', '#9ca3af', '#cbd5e1', '#1e40af', '#047857', '#b91c1c'];
 
     if (chartType === 'bar') {
         let datasets = [];
@@ -798,20 +802,14 @@ function renderCharts(isMultiYear, selectedYears) {
         });
     } else {
         let data = [];
-        let currentColors = [];
         labels.forEach(k => {
             if(currentMode === 'count') data.push(stratData[k].total.sC + stratData[k].total.jC);
             else data.push(stratData[k].total.sB);
-            
-            let colorIdx = masterList.indexOf(k);
-            let pieColor = colorIdx !== -1 ? baseChartColors[colorIdx % baseChartColors.length] : '#9ca3af';
-            currentColors.push(pieColor);
         });
         if (currentMode === 'budget' && integratedBudget > 0) {
             displayLabels.push("งบประมาณบูรณาการ");
             labels.push("งบประมาณบูรณาการ");
             data.push(integratedBudget);
-            currentColors.push('#cbd5e1');
         }
 
         let dataSum = data.reduce((a, b) => a + b, 0);
@@ -822,7 +820,7 @@ function renderCharts(isMultiYear, selectedYears) {
         
         myChart = new Chart(ctxMain, {
             type: 'doughnut',
-            data: { labels: labelsWithPct, datasets: [{ data: data, backgroundColor: currentColors }] },
+            data: { labels: labelsWithPct, datasets: [{ data: data, backgroundColor: pieColors }] },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
                 plugins: { 
@@ -837,7 +835,7 @@ function renderCharts(isMultiYear, selectedYears) {
                             }
                         }
                     },
-                    datalabels: { display: false } 
+                    datalabels: { color: '#fff', font: { weight: 'bold', size: 11 }, formatter: (value) => { let percentage = dataSum > 0 ? (value*100 / dataSum).toFixed(1) : 0; return percentage >= 5 ? percentage + "%" : ""; } }
                 } 
             }
         });
@@ -880,7 +878,7 @@ function renderCharts(isMultiYear, selectedYears) {
                             }
                         }
                     },
-                    datalabels: { display: false } 
+                    datalabels: { color: '#fff', font: { weight: 'bold', size: 14 }, formatter: (value) => { let pct = aTotal > 0 ? (value*100 / aTotal).toFixed(1) : 0; return pct >= 5 ? pct + "%" : ""; } }
                 },
                 onClick: (e, elements) => {
                     if(elements.length > 0) {
@@ -919,6 +917,7 @@ function renderCharts(isMultiYear, selectedYears) {
     }
 }
 
+// 🌟 Heat Map ฟังก์ชันที่อัปเกรดให้ใช้ระบบ Percentile 8 เฉดสี ตามหลักการหน้า Simple (ไม่มีการแก้ส่วนอื่น)
 function renderMap(isMultiYear, selectedYears) {
     let mapModeSelect = document.getElementById('mapModeSelect');
     let mapMode = mapModeSelect ? mapModeSelect.value : 'overview';
@@ -946,12 +945,12 @@ function renderMap(isMultiYear, selectedYears) {
     let districtStats = {};
     dNames.forEach(d => {
         districtStats[d] = { 
-            total: { singleC: 0, singleB: 0, multiC: 0, multiB: 0, provC: 0, provB: 0, totalProjects: 0, stratCounts: {}, matrix: { s_s:0, s_j:0, m_s:0, m_j:0 } },
+            total: { singleC: 0, singleB: 0, multiC: 0, multiB: 0, provC: 0, totalProjects: 0, stratCounts: {}, matrix: { s_s:0, s_j:0, m_s:0, m_j:0 } },
             years: {} 
         };
         activeYears.forEach(y => {
             districtStats[d].years[y] = { 
-                singleC: 0, singleB: 0, multiC: 0, multiB: 0, provC: 0, provB: 0, totalProjects: 0, stratCounts: {}, matrix: { s_s:0, s_j:0, m_s:0, m_j:0 } 
+                singleC: 0, singleB: 0, multiC: 0, multiB: 0, provC: 0, totalProjects: 0, stratCounts: {}, matrix: { s_s:0, s_j:0, m_s:0, m_j:0 } 
             };
         });
     });
@@ -1030,20 +1029,16 @@ function renderMap(isMultiYear, selectedYears) {
         } else if (areaType === "Provincial") {
             dNames.forEach(d => { 
                 districtStats[d].total.provC += 1; 
-                districtStats[d].total.provB += row._budgetNum;
-                if(districtStats[d].years[rYear]) {
-                    districtStats[d].years[rYear].provC += 1;
-                    districtStats[d].years[rYear].provB += row._budgetNum;
-                }
+                if(districtStats[d].years[rYear]) districtStats[d].years[rYear].provC += 1;
             });
         }
     });
 
-    // 🌟 ระบบคำนวณ Heat Map แบบ Percentile 
+    // 🌟 หาสูงสุดและ Percentile เพื่อใช้เป็นเกณฑ์อิงกลุ่ม 
     let validVals = dNames.map(d => {
         let s = districtStats[d].total;
         if (mapMode === 'overview') {
-            return currentMode === 'budget' ? (s.singleB + s.multiB + s.provB) : (s.singleC + s.multiC);
+            return currentMode === 'budget' ? s.singleB : (s.singleC + s.multiC);
         } else {
             return s.totalProjects;
         }
@@ -1061,8 +1056,6 @@ function renderMap(isMultiYear, selectedYears) {
 
     if (!districtGeoJSON) return;
     if(geojsonLayer) map.removeLayer(geojsonLayer);
-    
-    let isProvOnly = typeof isProvincialOnly !== 'undefined' ? isProvincialOnly : false;
 
     geojsonLayer = L.geoJSON(districtGeoJSON, {
         style: function (f) {
@@ -1072,42 +1065,38 @@ function renderMap(isMultiYear, selectedYears) {
                 else return { fillColor: '#e5e7eb', weight: 1, opacity: 0.5, color: '#fff', fillOpacity: 0.3 };
             }
             
-            let s = districtStats[dName]?.total || {singleC: 0, singleB: 0, multiC: 0, multiB: 0, provB: 0, totalProjects: 0};
-            let val = mapMode === 'overview' ? (currentMode === 'budget' ? (s.singleB + s.multiB + s.provB) : (s.singleC + s.multiC)) : s.totalProjects;
+            let s = districtStats[dName]?.total || {singleC: 0, singleB: 0, multiC: 0, multiB: 0, totalProjects: 0};
+            let val = mapMode === 'overview' ? (currentMode === 'budget' ? s.singleB : (s.singleC + s.multiC)) : s.totalProjects;
             
             let color = '#f1f5f9';
             let borderColor = '#9ca3af';
             let weight = 1;
             
-            if (isProvOnly) {
-                color = mapMode === 'budget' ? '#059669' : '#3b82f6'; 
-                borderColor = '#fff';
+            if (val === 0) {
+                color = '#f1f5f9'; // สีฐาน 0
             } else {
-                if (val === 0) {
-                    color = '#f1f5f9'; // สีฐาน (0 บาท/โครงการ)
+                borderColor = '#fff';
+                if (val === max1 && max1 > 0) {
+                    color = currentMode === 'budget' ? '#022c22' : '#0f172a'; // Top 1 
+                    weight = 2;
+                } else if (val === max2 && max2 > 0) {
+                    color = currentMode === 'budget' ? '#064e3b' : '#172554'; // Top 2
+                } else if (val === max3 && max3 > 0) {
+                    color = currentMode === 'budget' ? '#047857' : '#1e3a8a'; // Top 3
+                } else if (currentMode === 'budget') {
+                    // โทนสีเขียวมรกต
+                    if (val >= q80) color = '#059669'; 
+                    else if (val >= q60) color = '#10b981'; 
+                    else if (val >= q40) color = '#34d399'; 
+                    else if (val >= q20) color = '#6ee7b7';  
+                    else color = '#a7f3d0';
                 } else {
-                    borderColor = '#fff';
-                    // 🌟 แยก Top 3 ให้สีเข้มโดดเด่น
-                    if (val === max1 && max1 > 0) {
-                        color = currentMode === 'budget' ? '#022c22' : '#0f172a'; 
-                        weight = 2;
-                    } else if (val === max2 && max2 > 0) {
-                        color = currentMode === 'budget' ? '#064e3b' : '#172554'; 
-                    } else if (val === max3 && max3 > 0) {
-                        color = currentMode === 'budget' ? '#047857' : '#1e3a8a'; 
-                    } else if (currentMode === 'budget') {
-                        if (val >= q80) color = '#059669'; 
-                        else if (val >= q60) color = '#10b981'; 
-                        else if (val >= q40) color = '#34d399'; 
-                        else if (val >= q20) color = '#6ee7b7';  
-                        else color = '#a7f3d0';
-                    } else {
-                        if (val >= q80) color = '#2563eb';
-                        else if (val >= q60) color = '#3b82f6';
-                        else if (val >= q40) color = '#60a5fa';
-                        else if (val >= q20) color = '#93c5fd';
-                        else color = '#bfdbfe';
-                    }
+                    // โทนสีน้ำเงิน
+                    if (val >= q80) color = '#2563eb';
+                    else if (val >= q60) color = '#3b82f6';
+                    else if (val >= q40) color = '#60a5fa';
+                    else if (val >= q20) color = '#93c5fd';
+                    else color = '#bfdbfe';
                 }
             }
 
@@ -1144,9 +1133,7 @@ function renderMap(isMultiYear, selectedYears) {
                     if(isMultiYear) {
                         popupHtml += `<ul style="margin:2px 0 5px 0; padding-left:15px; font-size:11.5px; color:#475569;">`;
                         activeYears.forEach(y => {
-                            if (dt.years[y].singleC > 0) {
-                                popupHtml += `<li>ปี ${y}: ${dt.years[y].singleC} โครงการ (${dt.years[y].singleB.toLocaleString()} บ.)</li>`;
-                            }
+                            popupHtml += `<li>ปี ${y}: ${dt.years[y].singleC} โครงการ (${dt.years[y].singleB.toLocaleString()} บ.)</li>`;
                         });
                         popupHtml += `</ul>`;
                     }
@@ -1159,9 +1146,7 @@ function renderMap(isMultiYear, selectedYears) {
                     if(isMultiYear) {
                         popupHtml += `<ul style="margin:2px 0 5px 0; padding-left:15px; font-size:11.5px; color:#475569;">`;
                         activeYears.forEach(y => {
-                            if (dt.years[y].multiC > 0) {
-                                popupHtml += `<li>ปี ${y}: ${dt.years[y].multiC} โครงการ (${dt.years[y].multiB.toLocaleString()} บ.)</li>`;
-                            }
+                            popupHtml += `<li>ปี ${y}: ${dt.years[y].multiC} โครงการ (${dt.years[y].multiB.toLocaleString()} บ.)</li>`;
                         });
                         popupHtml += `</ul>`;
                     }
@@ -1174,9 +1159,7 @@ function renderMap(isMultiYear, selectedYears) {
                     if(isMultiYear) {
                         popupHtml += `<ul style="margin:2px 0 5px 0; padding-left:15px; font-size:11.5px; color:#475569;">`;
                         activeYears.forEach(y => {
-                            if (dt.years[y].provC > 0) {
-                                popupHtml += `<li>ปี ${y}: ${dt.years[y].provC} โครงการ</li>`;
-                            }
+                            popupHtml += `<li>ปี ${y}: ${dt.years[y].provC} โครงการ</li>`;
                         });
                         popupHtml += `</ul>`;
                     }
@@ -1200,13 +1183,11 @@ function renderMap(isMultiYear, selectedYears) {
                             popupHtml += `<hr style="margin:5px 0;"><div style="font-size:12px; color:#475569;">`;
                             activeYears.forEach(y => {
                                 let yM = dt.years[y].matrix;
-                                if (dt.years[y].totalProjects > 0) {
-                                    popupHtml += `<b style="color:#1e3a8a">ปี ${y}:</b> รวม ${dt.years[y].totalProjects} โครงการ<br>
-                                        <div style="padding-left:10px; font-size:11px; margin-bottom:4px; line-height: 1.3;">
-                                            - <span style="color:#059669">เดี่ยว+เดี่ยว:</span> ${yM.s_s} | <span style="color:#d97706">เดี่ยว+ร่วม:</span> ${yM.s_j}<br>
-                                            - <span style="color:#2563eb">ร่วม+เดี่ยว:</span> ${yM.m_s} | <span style="color:#7c3aed">ร่วม+ร่วม:</span> ${yM.m_j}
-                                        </div>`;
-                                }
+                                popupHtml += `<b style="color:#1e3a8a">ปี ${y}:</b> รวม ${dt.years[y].totalProjects} โครงการ<br>
+                                    <div style="padding-left:10px; font-size:11px; margin-bottom:4px; line-height: 1.3;">
+                                        - <span style="color:#059669">เดี่ยว+เดี่ยว:</span> ${yM.s_s} | <span style="color:#d97706">เดี่ยว+ร่วม:</span> ${yM.s_j}<br>
+                                        - <span style="color:#2563eb">ร่วม+เดี่ยว:</span> ${yM.m_s} | <span style="color:#7c3aed">ร่วม+ร่วม:</span> ${yM.m_j}
+                                    </div>`;
                             });
                             popupHtml += `</div>`;
                         }
