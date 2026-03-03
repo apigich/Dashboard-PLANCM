@@ -4,6 +4,19 @@
 const safeSetText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
 const safeSetHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
 
+// 🌟 เพิ่มฟังก์ชันคำนวณ Percentile สำหรับ Heat Map (แก้ปัญหา getPercentile is not defined)
+function getPercentile(arr, p) {
+    if (arr.length === 0) return 0;
+    if (p <= 0) return arr[0];
+    if (p >= 1) return arr[arr.length - 1];
+    let index = (arr.length - 1) * p;
+    let lower = Math.floor(index);
+    let upper = lower + 1;
+    let weight = index % 1;
+    if (upper >= arr.length) return arr[lower];
+    return arr[lower] * (1 - weight) + arr[upper] * weight;
+}
+
 // 🚨 เปลี่ยน URL เป็นของคุณที่นี่
 const API_URL = "https://script.google.com/macros/s/AKfycby4zmatIMhxh2K4PIiabU5qhgEiJT2RMWhY7N_0TGi9DalIfrGsthWd_6NXj62UQrhc/exec";
 
@@ -50,6 +63,8 @@ const stratMapping = {
     'filterProv': { key: 'ประเด็นการพัฒนาจังหวัด (2566-2570)', name: 'แผนพัฒนาจังหวัดเชียงใหม่ (พ.ศ. 2566-2570)' }
 };
 
+const dNames = ["กัลยาณิวัฒนา", "จอมทอง", "เชียงดาว", "ไชยปราการ", "ดอยเต่า", "ดอยสะเก็ด", "ดอยหล่อ", "ฝาง", "พร้าว", "เมืองเชียงใหม่", "แม่แจ่ม", "แม่แตง", "แม่ริม", "แม่วาง", "แม่ออน", "แม่อาย", "เวียงแหง", "สะเมิง", "สันกำแพง", "สันทราย", "สันป่าตอง", "สารภี", "หางดง", "อมก๋อย", "ฮอด"];
+
 // ==========================================
 // 🛡️ จัดระเบียบ Event การคลิก ไม่ให้บั๊กทับซ้อนกัน
 // ==========================================
@@ -58,19 +73,17 @@ if(checkList) {
     let anchor = checkList.getElementsByClassName('anchor')[0];
     if(anchor) {
         anchor.onclick = function(evt) {
-            evt.stopPropagation(); // ไม่ให้คลิกทะลุไปโดนตัวปิดด้านล่าง
+            evt.stopPropagation(); 
             checkList.classList.toggle('visible');
         }
     }
 }
 
 document.addEventListener('click', function(event) {
-    // 1. ปิด Year Dropdown ถ้าไม่ได้คลิกในนั้น
     if (checkList && !checkList.contains(event.target)) {
         checkList.classList.remove('visible');
     }
     
-    // 2. ปิด Modal ถ้าคลิกขอบดำๆ ข้างนอก
     const pm = document.getElementById('projectModal');
     if (event.target === pm) {
         closeModal();
@@ -108,7 +121,6 @@ function clearMapFilter() {
     applyFilters();
 }
 
-// 🌟 เพิ่มฟังก์ชันนี้เพื่อรับคำสั่งจากปุ่มใน Popup แผนที่
 function setDistrictFilter(dName) {
     mapFilterDistrict = dName;
     mapFilterProject = "all"; 
@@ -719,8 +731,9 @@ function renderCharts(isMultiYear, selectedYears) {
     });
 
     let labels = sortedKeys;
-    let displayLabels = labels.map(k => k.length > 35 ? k.substring(0, 35) + "..." : k);
-    const pieColors = ['#1e3a8a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b', '#0ea5e9', '#14b8a6', '#f43f5e', '#d946ef', '#a855f7', '#6366f1', '#84cc16', '#eab308', '#f97316', '#06b6d4', '#059669', '#dc2626', '#7c3aed', '#475569', '#9ca3af', '#cbd5e1', '#1e40af', '#047857', '#b91c1c'];
+    let displayLabels = labels.map(k => truncateLabel(k, 35));
+    // 🌟 ดึงสีจาก Palette หลัก
+    let currentDataColors = sortedKeys.map(k => getStratColor(k, masterList));
 
     if (chartType === 'bar') {
         let datasets = [];
@@ -797,6 +810,7 @@ function renderCharts(isMultiYear, selectedYears) {
             displayLabels.push("งบประมาณบูรณาการ");
             labels.push("งบประมาณบูรณาการ");
             data.push(integratedBudget);
+            currentDataColors.push('#cbd5e1');
         }
 
         let dataSum = data.reduce((a, b) => a + b, 0);
@@ -807,7 +821,7 @@ function renderCharts(isMultiYear, selectedYears) {
         
         myChart = new Chart(ctxMain, {
             type: 'doughnut',
-            data: { labels: labelsWithPct, datasets: [{ data: data, backgroundColor: pieColors }] },
+            data: { labels: labelsWithPct, datasets: [{ data: data, backgroundColor: currentDataColors }] },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
                 plugins: { 
@@ -822,7 +836,7 @@ function renderCharts(isMultiYear, selectedYears) {
                             }
                         }
                     },
-                    datalabels: { color: '#fff', font: { weight: 'bold', size: 11 }, formatter: (value) => { let percentage = dataSum > 0 ? (value*100 / dataSum).toFixed(1) : 0; return percentage >= 5 ? percentage + "%" : ""; } }
+                    datalabels: { display: false } // 🌟 ปิดเปอร์เซ็นต์ในหน้าจอหลัก
                 } 
             }
         });
@@ -865,7 +879,7 @@ function renderCharts(isMultiYear, selectedYears) {
                             }
                         }
                     },
-                    datalabels: { color: '#fff', font: { weight: 'bold', size: 14 }, formatter: (value) => { let pct = aTotal > 0 ? (value*100 / aTotal).toFixed(1) : 0; return pct >= 5 ? pct + "%" : ""; } }
+                    datalabels: { display: false } // 🌟 ปิดเปอร์เซ็นต์
                 },
                 onClick: (e, elements) => {
                     if(elements.length > 0) {
@@ -904,6 +918,7 @@ function renderCharts(isMultiYear, selectedYears) {
     }
 }
 
+// 🌟 แผนที่ อิงกลุ่ม + อิงเปอร์เซ็นไทล์
 function renderMap(isMultiYear, selectedYears) {
     let mapModeSelect = document.getElementById('mapModeSelect');
     let mapMode = mapModeSelect ? mapModeSelect.value : 'overview';
@@ -929,8 +944,6 @@ function renderMap(isMultiYear, selectedYears) {
     }
 
     let districtStats = {};
-    const dNames = ["กัลยาณิวัฒนา", "จอมทอง", "เชียงดาว", "ไชยปราการ", "ดอยเต่า", "ดอยสะเก็ด", "ดอยหล่อ", "ฝาง", "พร้าว", "เมืองเชียงใหม่", "แม่แจ่ม", "แม่แตง", "แม่ริม", "แม่วาง", "แม่ออน", "แม่อาย", "เวียงแหง", "สะเมิง", "สันกำแพง", "สันทราย", "สันป่าตอง", "สารภี", "หางดง", "อมก๋อย", "ฮอด"];
-    
     dNames.forEach(d => {
         districtStats[d] = { 
             total: { singleC: 0, singleB: 0, multiC: 0, multiB: 0, provC: 0, totalProjects: 0, stratCounts: {}, matrix: { s_s:0, s_j:0, m_s:0, m_j:0 } },
@@ -1022,8 +1035,27 @@ function renderMap(isMultiYear, selectedYears) {
         }
     });
 
-    if (!districtGeoJSON) return;
+    // 🌟 คำนวณ Percentile สำหรับแบ่งสี 8 ระดับ
+    let validVals = dNames.map(d => {
+        let s = districtStats[d].total;
+        if (mapMode === 'overview') {
+            return currentMode === 'budget' ? s.singleB : (s.singleC + s.multiC);
+        } else {
+            return s.totalProjects;
+        }
+    }).filter(v => v > 0).sort((a,b) => a - b);
+
+    let q80 = getPercentile(validVals, 0.8);
+    let q60 = getPercentile(validVals, 0.6);
+    let q40 = getPercentile(validVals, 0.4);
+    let q20 = getPercentile(validVals, 0.2);
     
+    let uniqueDesc = [...new Set(validVals)].sort((a,b) => b - a);
+    let max1 = uniqueDesc.length > 0 ? uniqueDesc[0] : 0;
+    let max2 = uniqueDesc.length > 1 ? uniqueDesc[1] : 0;
+    let max3 = uniqueDesc.length > 2 ? uniqueDesc[2] : 0;
+
+    if (!districtGeoJSON) return;
     if(geojsonLayer) map.removeLayer(geojsonLayer);
     
     geojsonLayer = L.geoJSON(districtGeoJSON, {
@@ -1035,24 +1067,38 @@ function renderMap(isMultiYear, selectedYears) {
             }
             
             let s = districtStats[dName]?.total || {singleC: 0, singleB: 0, multiC: 0, multiB: 0, totalProjects: 0};
-            let color = '#FFEDA0';
+            let val = mapMode === 'overview' ? (currentMode === 'budget' ? s.singleB : (s.singleC + s.multiC)) : s.totalProjects;
             
-            if (mapMode === 'overview') {
-                if (currentMode === 'budget') {
-                    let val = s.singleB; 
-                    color = val > 50000000 ? '#800026' : val > 10000000 ? '#BD0026' : val > 1000000 ? '#E31A1C' : val > 0 ? '#FC4E2A' : '#FFEDA0';
-                } else {
-                    let val = s.singleC + s.multiC; 
-                    color = val > 10 ? '#800026' : val > 5 ? '#BD0026' : val > 2 ? '#E31A1C' : val > 0 ? '#FC4E2A' : '#FFEDA0';
-                }
+            let color = '#f1f5f9';
+            let borderColor = '#9ca3af';
+            let weight = 1;
+            
+            if (val === 0) {
+                color = '#f1f5f9';
             } else {
-                let val = s.totalProjects;
-                if (val > 15) color = '#800026';
-                else if (val > 8) color = '#BD0026';
-                else if (val > 3) color = '#E31A1C';
-                else if (val > 0) color = '#FC4E2A';
+                borderColor = '#fff';
+                if (val === max1 && max1 > 0) {
+                    color = currentMode === 'budget' ? '#022c22' : '#0f172a'; // Top 1 
+                    weight = 2;
+                } else if (val === max2 && max2 > 0) {
+                    color = currentMode === 'budget' ? '#064e3b' : '#172554'; // Top 2
+                } else if (val === max3 && max3 > 0) {
+                    color = currentMode === 'budget' ? '#047857' : '#1e3a8a'; // Top 3
+                } else if (currentMode === 'budget') {
+                    if (val >= q80) color = '#059669'; 
+                    else if (val >= q60) color = '#10b981'; 
+                    else if (val >= q40) color = '#34d399'; 
+                    else if (val >= q20) color = '#6ee7b7';  
+                    else color = '#a7f3d0';
+                } else {
+                    if (val >= q80) color = '#2563eb';
+                    else if (val >= q60) color = '#3b82f6';
+                    else if (val >= q40) color = '#60a5fa';
+                    else if (val >= q20) color = '#93c5fd';
+                    else color = '#bfdbfe';
+                }
             }
-            return { fillColor: color, weight: 1, opacity: 1, color: '#333', fillOpacity: 0.8 };
+            return { fillColor: color, weight: weight, opacity: 1, color: borderColor, fillOpacity: 0.85 };
         },
         onEachFeature: function (f, l) {
             let dName = f.properties.amp_th || f.properties.AMP_TH || "ไม่ระบุ";
@@ -1169,7 +1215,6 @@ function renderMap(isMultiYear, selectedYears) {
                     }
                 }
 
-                // 🌟 ปุ่มนี้จะเรียกคำสั่ง setDistrictFilter ได้แล้วครับ
                 popupHtml += `<button type="button" onclick="setDistrictFilter('${dName}')" style="margin-top:10px; width:100%; padding:6px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer; position:sticky; bottom:-5px; z-index:100;">🔍 กรองข้อมูลเฉพาะอำเภอนี้</button></div>`;
                 
                 l.bindPopup(popupHtml);
@@ -1257,7 +1302,6 @@ function closeModal() {
     if(pm) pm.style.display = "none"; 
 }
 
-// 🌟 เรียกใช้งานระบบเมื่อโหลดไฟล์เสร็จ
 document.addEventListener("DOMContentLoaded", () => {
     init();
 });
