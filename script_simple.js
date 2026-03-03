@@ -1,7 +1,7 @@
 // 🚨 เปลี่ยน API ของคุณที่นี่
 const API_URL = "https://script.google.com/macros/s/AKfycby4zmatIMhxh2K4PIiabU5qhgEiJT2RMWhY7N_0TGi9DalIfrGsthWd_6NXj62UQrhc/exec";
 
-// 🛡️ ฟังก์ชันป้องกัน Error (Safe Setters)
+// 🛡️ ฟังก์ชันเกราะป้องกัน Error (Safe Setters)
 const safeSetText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
 const safeSetHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
 
@@ -25,7 +25,7 @@ const STRAT_MASTER_LISTS = {
     4: ["ประเด็นการพัฒนาที่ 1 การส่งเสริมอุตสาหกรรมท่องเที่ยวเน้นคุณค่า สร้างสรรค์บนอัตลักษณ์ล้านนา และอุตสาหกรรมไมซ์", "ประเด็นการพัฒนาที่ 2 การขับเคลื่อนเกษตรเพิ่มมูลค่า และเกษตรแปรรูปมูลค่าสูง", "ประเด็นการพัฒนาที่ 3 การยกระดับการค้าการลงทุนบนฐานเศรษฐกิจสร้างสรรค์ (Creative Economy) นวัตกรรม (Innovation) และการพัฒนาอย่างยั่งยืน (SDGs)", "ประเด็นการพัฒนาที่ 4 การจัดการเชิงรุกในปัญหาฝุ่นควัน (PM 2.5) และการรักษาทรัพยากรธรรมชาติและสิ่งแวดล้อมแบบมีส่วนร่วม", "ประเด็นการพัฒนาที่ 5 การเสริมสร้างสังคมแห่งโอกาสและเป็นธรรม เมืองน่าอยู่ มีความปลอดภัย เพื่อคุณภาพชีวิตที่ดีของประชาชน"]
 };
 
-// 🌟 ระบบจับคู่สีให้ตรงกันทุกกราฟ
+// 🌟 ระบบสีให้ล้อกันทุกกราฟ
 const baseChartColors = [
     '#1e3a8a', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
     '#0ea5e9', '#f43f5e', '#14b8a6', '#d946ef', '#84cc16', 
@@ -58,7 +58,6 @@ document.addEventListener('click', function(event) {
     if (event.target === m2) closeDistrictModal();
 });
 
-// สลับโหมดการ์ด
 function setAppMode(mode) {
     if (currentMode === mode) return; 
     currentMode = mode;
@@ -77,7 +76,6 @@ function setAppMode(mode) {
     updateDashboard(); 
 }
 
-// สลับกราฟล่าง
 function setBottomChartMode(mode) {
     bottomChartMode = mode;
     let btnTrend = document.getElementById('btnBottomTrend');
@@ -95,7 +93,6 @@ function setBottomChartMode(mode) {
     renderBottomChart(sYears);
 }
 
-// สลับ Tab ตาราง
 function setTableTab(tabId) {
     currentTableTab = tabId;
     let tabY = document.getElementById('tabYear');
@@ -380,7 +377,7 @@ function closeStratModal() {
     if(modal) modal.style.display = 'none'; 
 }
 
-// 🌟 Modal อำเภอ (แก้คำ เรียงลำดับประเด็นตามโครงสร้าง และมี Dropdown)
+// 🌟 Modal อำเภอ: เรียงยุทธศาสตร์ตามมาสเตอร์ และมี Dropdown กางดูรายปี
 function openDistrictModal(dName, sYears) {
     let targetKey = stratKeys[currentStratLevel];
     let masterList = STRAT_MASTER_LISTS[currentStratLevel];
@@ -424,6 +421,7 @@ function openDistrictModal(dName, sYears) {
             
     pop += `<b style="color:#1e3a8a;">🧬 แจกแจงตามประเด็นยุทธศาสตร์:</b><br>`;
                 
+    // เรียงตามโครงสร้าง Master List เสมอ
     let sortedStrats = Object.keys(distStrats).sort((a,b) => {
         if(a === 'ไม่ระบุ') return 1; if(b === 'ไม่ระบุ') return -1;
         let idxA = masterList.indexOf(a); let idxB = masterList.indexOf(b);
@@ -434,7 +432,7 @@ function openDistrictModal(dName, sYears) {
     if (sortedStrats.length === 0) {
         pop += `<div style="text-align:center; padding:10px; color:gray;">ไม่มีข้อมูล</div>`;
     } else {
-        sortedStrats.forEach((s, idx) => {
+        sortedStrats.forEach((s) => {
             let item = distStrats[s];
             pop += `<div style="margin-top: 8px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
                         <div style="background:#e2e8f0; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
@@ -444,6 +442,7 @@ function openDistrictModal(dName, sYears) {
                             </div>
                         </div>`;
             
+            // 🌟 มี Dropdown แสดงรายปีงบประมาณซ่อนไว้
             if(sYears.length > 1) {
                 pop += `<details class="dist-yr-details" style="background:#f8fafc; padding:5px 10px; border-top:1px solid #cbd5e1;">
                             <summary>ดูรายละเอียดรายปีงบประมาณ</summary>
@@ -542,10 +541,10 @@ function renderDonutOrBar(sYears) {
         return idxA - idxB; 
     });
 
-    let fullLabels = sortedKeys;
-    let displayLabels = sortedKeys.map(k => k.length > 25 ? k.substring(0, 25) + "..." : k);
+    // 🌟 ใช้ชื่อเต็ม ไม่มีการย่อ
+    let displayLabels = sortedKeys;
     
-    // 🌟 ใช้ระบบสีตรงกัน (Consistency Color)
+    // 🌟 ดึงสีให้ตรงกับลำดับเสมอ
     let dataColors = sortedKeys.map(k => getStratColor(k, masterList));
 
     let totalC = sortedKeys.reduce((a, k) => a + stratStats[k].sC + stratStats[k].jC, 0);
@@ -562,7 +561,7 @@ function renderDonutOrBar(sYears) {
         const clickHandlerSingle = (e, elements) => {
             if(!elements.length) return;
             let idx = elements[0].index;
-            let clickedStrat = fullLabels[idx];
+            let clickedStrat = sortedKeys[idx];
             if (clickedStrat === "ไม่ระบุ") return;
 
             if (activeSubStrategy === clickedStrat) {
@@ -584,7 +583,7 @@ function renderDonutOrBar(sYears) {
                     legend: { position: 'right', labels: {font:{family:'Sarabun', size: 10}} },
                     tooltip: { callbacks: { 
                         label: c => {
-                            let k = fullLabels[c.dataIndex];
+                            let k = sortedKeys[c.dataIndex];
                             let st = stratStats[k];
                             let yearTxt = sYears.length > 0 ? sYears[0] : "รวม";
                             if(currentMode === 'count') {
@@ -613,15 +612,13 @@ function renderDonutOrBar(sYears) {
                 label: `ปี ${y} (เดี่ยว)`,
                 data: sortedKeys.map(k => currentMode === 'count' ? stratStats[k].yData[y].sC : stratStats[k].yData[y].sB),
                 backgroundColor: singleColors,
-                stack: `Stack${idx}`,
-                minBarLength: 5 
+                stack: `Stack${idx}`
             });
             datasets.push({
                 label: `ปี ${y} (ร่วม)`,
                 data: sortedKeys.map(k => currentMode === 'count' ? stratStats[k].yData[y].jC : stratStats[k].yData[y].jB),
                 backgroundColor: jointColors,
-                stack: `Stack${idx}`,
-                minBarLength: 5 
+                stack: `Stack${idx}`
             });
         });
 
@@ -629,7 +626,7 @@ function renderDonutOrBar(sYears) {
             if(!elements.length) return;
             let dataIndex = elements[0].datasetIndex;
             let index = elements[0].index;
-            let clickedStrat = fullLabels[index];
+            let clickedStrat = sortedKeys[index];
             if (clickedStrat === "ไม่ระบุ") return;
 
             if (activeSubStrategy === clickedStrat) {
@@ -662,14 +659,14 @@ function renderDonutOrBar(sYears) {
                     legend: { position: 'bottom', labels: {font:{family:'Sarabun', size: 10}} },
                     tooltip: { 
                         callbacks: { 
-                            title: c => fullLabels[c[0].dataIndex],
+                            title: c => sortedKeys[c[0].dataIndex],
                             label: c => {
                                 let labelStr = c.dataset.label || '';
                                 let yearMatch = labelStr.match(/ปี (\d+)/);
                                 if(!yearMatch) return null;
                                 let y = yearMatch[1];
                                 
-                                let k = fullLabels[c.dataIndex];
+                                let k = sortedKeys[c.dataIndex];
                                 let st = stratStats[k]?.yData[y];
                                 if (!st) return null;
 
@@ -700,7 +697,7 @@ function renderDonutOrBar(sYears) {
     }
 }
 
-// 🌟 กราฟล่าง (แนวโน้มรายปี vs รายอำเภอปลดล็อกครบ 25 + Single Click โชว์ Modal)
+// 🌟 กราฟล่าง: ปลดล็อก Scroll + เรียงสัดส่วนแท่งสมจริง + คลิกเดียวโชว์ Modal
 function renderBottomChart(sYears) {
     const ctx = document.getElementById('trendChart');
     if(!ctx) return;
@@ -754,15 +751,18 @@ function renderBottomChart(sYears) {
             let amount = currentMode === 'count' ? 1 : r._b;
             
             dNames.filter(d => r._a.includes(d)).forEach(d => {
-                distStats[d].total += amount;
                 strategies.forEach(s => {
                     distStats[d].strats[s] = (distStats[d].strats[s] || 0) + amount;
                 });
             });
         });
         
-        // 🌟 เรียงลำดับจากมากสุดไปน้อยสุดตามความสูงรวม
-        let sortedDists = dNames.filter(d => distStats[d].total > 0).sort((a,b) => distStats[b].total - distStats[a].total);
+        // 🌟 เรียงลำดับกราฟอำเภอจาก "ผลรวมความสูงแท่ง" อย่างถูกต้องเป๊ะๆ
+        let sortedDists = dNames.filter(d => Object.keys(distStats[d].strats).length > 0).sort((a,b) => {
+            let sumA = Object.values(distStats[a].strats).reduce((acc, v) => acc + v, 0);
+            let sumB = Object.values(distStats[b].strats).reduce((acc, v) => acc + v, 0);
+            return sumB - sumA;
+        });
         
         if (sortedDists.length === 0) {
              canvasContainer.style.width = '100%';
@@ -770,9 +770,9 @@ function renderBottomChart(sYears) {
              return;
         }
 
-        // ขยายกล่องให้เลื่อน (Swipe) ขวาได้
+        // ขยายกล่องให้เลื่อน (Swipe) ขวาได้ 
         if (sortedDists.length > 8) {
-            canvasContainer.style.width = (sortedDists.length * 40) + 'px'; 
+            canvasContainer.style.width = (sortedDists.length * 45) + 'px'; 
         } else {
             canvasContainer.style.width = '100%';
         }
@@ -787,7 +787,7 @@ function renderBottomChart(sYears) {
             return idxA - idxB; 
         });
 
-        // 🌟 ใช้สีเดียวกับกราฟโดนัท
+        // 🌟 ใช้สีให้ตรงกันทั้งหมด
         let datasets = sortedActiveStrats.map((s) => {
             return {
                 label: s.length > 20 ? s.substring(0, 20) + "..." : s,
@@ -795,11 +795,11 @@ function renderBottomChart(sYears) {
                 data: sortedDists.map(d => distStats[d].strats[s] || 0),
                 backgroundColor: getStratColor(s, masterList),
                 stack: 'Stack0'
-                // ลบ minBarLength ออก ให้ความสูงสมจริง
+                // 🌟 ไม่มี minBarLength แล้ว เพื่อให้สัดส่วน 1 โครงการ เป็น 1 โครงการจริงๆ
             };
         });
 
-        // 🌟 Single Click 
+        // 🌟 เปลี่ยนเป็น "คลิกเดียว (Single Click)"
         const clickHandlerDistrict = (e, elements) => {
             if(!elements.length) return;
             let dataIndex = elements[0].index;
@@ -812,6 +812,8 @@ function renderBottomChart(sYears) {
             data: { labels: sortedDists, datasets: datasets },
             options: {
                 responsive: true, maintainAspectRatio: false,
+                // 🌟 ปลดล็อกให้ชี้พื้นที่เหนือกราฟก็เจอ Tooltip
+                interaction: { mode: 'index', intersect: false }, 
                 scales: { 
                     x: { stacked: true, ticks: { font: {family:'Sarabun', size: 11} } }, 
                     y: { stacked: true, title: {display:true, text: currentMode==='count'?'โครงการ':'บาท', font:{family:'Sarabun'}} } 
@@ -819,9 +821,8 @@ function renderBottomChart(sYears) {
                 plugins: {
                     legend: { display: false }, 
                     tooltip: {
-                        mode: 'index', intersect: false,
                         callbacks: {
-                            title: c => 'อ.' + c[0].label + ' (คลิกเพื่อเจาะลึก)',
+                            title: c => 'อ.' + c[0].label + ' (คลิกเพื่อดูสรุป)',
                             label: c => {
                                 let val = c.raw;
                                 if (val === 0) return null;
@@ -838,7 +839,7 @@ function renderBottomChart(sYears) {
     }
 }
 
-// 🌟 Heat Map: อิงกลุ่ม (Relative Rank) หาสูงสุด 3 อันดับแรก
+// 🌟 กฎใหม่ Heat Map: อิงกลุ่ม หาแชมป์ Top 1-3 เพื่อไล่ 8 เฉดสี 
 function renderMap(sDists, sYears) {
     if (!map) {
         map = L.map('map', {scrollWheelZoom: false, preferCanvas: true}).setView([18.7883, 98.9853], 8);
@@ -865,7 +866,7 @@ function renderMap(sDists, sYears) {
         }
     });
 
-    // หาสูงสุด 3 อันดับแรก 
+    // หาสูงสุด 3 อันดับแรก เพื่อใช้เป็นเกณฑ์อิงกลุ่ม
     let uniqueVals = [...new Set(dNames.map(d => {
         let s = dStats[d].total;
         return currentMode === 'budget' ? (s.bS + s.bM + s.bP) : (s.cS + s.cM);
@@ -887,7 +888,7 @@ function renderMap(sDists, sYears) {
             let val = currentMode === 'budget' ? (s.bS + s.bM + s.bP) : (s.cS + s.cM);
             
             let color = '#f1f5f9'; 
-            let borderColor = '#cbd5e1';
+            let borderColor = '#9ca3af';
             let weight = 1;
             
             if (isProvincialOnly) {
@@ -895,29 +896,47 @@ function renderMap(sDists, sYears) {
                 borderColor = '#fff';
             } else {
                 if (val === 0) {
-                    color = '#f1f5f9'; // 🌟 สีฐาน (ไม่มีข้อมูล) เทาชัดๆ
-                    borderColor = '#9ca3af';
+                    color = '#f1f5f9'; // ไม่มีข้อมูล 
+                    borderColor = '#9ca3af'; // ตัดขอบเข้ม
                 } else {
                     borderColor = '#fff';
                     if (val === max1 && max1 > 0) {
-                        color = currentMode === 'budget' ? '#022c22' : '#172554'; // 🌟 Top 1: เข้มจัดสุด (ดำมรกต/ดำกรมท่า)
+                        color = currentMode === 'budget' ? '#022c22' : '#0f172a'; // 🌟 แชมป์อันดับ 1 (ดำอมเขียว / ดำอมน้ำเงิน)
                         weight = 2;
-                    } else if (val === max2) {
-                        color = currentMode === 'budget' ? '#064e3b' : '#1e3a8a'; // 🌟 Top 2: เข้มมาก
-                    } else if (val === max3) {
-                        color = currentMode === 'budget' ? '#047857' : '#1d4ed8'; // 🌟 Top 3: เข้ม
+                    } else if (val === max2 && max2 > 0) {
+                        color = currentMode === 'budget' ? '#064e3b' : '#172554'; // 🌟 อันดับ 2
+                    } else if (val === max3 && max3 > 0) {
+                        color = currentMode === 'budget' ? '#047857' : '#1e3a8a'; // 🌟 อันดับ 3
                     } else if (currentMode === 'budget') {
-                        // 🌟 โทนสีเขียว สำหรับงบประมาณ
-                        if (val >= max1 * 0.4) color = '#059669';
-                        else if (val >= max1 * 0.1) color = '#10b981';
-                        else if (val >= max1 * 0.05) color = '#34d399';
-                        else color = '#6ee7b7';
+                        // 🌟 โทนสีเขียวมรกต 
+                        if (isMultiYear) { // เกณฑ์สำหรับดูหลายปี
+                            if (val >= 1000000000) color = '#059669'; // พันล้าน
+                            else if (val >= 500000000) color = '#10b981'; // 500 ล้าน
+                            else if (val >= 100000000) color = '#34d399'; // 100 ล้าน
+                            else if (val >= 10000000) color = '#6ee7b7';  // 10 ล้าน
+                            else color = '#a7f3d0';
+                        } else { // เกณฑ์สำหรับดูปีเดียว
+                            if (val >= 300000000) color = '#059669'; // 300 ล้าน
+                            else if (val >= 100000000) color = '#10b981'; // 100 ล้าน
+                            else if (val >= 50000000) color = '#34d399'; // 50 ล้าน
+                            else if (val >= 5000000) color = '#6ee7b7';  // 5 ล้าน
+                            else color = '#a7f3d0';
+                        }
                     } else {
-                        // 🌟 โทนสีน้ำเงิน สำหรับโครงการ
-                        if (val >= max1 * 0.4) color = '#2563eb';
-                        else if (val >= max1 * 0.1) color = '#3b82f6';
-                        else if (val >= max1 * 0.05) color = '#60a5fa';
-                        else color = '#bfdbfe';
+                        // 🌟 โทนสีน้ำเงิน 
+                        if (isMultiYear) {
+                            if (val >= 20) color = '#1d4ed8';
+                            else if (val >= 12) color = '#2563eb';
+                            else if (val >= 6) color = '#3b82f6';
+                            else if (val >= 3) color = '#60a5fa';
+                            else color = '#93c5fd';
+                        } else {
+                            if (val >= 10) color = '#1d4ed8';
+                            else if (val >= 7) color = '#2563eb';
+                            else if (val >= 4) color = '#3b82f6';
+                            else if (val >= 2) color = '#60a5fa';
+                            else color = '#93c5fd';
+                        }
                     }
                 }
             }
@@ -946,7 +965,7 @@ function renderMap(sDists, sYears) {
                     <b style="color:#f59e0b;">📦 โครงการร่วมพื้นที่อื่น:</b><br>
                     รวม: <b>${s.cM}</b> โครงการ<br>
                     งบที่ครอบคลุม: <b>${s.bM.toLocaleString()}</b> บาท<br>`;
-
+            
             pop += `<hr style="border:0; border-top:1px dashed #ccc; margin:4px 0;">
                     <b style="color:#ef4444;">🌐 โครงการทั้งจังหวัด:</b><br>
                     ครอบคลุมถึง: <b>${s.cP}</b> โครงการ<br>
@@ -960,7 +979,7 @@ function renderMap(sDists, sYears) {
     }).addTo(map);
 }
 
-// 🌟 ซ่อมตารางรายปี 
+// 🌟 ซ่อมบั๊กตารางรายปี 
 function toggleYearRow(rowId) {
     const detailRow = document.getElementById(`detail-${rowId}`);
     const mainRow = document.getElementById(`row-${rowId}`);
@@ -976,7 +995,6 @@ function toggleYearRow(rowId) {
     }
 }
 
-// 🌟 ตารางแสดงผล
 function renderTable(sYears) {
     let container = document.getElementById('tableContainer');
     if (!container) return;
