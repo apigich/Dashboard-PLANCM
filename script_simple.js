@@ -25,7 +25,7 @@ const STRAT_MASTER_LISTS = {
     4: ["ประเด็นการพัฒนาที่ 1 การส่งเสริมอุตสาหกรรมท่องเที่ยวเน้นคุณค่า สร้างสรรค์บนอัตลักษณ์ล้านนา และอุตสาหกรรมไมซ์", "ประเด็นการพัฒนาที่ 2 การขับเคลื่อนเกษตรเพิ่มมูลค่า และเกษตรแปรรูปมูลค่าสูง", "ประเด็นการพัฒนาที่ 3 การยกระดับการค้าการลงทุนบนฐานเศรษฐกิจสร้างสรรค์ (Creative Economy) นวัตกรรม (Innovation) และการพัฒนาอย่างยั่งยืน (SDGs)", "ประเด็นการพัฒนาที่ 4 การจัดการเชิงรุกในปัญหาฝุ่นควัน (PM 2.5) และการรักษาทรัพยากรธรรมชาติและสิ่งแวดล้อมแบบมีส่วนร่วม", "ประเด็นการพัฒนาที่ 5 การเสริมสร้างสังคมแห่งโอกาสและเป็นธรรม เมืองน่าอยู่ มีความปลอดภัย เพื่อคุณภาพชีวิตที่ดีของประชาชน"]
 };
 
-// ชุดสี 25 สี
+// 🌟 ชุดสี 25 สี 
 const baseChartColors = [
     '#1e3a8a', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', 
     '#0ea5e9', '#ec4899', '#14b8a6', '#f97316', '#d946ef', 
@@ -40,7 +40,7 @@ function getStratColor(stratName, masterList) {
     return baseChartColors[idx % baseChartColors.length];
 }
 
-// ฟังก์ชันคำนวณเปอร์เซ็นไทล์
+// 🌟 ฟังก์ชันคำนวณเปอร์เซ็นไทล์
 function getPercentile(arr, p) {
     if (arr.length === 0) return 0;
     if (p <= 0) return arr[0];
@@ -53,7 +53,8 @@ function getPercentile(arr, p) {
     return arr[lower] * (1 - weight) + arr[upper] * weight;
 }
 
-function truncateLabel(text, maxLength = 20) {
+// 🌟 ฟังก์ชันตัดคำ
+function truncateLabel(text, maxLength = 25) {
     if (!text) return "";
     return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 }
@@ -75,9 +76,11 @@ document.addEventListener('click', function(event) {
     const m1 = document.getElementById('stratModal');
     const m2 = document.getElementById('districtModal');
     const m3 = document.getElementById('enlargeModal');
+    const m4 = document.getElementById('welcomeModal');
     if (event.target === m1) closeStratModal();
     if (event.target === m2) closeDistrictModal();
     if (event.target === m3) closeEnlargeModal();
+    if (event.target === m4) m4.style.display = 'none';
 });
 
 function setAppMode(mode) {
@@ -215,10 +218,17 @@ async function init() {
         if(chkAll) chkAll.checked = true;
 
         updateDashboard();
+        
         let loader = document.getElementById('loadingOverlay');
         if(loader) {
-            setTimeout(() => { loader.style.display = 'none'; }, 300);
+            setTimeout(() => { 
+                loader.style.display = 'none'; 
+                // 🌟 แสดง Welcome Modal เมื่อโหลดข้อมูลเสร็จสมบูรณ์
+                let welcome = document.getElementById('welcomeModal');
+                if (welcome) welcome.style.display = 'flex';
+            }, 300);
         }
+
     } catch (error) {
         let loader = document.getElementById('loadingOverlay');
         if(loader) {
@@ -246,9 +256,9 @@ function toggleAllYears(cb) {
 }
 
 function handleYearChange() {
-    let all = document.querySelectorAll('.y-cb').length === document.querySelectorAll('.y-cb:checked').length;
+    let allChecked = document.querySelectorAll('.y-cb:checked').length === document.querySelectorAll('.y-cb').length;
     let chkAll = document.getElementById('checkAllYears');
-    if(chkAll) chkAll.checked = all;
+    if(chkAll) chkAll.checked = allChecked;
     updateDashboard();
 }
 
@@ -411,7 +421,6 @@ function closeStratModal() {
     if(modal) modal.style.display = 'none'; 
 }
 
-// 🌟 Modal อำเภอ: แก้บั๊กการนับ Provincial ซ้ำซ้อนอย่างเด็ดขาด
 function openDistrictModal(dName, sYears) {
     let targetKey = stratKeys[currentStratLevel];
     let masterList = STRAT_MASTER_LISTS[currentStratLevel];
@@ -419,19 +428,10 @@ function openDistrictModal(dName, sYears) {
     let totalC = 0;
     let totalB = 0;
 
-    // ใช้ filteredData เพื่อให้ตรงกับความสูงของกราฟ (กรองมาแล้ว)
-    filteredData.forEach(r => {
+    masterData.forEach(r => {
         let yr = r._y;
-        if (!sYears.includes(yr)) return;
-        
-        let isMatch = false;
-        if (dName === "Provincial" || dName === "🌐 ภาพรวมจังหวัด" || dName === "🌐 ทั่วจังหวัด") {
-            isMatch = (r._aType === "Provincial");
-        } else {
-            isMatch = (r._aType === "Single" || r._aType === "Multi") && r._a.includes(dName);
-        }
-
-        if (isMatch) {
+        if (sYears.includes(yr) && (r._aType === "Single" || r._aType === "Multi" || r._aType === "Provincial") && (r._a.includes(dName) || dName === "Provincial" && r._aType === "Provincial" || r._aType === "Provincial")) {
+            
             let val = r[targetKey] || r[Object.keys(r).find(k => k.includes(targetKey.split(" ")[0]))];
             let strats = String(val || "ไม่ระบุ").split(',').map(s=>s.trim()).filter(s=>s!=="");
             if(strats.length === 0) strats = ["ไม่ระบุ"];
@@ -454,7 +454,7 @@ function openDistrictModal(dName, sYears) {
         }
     });
 
-    let displayDName = (dName.includes("จังหวัด") || dName.includes("Provincial")) ? 'ภาพรวมทั้งจังหวัด' : `อำเภอ${dName}`;
+    let displayDName = dName === 'Provincial' ? 'ภาพรวมทั้งจังหวัด' : `อำเภอ${dName}`;
     safeSetText('distModalName', `📍 ข้อมูลเจาะลึก: ${displayDName}`);
     
     let pop = `<div style="font-size:14px; line-height: 1.5;">`;
@@ -627,9 +627,13 @@ function renderEnlargeChart(type, sYears) {
                 options: { 
                     responsive: true, maintainAspectRatio: false,
                     plugins: { 
-                        // 🌟 ย้าย Legend มาไว้ด้านขวา ให้เรียงเป็น List แนวตั้งสวยๆ
                         legend: { position: 'right', align: 'center', labels: {font:{family:'Sarabun', size: 14}, boxWidth: 15} },
-                        datalabels: { display: false }
+                        // 🌟 เอา % กลับมาในหน้าต่างขยายด้วย 
+                        datalabels: { 
+                            color: '#fff', 
+                            font: { weight: 'bold', size: 16 }, 
+                            formatter: v => overallTotal > 0 && (v*100/overallTotal) >= 4 ? (v*100/overallTotal).toFixed(1) + "%" : "" 
+                        }
                     }
                 }
             });
@@ -660,7 +664,7 @@ function renderEnlargeChart(type, sYears) {
                 data: { labels: displayLabels, datasets: datasets },
                 options: { 
                     indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
-                    scales: { x: { stacked: true }, y: { stacked: true, ticks: { font: {family:'Sarabun', size: 14} } } },
+                    scales: { x: { stacked: true }, y: { stacked: true, ticks: { font: {family:'Sarabun', size: 13} } } },
                     plugins: { 
                         legend: { position: 'bottom', labels: {font:{family:'Sarabun', size: 14}} }, 
                         tooltip: { callbacks: { title: c => sortedKeys[c[0].dataIndex] } },
@@ -753,7 +757,7 @@ function renderEnlargeChart(type, sYears) {
 
             let datasets = sortedActiveStrats.map((s) => {
                 return {
-                    label: truncateLabel(s, 25),
+                    label: truncateLabel(s, 40),
                     fullLabel: s,
                     data: sortedDists.map(d => distStats[d].strats[s] || 0),
                     backgroundColor: getStratColor(s, masterList),
@@ -791,6 +795,7 @@ function renderEnlargeChart(type, sYears) {
     }
 }
 
+// 🌟 กราฟโดนัทหน้าจอหลัก (เอา % กลับมาด้วย ChartDataLabels)
 function renderDonutOrBar(sYears) {
     const ctx = document.getElementById('donutChart');
     if(!ctx) return;
@@ -801,7 +806,6 @@ function renderDonutOrBar(sYears) {
 
     let stratStats = {};
     
-    // ดึง baseData มาหาผลรวมโดนัท (ไม่กรอง Strategy ตัวเอง เพื่อให้เห็นวงกลมเต็มเสมอ)
     const sDists = Array.from(document.querySelectorAll('.dist-cb:checked')).map(el => String(el.value));
     let baseDataForChart = masterData.filter(r => {
         let mY = sYears.includes(r._y);
@@ -891,7 +895,7 @@ function renderDonutOrBar(sYears) {
                     tooltip: { callbacks: { 
                         title: c => sortedKeys[c[0].dataIndex], 
                         label: c => {
-                            let k = sortedKeys[c.dataIndex];
+                            let k = sortedKeys[c[0].dataIndex];
                             let st = stratStats[k];
                             let yearTxt = sYears.length > 0 ? sYears[0] : "รวม";
                             let p = overallTotal > 0 ? ((c.raw*100)/overallTotal).toFixed(1) : 0;
@@ -904,7 +908,12 @@ function renderDonutOrBar(sYears) {
                             }
                         }
                     }},
-                    datalabels: { display: false } 
+                    // 🌟 วาด % ลงบนชิ้นโดนัท ตามรูปตัวอย่างของคุณ
+                    datalabels: { 
+                        color: '#fff', 
+                        font: { weight: 'bold', size: 11 }, 
+                        formatter: v => overallTotal > 0 && (v*100/overallTotal) >= 4 ? (v*100/overallTotal).toFixed(1) + "%" : "" 
+                    }
                 },
                 onClick: clickHandlerSingle
             }
@@ -1006,7 +1015,7 @@ function renderDonutOrBar(sYears) {
     }
 }
 
-// 🌟 กราฟล่าง (แก้การเรียงลำดับความสูงแท่งให้เป๊ะ)
+// 🌟 กราฟล่าง
 function renderBottomChart(sYears) {
     const ctx = document.getElementById('trendChart');
     if(!ctx) return;
@@ -1069,13 +1078,11 @@ function renderBottomChart(sYears) {
             }
         });
         
-        // 🌟 คำนวณความสูงแท่ง (ผลรวมของทุกยุทธศาสตร์ในอำเภอนั้นๆ) เพื่อเอามาจัดเรียง
         let distStackSums = {};
         pseudoDistricts.forEach(d => {
             distStackSums[d] = Object.values(distStats[d].strats).reduce((acc, v) => acc + v, 0);
         });
 
-        // จัดเรียงจากมากไปน้อย
         let validDists = dNames.filter(d => distStackSums[d] > 0).sort((a,b) => distStackSums[b] - distStackSums[a]);
         let sortedDists = [];
         if (distStackSums["Provincial"] > 0) sortedDists.push("Provincial");
@@ -1112,11 +1119,9 @@ function renderBottomChart(sYears) {
                 data: sortedDists.map(d => distStats[d].strats[s] || 0),
                 backgroundColor: getStratColor(s, masterList),
                 stack: 'Stack0'
-                // 🌟 ไม่มี minBarLength แล้ว เพื่อให้กราฟสมจริง
             };
         });
 
-        // 🌟 เปลี่ยนเป็น Single Click จิ้มปุ๊บเด้งปั๊บ
         const clickHandlerDistrict = (e, elements) => {
             if(!elements.length) return;
             let dataIndex = elements[0].index;
@@ -1138,7 +1143,7 @@ function renderBottomChart(sYears) {
                     legend: { display: false }, 
                     tooltip: {
                         callbacks: {
-                            title: c => c[0].label + ' (คลิกเพื่อดูสรุป)',
+                            title: c => c[0].label + ' (คลิกเพื่อดูสรุปยุทธศาสตร์)',
                             label: c => {
                                 let val = c.raw;
                                 if (val === 0) return null;
@@ -1155,7 +1160,7 @@ function renderBottomChart(sYears) {
     }
 }
 
-// 🌟 Heat Map
+// 🌟 แผนที่ อิงกลุ่ม + อิงเกณฑ์ Percentile
 function renderMap(sDists, sYears) {
     if (!map) {
         map = L.map('map', {scrollWheelZoom: false, preferCanvas: true}).setView([18.7883, 98.9853], 8);
@@ -1165,7 +1170,8 @@ function renderMap(sDists, sYears) {
     let isMultiYear = sYears.length > 1;
     let dStats = {};
     dNames.forEach(d => { 
-        dStats[d] = { total: {cS: 0, bS: 0, cM: 0, bM: 0, cP: 0, bP: 0} }; 
+        dStats[d] = { total: {cS: 0, bS: 0, cM: 0, bM: 0, cP: 0, bP: 0}, years: {} }; 
+        sYears.forEach(y => dStats[d].years[y] = {cS: 0, bS: 0, cM: 0, bM: 0, cP: 0, bP: 0});
     });
 
     filteredData.forEach(r => {
@@ -1173,8 +1179,23 @@ function renderMap(sDists, sYears) {
         if (sYears.includes(yr)) {
             if (r._aType === "Single" || r._aType === "Multi") {
                 dNames.filter(d => r._a.includes(d)).forEach(d => {
-                    if (r._aType === "Single") { dStats[d].total.cS++; dStats[d].total.bS += r._b; }
-                    if (r._aType === "Multi") { dStats[d].total.cM++; dStats[d].total.bM += r._b; }
+                    if (r._aType === "Single") { 
+                        dStats[d].total.cS++; dStats[d].total.bS += r._b; 
+                        if(dStats[d].years[yr]) { dStats[d].years[yr].cS++; dStats[d].years[yr].bS += r._b; }
+                    }
+                    if (r._aType === "Multi") { 
+                        dStats[d].total.cM++; dStats[d].total.bM += r._b; 
+                        if(dStats[d].years[yr]) { dStats[d].years[yr].cM++; dStats[d].years[yr].bM += r._b; }
+                    }
+                });
+            } else if (r._aType === "Provincial") {
+                dNames.forEach(d => { 
+                    dStats[d].total.cP++; 
+                    dStats[d].total.bP += r._b;
+                    if(dStats[d].years[yr]) { 
+                        dStats[d].years[yr].cP++; 
+                        dStats[d].years[yr].bP += r._b;
+                    }
                 });
             }
         }
@@ -1207,7 +1228,7 @@ function renderMap(sDists, sYears) {
             let val = currentMode === 'budget' ? (s.bS + s.bM + s.bP) : (s.cS + s.cM);
             
             let color = '#f1f5f9'; 
-            let borderColor = '#9ca3af';
+            let borderColor = '#cbd5e1';
             let weight = 1;
             
             if (isProvincialOnly) {
@@ -1215,7 +1236,7 @@ function renderMap(sDists, sYears) {
                 borderColor = '#fff';
             } else {
                 if (val === 0) {
-                    color = '#f1f5f9'; // สีฐาน (ไม่มีข้อมูล) เทาชัดๆ
+                    color = '#f1f5f9'; 
                     borderColor = '#9ca3af';
                 } else {
                     borderColor = '#fff';
@@ -1256,18 +1277,54 @@ function renderMap(sDists, sYears) {
             let st = dStats[d];
             let s = st.total;
             
+            // 🌟 เพิ่มคำอธิบายแยกรายปี สำหรับ Single, Multi, Provincial 
             let pop = `<div style="font-family:'Sarabun'; width: 240px; max-height:260px; overflow-y:auto; overflow-x:hidden; padding-right:5px;">
                 <b style="font-size:14px; color:#1e3a8a;">📍 อำเภอ${d}</b>
                 <hr style="margin:4px 0;">
                 <div style="font-size:11px; line-height: 1.3;">
                     <b style="color:#10b981;">✅ โครงการเฉพาะพื้นที่:</b><br>
                     รวม: <b>${s.cS}</b> โครงการ | <b>${s.bS.toLocaleString()}</b> บาท<br>`;
+            
+            if(sYears.length > 1) {
+                pop += `<ul style="padding-left:15px; margin:2px 0; color:#475569; font-size:10px;">`;
+                sYears.sort((a,b)=>a-b).forEach(y => {
+                    if (st.years[y] && st.years[y].cS > 0) {
+                        pop += `<li>ปี ${y}: ${st.years[y].cS} โครงการ (${st.years[y].bS.toLocaleString()} บ.)</li>`;
+                    }
+                });
+                pop += `</ul>`;
+            }
 
             pop += `<hr style="border:0; border-top:1px dashed #ccc; margin:4px 0;">
                     <b style="color:#f59e0b;">📦 โครงการร่วมพื้นที่อื่น:</b><br>
                     รวม: <b>${s.cM}</b> โครงการ<br>
                     งบที่ครอบคลุม: <b>${s.bM.toLocaleString()}</b> บาท<br>`;
             
+            if(sYears.length > 1) {
+                pop += `<ul style="padding-left:15px; margin:2px 0; color:#475569; font-size:10px;">`;
+                sYears.sort((a,b)=>a-b).forEach(y => {
+                    if (st.years[y] && st.years[y].cM > 0) {
+                        pop += `<li>ปี ${y}: ${st.years[y].cM} โครงการ (${st.years[y].bM.toLocaleString()} บ.)</li>`;
+                    }
+                });
+                pop += `</ul>`;
+            }
+
+            pop += `<hr style="border:0; border-top:1px dashed #ccc; margin:4px 0;">
+                    <b style="color:#ef4444;">🌐 โครงการทั้งจังหวัด:</b><br>
+                    ครอบคลุมถึง: <b>${s.cP}</b> โครงการ<br>
+                    งบระดับจังหวัด: <b>${s.bP.toLocaleString()}</b> บาท`;
+            
+            if(sYears.length > 1) {
+                pop += `<ul style="padding-left:15px; margin:2px 0; color:#475569; font-size:10px;">`;
+                sYears.sort((a,b)=>a-b).forEach(y => {
+                    if (st.years[y] && st.years[y].cP > 0) {
+                        pop += `<li>ปี ${y}: ${st.years[y].cP} โครงการ (${st.years[y].bP.toLocaleString()} บ.)</li>`;
+                    }
+                });
+                pop += `</ul>`;
+            }
+
             pop += `</div></div>`;
             l.bindPopup(pop, { autoPan: true, autoPanPadding: [20, 20] }); 
             l.on('mouseover', e => { e.target.setStyle({weight: 3, color: '#f59e0b'}); e.target.bringToFront(); });
