@@ -71,9 +71,10 @@
         /* === ขวา (ปุ่มยุทธศาสตร์ + กราฟ + ตาราง) === */
         .col-right { width: 420px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; min-height: 0; }
         
+        /* 🌟 คืน Layout ปุ่มให้จัดเป็น 2 คอลัมน์ (48%) ไม่ให้กินพื้นที่ความสูงกราฟ */
         .strat-tabs { display: flex; flex-wrap: wrap; gap: 4px; flex-shrink: 0; }
-        /* 🌟 คืนชื่อปุ่มแบบเต็ม ไม่มีตัดคำตามที่สั่งครับ */
-        .strat-btn { flex: 1 1 100%; background: white; border: 2px solid #cbd5e1; border-radius: 6px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.2; padding: 6px 4px; min-height: 32px;}
+        .strat-btn { flex: 1 1 48%; background: white; border: 2px solid #cbd5e1; border-radius: 6px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.2; padding: 4px; min-height: 38px;}
+        .strat-btn:last-child { flex: 1 1 100%; } /* ปุ่มสุดท้ายเต็มบรรทัด */
         .strat-btn:hover { border-color: #3b82f6; }
         .strat-btn.active { background: #1e3a8a; color: white; border-color: #1e3a8a; box-shadow: inset 0 3px 5px rgba(0,0,0,0.4); transform: translateY(1px); }
 
@@ -158,6 +159,9 @@
             .btn-advanced { width: 100%; text-align: center; }
             .main-workspace { flex-direction: column; padding: 12px; gap: 15px;}
             .col-left, .col-center, .col-right { width: 100%; min-width: 0; flex: none; display: flex; flex-direction: column;}
+            
+            .strat-tabs { flex-wrap: wrap; }
+            .strat-btn { flex: 1 1 calc(45% - 4px); }
             
             .col-right .chart-box, .col-right .table-col { width: 100%; min-width: 0; height: 400px; }
             .summary-row { flex-direction: column; height: auto; gap: 10px; }
