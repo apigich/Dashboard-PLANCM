@@ -1,7 +1,6 @@
 // 🚨 เปลี่ยน API ของคุณที่นี่
 const API_URL = "https://script.google.com/macros/s/AKfycby4zmatIMhxh2K4PIiabU5qhgEiJT2RMWhY7N_0TGi9DalIfrGsthWd_6NXj62UQrhc/exec";
 
-// 🛡️ ฟังก์ชันเกราะป้องกัน Error
 const safeSetText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
 const safeSetHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
 
@@ -25,7 +24,7 @@ const STRAT_MASTER_LISTS = {
     4: ["ประเด็นการพัฒนาที่ 1 การส่งเสริมอุตสาหกรรมท่องเที่ยวเน้นคุณค่า สร้างสรรค์บนอัตลักษณ์ล้านนา และอุตสาหกรรมไมซ์", "ประเด็นการพัฒนาที่ 2 การขับเคลื่อนเกษตรเพิ่มมูลค่า และเกษตรแปรรูปมูลค่าสูง", "ประเด็นการพัฒนาที่ 3 การยกระดับการค้าการลงทุนบนฐานเศรษฐกิจสร้างสรรค์ (Creative Economy) นวัตกรรม (Innovation) และการพัฒนาอย่างยั่งยืน (SDGs)", "ประเด็นการพัฒนาที่ 4 การจัดการเชิงรุกในปัญหาฝุ่นควัน (PM 2.5) และการรักษาทรัพยากรธรรมชาติและสิ่งแวดล้อมแบบมีส่วนร่วม", "ประเด็นการพัฒนาที่ 5 การเสริมสร้างสังคมแห่งโอกาสและเป็นธรรม เมืองน่าอยู่ มีความปลอดภัย เพื่อคุณภาพชีวิตที่ดีของประชาชน"]
 };
 
-// 🌟 ชุดสี 25 สี 
+// ชุดสี 25 สี 
 const baseChartColors = [
     '#1e3a8a', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', 
     '#0ea5e9', '#ec4899', '#14b8a6', '#f97316', '#d946ef', 
@@ -40,7 +39,6 @@ function getStratColor(stratName, masterList) {
     return baseChartColors[idx % baseChartColors.length];
 }
 
-// 🌟 ฟังก์ชันคำนวณเปอร์เซ็นไทล์
 function getPercentile(arr, p) {
     if (arr.length === 0) return 0;
     if (p <= 0) return arr[0];
@@ -51,12 +49,6 @@ function getPercentile(arr, p) {
     let weight = index % 1;
     if (upper >= arr.length) return arr[lower];
     return arr[lower] * (1 - weight) + arr[upper] * weight;
-}
-
-// 🌟 ฟังก์ชันตัดคำ
-function truncateLabel(text, maxLength = 25) {
-    if (!text) return "";
-    return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 }
 
 const dNames = ["กัลยาณิวัฒนา", "จอมทอง", "เชียงดาว", "ไชยปราการ", "ดอยเต่า", "ดอยสะเก็ด", "ดอยหล่อ", "ฝาง", "พร้าว", "เมืองเชียงใหม่", "แม่แจ่ม", "แม่แตง", "แม่ริม", "แม่วาง", "แม่ออน", "แม่อาย", "เวียงแหง", "สะเมิง", "สันกำแพง", "สันทราย", "สันป่าตอง", "สารภี", "หางดง", "อมก๋อย", "ฮอด"];
@@ -611,7 +603,8 @@ function renderEnlargeChart(type, sYears) {
             return idxA - idxB; 
         });
 
-        let displayLabels = sortedKeys.map(k => truncateLabel(k, 50));
+        // 🌟 ใช้ชื่อเต็มเสมอ ไม่มีการตัดคำ
+        let displayLabels = sortedKeys;
         let dataColors = sortedKeys.map(k => getStratColor(k, masterList));
 
         let totalC = sortedKeys.reduce((a, k) => a + stratStats[k].sC + stratStats[k].jC, 0);
@@ -628,11 +621,25 @@ function renderEnlargeChart(type, sYears) {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { 
                         legend: { position: 'right', align: 'center', labels: {font:{family:'Sarabun', size: 14}, boxWidth: 15} },
-                        // 🌟 เอา % กลับมาในหน้าต่างขยายด้วย 
-                        datalabels: { 
-                            color: '#fff', 
-                            font: { weight: 'bold', size: 16 }, 
-                            formatter: v => overallTotal > 0 && (v*100/overallTotal) >= 4 ? (v*100/overallTotal).toFixed(1) + "%" : "" 
+                        // 🌟 ปิด % ในหน้าขยาย (ตามสั่ง)
+                        datalabels: { display: false },
+                        // 🌟 แก้ Tooltip ให้กลับมาทำงานได้ปกติ
+                        tooltip: { 
+                            callbacks: { 
+                                title: c => displayLabels[c[0].dataIndex], 
+                                label: c => {
+                                    let k = displayLabels[c.dataIndex];
+                                    let st = stratStats[k];
+                                    let yearTxt = sYears.length > 0 ? sYears[0] : "รวม";
+                                    if(currentMode === 'count') {
+                                        let jointText = st.jC > 0 ? ` (+${st.jC})` : '';
+                                        return ` ปี ${yearTxt} : ${st.sC}${jointText} โครงการ`;
+                                    } else {
+                                        let totalB = st.sB + st.jB;
+                                        return ` ปี ${yearTxt} : ${totalB.toLocaleString()} บาท`;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -664,10 +671,10 @@ function renderEnlargeChart(type, sYears) {
                 data: { labels: displayLabels, datasets: datasets },
                 options: { 
                     indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
-                    scales: { x: { stacked: true }, y: { stacked: true, ticks: { font: {family:'Sarabun', size: 13} } } },
+                    scales: { x: { stacked: true }, y: { stacked: true, ticks: { font: {family:'Sarabun', size: 14} } } },
                     plugins: { 
                         legend: { position: 'bottom', labels: {font:{family:'Sarabun', size: 14}} }, 
-                        tooltip: { callbacks: { title: c => sortedKeys[c[0].dataIndex] } },
+                        tooltip: { callbacks: { title: c => displayLabels[c[0].dataIndex] } },
                         datalabels: { display: false } 
                     }
                 }
@@ -757,7 +764,7 @@ function renderEnlargeChart(type, sYears) {
 
             let datasets = sortedActiveStrats.map((s) => {
                 return {
-                    label: truncateLabel(s, 40),
+                    label: s, // 🌟 ใช้ชื่อเต็ม
                     fullLabel: s,
                     data: sortedDists.map(d => distStats[d].strats[s] || 0),
                     backgroundColor: getStratColor(s, masterList),
@@ -795,7 +802,7 @@ function renderEnlargeChart(type, sYears) {
     }
 }
 
-// 🌟 กราฟโดนัทหน้าจอหลัก (เอา % กลับมาด้วย ChartDataLabels)
+// 🌟 กราฟโดนัทหน้าหลัก (ซ่อน % ในชาร์ตแล้ว, มี Tooltip)
 function renderDonutOrBar(sYears) {
     const ctx = document.getElementById('donutChart');
     if(!ctx) return;
@@ -856,7 +863,8 @@ function renderDonutOrBar(sYears) {
         return idxA - idxB; 
     });
 
-    let displayLabels = sortedKeys.map(k => truncateLabel(k, 30));
+    // 🌟 ใช้ชื่อเต็ม ไม่มีตัดคำ
+    let displayLabels = sortedKeys;
     let dataColors = sortedKeys.map(k => getStratColor(k, masterList));
 
     let totalC = sortedKeys.reduce((a, k) => a + stratStats[k].sC + stratStats[k].jC, 0);
@@ -892,28 +900,24 @@ function renderDonutOrBar(sYears) {
                 responsive: true, maintainAspectRatio: false, cutout: '45%', 
                 plugins: { 
                     legend: { position: 'right', labels: {font:{family:'Sarabun', size: 10}} },
-                    tooltip: { callbacks: { 
-                        title: c => sortedKeys[c[0].dataIndex], 
-                        label: c => {
-                            let k = sortedKeys[c[0].dataIndex];
-                            let st = stratStats[k];
-                            let yearTxt = sYears.length > 0 ? sYears[0] : "รวม";
-                            let p = overallTotal > 0 ? ((c.raw*100)/overallTotal).toFixed(1) : 0;
-                            if(currentMode === 'count') {
-                                let jointText = st.jC > 0 ? ` (+${st.jC})` : '';
-                                return ` ปี ${yearTxt} : ${st.sC}${jointText} โครงการ (${p}%)`;
-                            } else {
-                                let totalB = st.sB + st.jB;
-                                return ` ปี ${yearTxt} : ${totalB.toLocaleString()} บาท (${p}%)`;
+                    tooltip: { 
+                        callbacks: { 
+                            title: c => displayLabels[c[0].dataIndex], 
+                            label: c => {
+                                let k = displayLabels[c.dataIndex];
+                                let st = stratStats[k];
+                                let yearTxt = sYears.length > 0 ? sYears[0] : "รวม";
+                                if(currentMode === 'count') {
+                                    let jointText = st.jC > 0 ? ` (+${st.jC})` : '';
+                                    return ` ปี ${yearTxt} : ${st.sC}${jointText} โครงการ`;
+                                } else {
+                                    let totalB = st.sB + st.jB;
+                                    return ` ปี ${yearTxt} : ${totalB.toLocaleString()} บาท`;
+                                }
                             }
                         }
-                    }},
-                    // 🌟 วาด % ลงบนชิ้นโดนัท ตามรูปตัวอย่างของคุณ
-                    datalabels: { 
-                        color: '#fff', 
-                        font: { weight: 'bold', size: 11 }, 
-                        formatter: v => overallTotal > 0 && (v*100/overallTotal) >= 4 ? (v*100/overallTotal).toFixed(1) + "%" : "" 
-                    }
+                    },
+                    datalabels: { display: false } // 🌟 ซ่อน % ออกจากหน้าหลัก
                 },
                 onClick: clickHandlerSingle
             }
@@ -968,7 +972,7 @@ function renderDonutOrBar(sYears) {
 
         donut = new Chart(ctx, {
             type: 'bar',
-            data: { labels: displayLabels.map(l => truncateLabel(l, 25)), datasets: datasets },
+            data: { labels: displayLabels, datasets: datasets },
             options: { 
                 indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
                 interaction: { mode: 'nearest', intersect: true }, 
@@ -977,14 +981,14 @@ function renderDonutOrBar(sYears) {
                     legend: { position: 'bottom', labels: {font:{family:'Sarabun', size: 10}} },
                     tooltip: { 
                         callbacks: { 
-                            title: c => sortedKeys[c[0].dataIndex],
+                            title: c => displayLabels[c[0].dataIndex],
                             label: c => {
                                 let labelStr = c.dataset.label || '';
                                 let yearMatch = labelStr.match(/ปี (\d+)/);
                                 if(!yearMatch) return null;
                                 let y = yearMatch[1];
                                 
-                                let k = sortedKeys[c.dataIndex];
+                                let k = displayLabels[c.dataIndex];
                                 let st = stratStats[k]?.yData[y];
                                 if (!st) return null;
 
@@ -1114,7 +1118,7 @@ function renderBottomChart(sYears) {
 
         let datasets = sortedActiveStrats.map((s) => {
             return {
-                label: truncateLabel(s, 20),
+                label: s, // 🌟 ใช้ชื่อเต็ม
                 fullLabel: s,
                 data: sortedDists.map(d => distStats[d].strats[s] || 0),
                 backgroundColor: getStratColor(s, masterList),
@@ -1277,7 +1281,6 @@ function renderMap(sDists, sYears) {
             let st = dStats[d];
             let s = st.total;
             
-            // 🌟 เพิ่มคำอธิบายแยกรายปี สำหรับ Single, Multi, Provincial 
             let pop = `<div style="font-family:'Sarabun'; width: 240px; max-height:260px; overflow-y:auto; overflow-x:hidden; padding-right:5px;">
                 <b style="font-size:14px; color:#1e3a8a;">📍 อำเภอ${d}</b>
                 <hr style="margin:4px 0;">
