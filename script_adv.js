@@ -4,7 +4,7 @@
 const safeSetText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
 const safeSetHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
 
-// 🌟 เพิ่มฟังก์ชันคำนวณ Percentile สำหรับ Heat Map (แก้ปัญหา getPercentile is not defined)
+// 🌟 เพิ่มฟังก์ชันคำนวณ Percentile สำหรับ Heat Map 
 function getPercentile(arr, p) {
     if (arr.length === 0) return 0;
     if (p <= 0) return arr[0];
@@ -732,9 +732,7 @@ function renderCharts(isMultiYear, selectedYears) {
 
     let labels = sortedKeys;
     let displayLabels = labels.map(k => truncateLabel(k, 35));
-    // 🌟 ดึงสีจาก Palette หลัก
-    let currentDataColors = sortedKeys.map(k => getStratColor(k, masterList));
-
+    
     if (chartType === 'bar') {
         let datasets = [];
         if (isMultiYear) {
@@ -802,9 +800,11 @@ function renderCharts(isMultiYear, selectedYears) {
         });
     } else {
         let data = [];
+        let currentDataColors = [];
         labels.forEach(k => {
             if(currentMode === 'count') data.push(stratData[k].total.sC + stratData[k].total.jC);
             else data.push(stratData[k].total.sB);
+            currentDataColors.push(getStratColor(k, masterList));
         });
         if (currentMode === 'budget' && integratedBudget > 0) {
             displayLabels.push("งบประมาณบูรณาการ");
@@ -814,14 +814,10 @@ function renderCharts(isMultiYear, selectedYears) {
         }
 
         let dataSum = data.reduce((a, b) => a + b, 0);
-        let labelsWithPct = displayLabels.map((lbl, idx) => {
-            let pct = dataSum > 0 ? ((data[idx] * 100) / dataSum).toFixed(1) : 0;
-            return `${lbl} (${pct}%)`;
-        });
         
         myChart = new Chart(ctxMain, {
             type: 'doughnut',
-            data: { labels: labelsWithPct, datasets: [{ data: data, backgroundColor: currentDataColors }] },
+            data: { labels: displayLabels, datasets: [{ data: data, backgroundColor: currentDataColors }] },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
                 plugins: { 
@@ -836,7 +832,7 @@ function renderCharts(isMultiYear, selectedYears) {
                             }
                         }
                     },
-                    datalabels: { display: false } // 🌟 ปิดเปอร์เซ็นต์ในหน้าจอหลัก
+                    datalabels: { display: false } 
                 } 
             }
         });
@@ -858,14 +854,10 @@ function renderCharts(isMultiYear, selectedYears) {
         if(areaCounts['ไม่ระบุ'] > 0) { aLabels.push('ไม่ระบุ'); aData.push(areaCounts['ไม่ระบุ']); aColors.push('#9ca3af'); }
 
         let aTotal = aData.reduce((a, b) => a + b, 0);
-        let aLabelsWithPct = aLabels.map((lbl, idx) => {
-            let pct = aTotal > 0 ? ((aData[idx] * 100) / aTotal).toFixed(1) : 0;
-            return `${lbl} (${pct}%)`;
-        });
 
         areaChart = new Chart(ctxArea, {
             type: 'doughnut',
-            data: { labels: aLabelsWithPct, datasets: [{ data: aData, backgroundColor: aColors }] },
+            data: { labels: aLabels, datasets: [{ data: aData, backgroundColor: aColors }] },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
                 plugins: { 
@@ -879,7 +871,7 @@ function renderCharts(isMultiYear, selectedYears) {
                             }
                         }
                     },
-                    datalabels: { display: false } // 🌟 ปิดเปอร์เซ็นต์
+                    datalabels: { display: false }
                 },
                 onClick: (e, elements) => {
                     if(elements.length > 0) {
@@ -918,7 +910,7 @@ function renderCharts(isMultiYear, selectedYears) {
     }
 }
 
-// 🌟 แผนที่ อิงกลุ่ม + อิงเปอร์เซ็นไทล์
+// 🌟 Heat Map อิง Percentile (ปรับตาม Simple Dashboard)
 function renderMap(isMultiYear, selectedYears) {
     let mapModeSelect = document.getElementById('mapModeSelect');
     let mapMode = mapModeSelect ? mapModeSelect.value : 'overview';
@@ -1035,7 +1027,7 @@ function renderMap(isMultiYear, selectedYears) {
         }
     });
 
-    // 🌟 คำนวณ Percentile สำหรับแบ่งสี 8 ระดับ
+    // 🌟 คำนวณ Percentile สำหรับแบ่งสีแผนที่
     let validVals = dNames.map(d => {
         let s = districtStats[d].total;
         if (mapMode === 'overview') {
@@ -1077,6 +1069,7 @@ function renderMap(isMultiYear, selectedYears) {
                 color = '#f1f5f9';
             } else {
                 borderColor = '#fff';
+                // 🌟 แชมป์ 3 อันดับแรก
                 if (val === max1 && max1 > 0) {
                     color = currentMode === 'budget' ? '#022c22' : '#0f172a'; // Top 1 
                     weight = 2;
@@ -1302,6 +1295,7 @@ function closeModal() {
     if(pm) pm.style.display = "none"; 
 }
 
+// 🌟 เรียกใช้งานระบบเมื่อโหลดไฟล์เสร็จ
 document.addEventListener("DOMContentLoaded", () => {
     init();
 });
