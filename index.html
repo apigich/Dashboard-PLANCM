@@ -72,8 +72,8 @@
         .col-right { width: 420px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; min-height: 0; }
         
         .strat-tabs { display: flex; flex-wrap: wrap; gap: 4px; flex-shrink: 0; }
-        .strat-btn { flex: 1 1 48%; background: white; border: 2px solid #cbd5e1; border-radius: 6px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 11.5px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; line-height: 1.2; padding: 4px 6px; min-height: 38px;}
-        .strat-btn:last-child { flex: 1 1 100%; } 
+        /* 🌟 คืนชื่อปุ่มแบบเต็ม ไม่มีตัดคำตามที่สั่งครับ */
+        .strat-btn { flex: 1 1 100%; background: white; border: 2px solid #cbd5e1; border-radius: 6px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.2; padding: 6px 4px; min-height: 32px;}
         .strat-btn:hover { border-color: #3b82f6; }
         .strat-btn.active { background: #1e3a8a; color: white; border-color: #1e3a8a; box-shadow: inset 0 3px 5px rgba(0,0,0,0.4); transform: translateY(1px); }
 
@@ -148,6 +148,7 @@
             .map-box { height: 450px; flex: none; } 
             
             .col-right { width: 100%; flex: none; flex-direction: row; flex-wrap: wrap; height: auto; }
+            .col-right .strat-tabs { width: 100%; flex-wrap: wrap; }
             .col-right .chart-box { flex: 1; min-width: 300px; height: 350px; }
             .col-right .table-col { flex: 1; min-width: 300px; height: 350px; }
         }
@@ -158,6 +159,7 @@
             .main-workspace { flex-direction: column; padding: 12px; gap: 15px;}
             .col-left, .col-center, .col-right { width: 100%; min-width: 0; flex: none; display: flex; flex-direction: column;}
             
+            .col-right .chart-box, .col-right .table-col { width: 100%; min-width: 0; height: 400px; }
             .summary-row { flex-direction: column; height: auto; gap: 10px; }
             .summary-card { padding: 15px 15px 20px 15px; }
             .map-box { height: 400px; }
@@ -257,11 +259,11 @@
 
     <div class="col-right">
         <div class="strat-tabs">
-            <button class="strat-btn" onclick="setStrat(0)"><span>🎯 ยุทธศาสตร์ชาติ</span></button>
-            <button class="strat-btn" onclick="setStrat(1)"><span>📖 แผนแม่บทฯ</span></button>
-            <button class="strat-btn" onclick="setStrat(2)"><span>📈 แผนพัฒนาฯ 13</span></button>
-            <button class="strat-btn" onclick="setStrat(3)"><span>🧭 แผนภาคเหนือ</span></button>
-            <button class="strat-btn active" id="btnDefaultStrat" onclick="setStrat(4)"><span>📌 แผนพัฒนาจังหวัด</span></button>
+            <button class="strat-btn" onclick="setStrat(0)"><span>🎯 ยุทธศาสตร์ชาติ 20 ปี</span></button>
+            <button class="strat-btn" onclick="setStrat(1)"><span>📖 แผนแม่บทภายใต้ยุทธศาสตร์ชาติ</span></button>
+            <button class="strat-btn" onclick="setStrat(2)"><span>📈 แผนพัฒนาเศรษฐกิจและสังคมแห่งชาติ ฉบับที่ 13</span></button>
+            <button class="strat-btn" onclick="setStrat(3)"><span>🧭 แผนพัฒนาภาคเหนือ</span></button>
+            <button class="strat-btn active" id="btnDefaultStrat" onclick="setStrat(4)"><span>📌 ประเด็นการพัฒนาจังหวัดเชียงใหม่ (พ.ศ. 2566-2570)</span></button>
         </div>
 
         <div class="chart-box top-chart">
