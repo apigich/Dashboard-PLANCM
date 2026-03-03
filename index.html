@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
     <style>
-        /* === ล็อก One-Page 100vh === */
+        /* === ล็อก One-Page 100vh แท้สำหรับ Desktop === */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Sarabun', sans-serif; background-color: #e2e8f0; width: 100vw; height: 100vh; overflow: hidden; display: flex; flex-direction: column;}
         
@@ -22,7 +22,6 @@
         .btn-advanced { background: #1e293b; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .btn-advanced:hover { background: #334155; transform: translateY(-1px); }
         
-        /* 🌟 คืนร่าง Layout เดิม: ซ้าย กลาง ขวา */
         .main-workspace { display: flex; flex-direction: row; flex: 1; padding: 12px; gap: 12px; min-height: 0; overflow: hidden; }
 
         /* === 1. ซ้าย (ตัวกรอง) === */
@@ -46,10 +45,11 @@
         .year-list label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #334155;}
         
         /* === 2. กลาง (การ์ดบุ๋ม + แผนที่) === */
-        .col-center { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
+        .col-center { flex: 1.1; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
         
         .summary-row { display: flex; gap: 12px; min-height: 75px; flex-shrink: 0; }
         
+        /* การ์ดกดได้ ป้ายสถานะอยู่ล่าง ไม่บังข้อความ */
         .summary-card { flex: 1; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; border-radius: 8px; padding: 10px 15px 15px 15px; display: flex; flex-direction: column; justify-content: center; position: relative; cursor: pointer; transition: all 0.2s ease-in-out; opacity: 0.55; filter: grayscale(40%); box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 2px solid transparent; overflow: hidden;}
         .summary-card.green { background: linear-gradient(135deg, #059669, #10b981); }
         .summary-card:hover { opacity: 0.85; filter: grayscale(15%); transform: translateY(-1px);}
@@ -68,26 +68,28 @@
         .map-header { padding: 8px 15px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: bold; color: #1e3a8a; background: #f8fafc; border-radius: 8px 8px 0 0; flex-shrink: 0;}
         #map { flex: 1; border-radius: 0 0 8px 8px; z-index: 1; min-height: 0;}
 
-        /* === 3. ขวา (ปุ่มแผน + กราฟ + ตาราง) === */
-        .col-right { width: 420px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; min-height: 0; }
+        /* === 3. ขวา (ปุ่มยุทธศาสตร์ + กราฟ + ตาราง) === */
+        .col-right { width: 450px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; min-height: 0; }
         
+        /* 🌟 คืนร่าง Layout: ปุ่มยุทธศาสตร์ชื่อสั้น */
         .strat-tabs { display: flex; flex-wrap: wrap; gap: 4px; flex-shrink: 0; }
-        .strat-btn { flex: 1 1 48%; background: white; border: 2px solid #cbd5e1; border-radius: 6px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 11px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; line-height: 1.2; padding: 4px; min-height: 38px;}
-        .strat-btn:last-child { flex: 1 1 100%; } /* ให้ปุ่มสุดท้ายเต็มบรรทัด */
-        .strat-btn:hover { border-color: #3b82f6; }
+        .strat-btn { flex: 1 1 30%; background: white; border: 2px solid #cbd5e1; border-radius: 6px; color: #64748b; font-family: 'Sarabun'; font-weight: bold; font-size: 11.5px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; line-height: 1.2; padding: 6px 4px; min-height: 40px;}
+        .strat-btn:last-child { flex: 1 1 48%; }
+        .strat-btn:nth-last-child(2) { flex: 1 1 48%; }
+        .strat-btn:hover { border-color: #3b82f6; color: #1e3a8a;}
         .strat-btn.active { background: #1e3a8a; color: white; border-color: #1e3a8a; box-shadow: inset 0 3px 5px rgba(0,0,0,0.4); transform: translateY(1px); }
 
-        .chart-box { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding: 8px; flex-shrink: 0;}
-        .chart-box.top-chart { flex: 1.2; min-height: 160px; }
-        .chart-box.bottom-chart { flex: 1; min-height: 140px; }
+        .chart-box { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding: 8px; flex-shrink: 1; min-height: 0;}
+        .chart-box.top-chart { flex: 1.4; min-height: 180px; }
+        .chart-box.bottom-chart { flex: 1.2; min-height: 160px; }
         
         .chart-title { font-size: 13px; font-weight: bold; color: #1e3a8a; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; flex-shrink: 0;}
         
         .chart-wrapper { flex: 1; position: relative; min-height: 0; }
         .bottom-chart-wrapper { flex: 1; position: relative; min-height: 0; overflow-x: auto; overflow-y: hidden; }
-        .bottom-canvas-container { position: relative; height: 100%; width: 100%; transition: width 0.3s;}
+        .bottom-canvas-container { position: relative; height: 100%; width: 100%; min-width: 100%; transition: width 0.3s;}
 
-        .table-col { flex: 1.4; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; min-height: 150px; }
+        .table-col { flex: 1.3; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; min-height: 140px; flex-shrink: 1;}
         .table-header { padding: 0; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 13px; font-weight: bold; color: #1e3a8a; border-radius: 8px 8px 0 0; display: flex; flex-shrink: 0;}
         .tbl-tab-btn { flex: 1; padding: 8px; text-align: center; background: transparent; border: none; font-family: 'Sarabun'; font-weight: bold; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s;}
         .tbl-tab-btn:hover { color: #1e3a8a; background: #f1f5f9; }
@@ -130,7 +132,7 @@
         .dist-yr-item { font-size: 11px; padding-left: 15px; border-bottom: 1px dotted #e2e8f0; padding-bottom: 2px; margin-bottom: 2px; }
         .dist-yr-item:last-child { border-bottom: none; margin-bottom: 0; }
 
-        /* Responsive */
+        /* Responsive iPad Landscape / Tablet */
         @media screen and (max-width: 1200px) {
             body { height: auto; overflow-y: auto; overflow-x: hidden; }
             .main-workspace { flex-wrap: wrap; height: auto; overflow: visible; align-items: stretch; padding: 15px;}
@@ -141,11 +143,13 @@
             .col-center { flex: 1; min-width: 400px; height: auto; }
             .map-box { height: 450px; flex: none; } 
             
-            .col-right { width: 100%; flex: none; flex-direction: row; flex-wrap: wrap; height: auto; }
-            .col-right .strat-tabs { width: 100%; flex-wrap: wrap; }
-            .col-right .chart-box { flex: 1; min-width: 300px; height: 350px; }
-            .col-right .table-col { flex: 1; min-width: 300px; height: 350px; }
+            .col-right { width: 100%; flex: none; height: auto; }
+            .chart-box.top-chart { min-height: 350px; }
+            .chart-box.bottom-chart { min-height: 350px; }
+            .table-col { min-height: 350px; }
         }
+        
+        /* Mobile / iPad Portrait */
         @media screen and (max-width: 820px) {
             .top-bar { padding: 12px; flex-wrap: wrap; gap: 8px; justify-content: center;}
             .top-bar h1 { font-size: 17px; width: 100%; text-align: center;}
@@ -153,14 +157,11 @@
             .main-workspace { flex-direction: column; padding: 12px; gap: 15px;}
             .col-left, .col-center, .col-right { width: 100%; min-width: 0; flex: none; display: flex; flex-direction: column;}
             
-            .strat-tabs { flex-wrap: wrap; }
-            .strat-btn { flex: 1 1 calc(45% - 4px); }
-            
-            .col-right .chart-box, .col-right .table-col { width: 100%; min-width: 0; height: 400px; }
             .summary-row { flex-direction: column; height: auto; gap: 10px; }
             .summary-card { padding: 15px 15px 20px 15px; }
             .map-box { height: 400px; }
         }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -237,11 +238,11 @@
 
     <div class="col-right">
         <div class="strat-tabs">
-            <button class="strat-btn" onclick="setStrat(0)"><span>🎯 ยุทธศาสตร์ชาติ 20 ปี</span></button>
-            <button class="strat-btn" onclick="setStrat(1)"><span>📖 แผนแม่บทภายใต้ยุทธศาสตร์ชาติ</span></button>
-            <button class="strat-btn" onclick="setStrat(2)"><span>📈 แผนพัฒนาเศรษฐกิจและสังคมแห่งชาติ ฉบับที่ 13</span></button>
-            <button class="strat-btn" onclick="setStrat(3)"><span>🧭 แผนพัฒนาภาคเหนือ</span></button>
-            <button class="strat-btn active" id="btnDefaultStrat" onclick="setStrat(4)"><span>📌 ประเด็นการพัฒนาจังหวัดเชียงใหม่ (พ.ศ. 2566-2570)</span></button>
+            <button class="strat-btn" onclick="setStrat(0)"><span>🎯 ยุทธศาสตร์ชาติ</span></button>
+            <button class="strat-btn" onclick="setStrat(1)"><span>📖 แผนแม่บทฯ</span></button>
+            <button class="strat-btn" onclick="setStrat(2)"><span>📈 แผนพัฒนาฯ 13</span></button>
+            <button class="strat-btn" onclick="setStrat(3)"><span>🧭 แผนภาคเหนือ</span></button>
+            <button class="strat-btn active" id="btnDefaultStrat" onclick="setStrat(4)"><span>📌 แผนพัฒนาจังหวัด</span></button>
         </div>
 
         <div class="chart-box top-chart">
